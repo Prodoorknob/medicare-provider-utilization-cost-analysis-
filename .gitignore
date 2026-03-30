@@ -1,0 +1,25 @@
+# Raw data and partitioned outputs (large, generated at runtime)
+data/
+partitioned_data/
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+.env
+.venv/
+env/
+venv/
+
+# Jupyter / IDE
+.ipynb_checkpoints/
+.vscode/
+.idea/
+
+# MLflow local runs
+mlruns/
+mlartifacts/
+
+# OS
+.DS_Store
+Thumbs.db
