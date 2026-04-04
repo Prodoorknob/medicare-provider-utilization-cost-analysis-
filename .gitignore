@@ -1,6 +1,7 @@
 # Raw data and partitioned outputs (large, generated at runtime)
 data/
 partitioned_data/
+local_pipeline/
 
 # Python artifacts
 __pycache__/

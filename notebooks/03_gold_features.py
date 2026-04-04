@@ -45,7 +45,7 @@ df = pipeline.fit(df).transform(df)
 FEATURE_COLS = [
     "Rndrng_Prvdr_Type_idx", "Rndrng_Prvdr_State_Abrvtn_idx", "HCPCS_Cd_idx",
     "Tot_Benes", "Tot_Srvcs",
-    "Avg_Sbmtd_Chrg", "Avg_Mdcr_Allo_Amt", "Avg_Mdcr_Stdzd_Amt",
+    "Avg_Sbmtd_Chrg", "Avg_Mdcr_Alowd_Amt", "Avg_Mdcr_Stdzd_Amt",
     "srvcs_per_bene", "pymt_to_charge_ratio", "stdz_to_pymt_ratio",
     "Avg_Mdcr_Pymt_Amt",   # target
 ]

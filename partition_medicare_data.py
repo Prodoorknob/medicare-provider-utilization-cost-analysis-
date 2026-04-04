@@ -1,4 +1,5 @@
 import os
+import re
 import glob
 import argparse
 import pandas as pd
@@ -23,9 +24,14 @@ def partition_and_sort(input_dir, output_dir, chunksize=250_000):
     partition_files = set()
 
     for file in csv_files:
-        print(f"  -> Processing {file} in chunks...")
+        # Extract year from filename (e.g. medicare_physician_practitioners_2023.csv → "2023")
+        year_match = re.search(r'(\d{4})', os.path.basename(file))
+        year_str   = year_match.group(1) if year_match else "UNKNOWN"
+        print(f"  -> Processing {file} (year={year_str}) in chunks...")
         # Read dataset as string to prevent pandas from guessing types and throwing mixed-type warnings
         for chunk in pd.read_csv(file, chunksize=chunksize, dtype=str):
+            # Inject year from filename — essential for temporal analysis / LSTM
+            chunk['year'] = year_str
             
             # Fill NaNs in the partitioning columns to avoid groupby dropping them
             chunk['Rndrng_Prvdr_State_Abrvtn'] = chunk['Rndrng_Prvdr_State_Abrvtn'].fillna('UNKNOWN_STATE')

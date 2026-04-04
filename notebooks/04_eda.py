@@ -22,7 +22,7 @@ spark = SparkSession.builder.getOrCreate()
 # MAGIC %md ## 1 · Target Distribution — Avg Medicare Payment
 
 df_pd = spark.table(SILVER_TABLE).select(
-    "Avg_Mdcr_Pymt_Amt", "Avg_Sbmtd_Chrg", "Avg_Mdcr_Allo_Amt",
+    "Avg_Mdcr_Pymt_Amt", "Avg_Sbmtd_Chrg", "Avg_Mdcr_Alowd_Amt",
     "Tot_Srvcs", "Tot_Benes", "Rndrng_Prvdr_Type", "Rndrng_Prvdr_State_Abrvtn"
 ).sample(fraction=0.05, seed=42).toPandas()
 
@@ -38,7 +38,7 @@ plt.show()
 
 NUM_COLS = [
     "Tot_Benes", "Tot_Srvcs", "Avg_Sbmtd_Chrg",
-    "Avg_Mdcr_Allo_Amt", "Avg_Mdcr_Pymt_Amt", "Avg_Mdcr_Stdzd_Amt"
+    "Avg_Mdcr_Alowd_Amt", "Avg_Mdcr_Pymt_Amt", "Avg_Mdcr_Stdzd_Amt"
 ]
 corr = df_pd[NUM_COLS].corr()
 

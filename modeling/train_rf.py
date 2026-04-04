@@ -15,11 +15,12 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split, RandomizedSearchCV
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
-TARGET   = "Avg_Mdcr_Pymt_Amt"
+TARGET   = "Avg_Mdcr_Alowd_Amt"
 FEATURES = [
-    "Rndrng_Prvdr_Type_idx", "Rndrng_Prvdr_State_Abrvtn_idx", "HCPCS_Cd_idx",
-    "Tot_Benes", "Tot_Srvcs", "Avg_Sbmtd_Chrg", "Avg_Mdcr_Allo_Amt",
-    "Avg_Mdcr_Stdzd_Amt", "srvcs_per_bene", "pymt_to_charge_ratio", "stdz_to_pymt_ratio",
+    "Rndrng_Prvdr_Type_idx", "Rndrng_Prvdr_State_Abrvtn_idx",
+    "HCPCS_Cd_idx", "hcpcs_bucket", "place_of_srvc_flag",
+    "Bene_Avg_Risk_Scre", "log_srvcs", "log_benes",
+    "Avg_Sbmtd_Chrg", "srvcs_per_bene",
 ]
 PARAM_DIST = {
     "n_estimators":      [100, 200, 400],

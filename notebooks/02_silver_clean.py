@@ -24,7 +24,7 @@ df = spark.table(BRONZE_TABLE)
 # --- 1. Cast numeric columns from string ---
 NUMERIC_COLS = [
     "Tot_Benes", "Tot_Srvcs", "Tot_Bene_Day_Srvcs",
-    "Avg_Sbmtd_Chrg", "Avg_Mdcr_Allo_Amt", "Avg_Mdcr_Pymt_Amt",
+    "Avg_Sbmtd_Chrg", "Avg_Mdcr_Alowd_Amt", "Avg_Mdcr_Pymt_Amt",
     "Avg_Mdcr_Stdzd_Amt",
 ]
 
