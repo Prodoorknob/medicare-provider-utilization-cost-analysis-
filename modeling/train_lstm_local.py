@@ -462,8 +462,11 @@ def generate_forecasts(model, df, device, n_forward=3, n_mc_samples=50, batch_si
 def plot_specialty_trends(df, forecast_df, label_encoders, output_dir, top_n=12):
     """Plot historical + forecast trends by specialty."""
     os.makedirs(output_dir, exist_ok=True)
-    ptype_names = label_encoders.get("Rndrng_Prvdr_Type", {})
-    inv_ptype = {int(v): k for k, v in ptype_names.items()}
+    ptype_names = label_encoders.get("Rndrng_Prvdr_Type", [])
+    if isinstance(ptype_names, list):
+        inv_ptype = {i: name for i, name in enumerate(ptype_names)}
+    else:
+        inv_ptype = {int(v): k for k, v in ptype_names.items()}
 
     # Count groups per specialty for top_n selection
     specialty_counts = df["Rndrng_Prvdr_Type_idx"].value_counts().head(top_n)
@@ -535,8 +538,9 @@ def plot_specialty_trends(df, forecast_df, label_encoders, output_dir, top_n=12)
         sub = df[df["Rndrng_Prvdr_Type_idx"] == ptype_idx]
         last_vals = []
         for _, row in sub.iterrows():
-            if 2023 in row["years"]:
-                idx_2023 = row["years"].index(2023)
+            years_arr = np.asarray(row["years"])
+            if 2023 in years_arr:
+                idx_2023 = int(np.where(years_arr == 2023)[0][0])
                 last_vals.append(row["target_seq"][idx_2023])
         if not last_vals:
             continue

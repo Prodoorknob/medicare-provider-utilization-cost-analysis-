@@ -257,19 +257,57 @@ Avg_Sbmtd_Chrg | srvcs_per_bene | Avg_Mdcr_Alowd_Amt (TARGET)
 
 ---
 
-## Phase 6 — Streamlit Portfolio App (Planned)
+## Phase 6 — Next.js Portfolio Web App ✅ COMPLETE
 
 **Goal:** Patient-facing query interface combining both stages + LSTM forecast.
 
-### Planned Milestones
-- [ ] 6.1 — Streamlit app scaffolding (`app.py`, `model_loader.py`)
-- [ ] 6.2 — Stage 1 + Stage 2 inference pipeline
-- [ ] 6.3 — LSTM forecast display with uncertainty bands
-- [ ] 6.4 — Deploy to Streamlit Community Cloud or HuggingFace Spaces
+**Live URL:** https://web-three-omega-21.vercel.app
+
+### Milestone 6.1 — Architecture & Data Layer (April 8, 2026)
+- [x] Supabase project created (us-east-1, project `zdkoniqnvbklxtsviikl`)
+- [x] 7 PostgreSQL tables with RLS (public SELECT) — 119K+ total rows
+- [x] Pre-computed Stage 1 aggregations from 103M gold rows → 32,818 groups
+- [x] Pre-computed Stage 2 OOP quantiles from 10.3M synthetic rows → 23,424 groups
+- [x] LSTM forecasts uploaded: 62,703 rows (20,901 groups × 3 years)
+- [x] Label encoders, state summary, model metrics, feature importances
+
+### Milestone 6.2 — Next.js App (April 8, 2026)
+- [x] Next.js 16 + Material UI + Recharts + Supabase JS client
+- [x] 6 pages: Dashboard, Cost Estimator, Forecast Explorer, Model Comparison, Data Explorer, About
+- [x] Two-stage cost estimation with fallback queries for missing combinations
+- [x] Interactive LSTM forecast chart with P10-P90 confidence bands
+- [x] Feature importance bar chart, model metrics table, methodology accordions
+- [x] State summary table with sorting/filtering, EDA plot gallery
+- [x] Responsive layout (mobile drawer nav, stacked forms)
+
+### Milestone 6.3 — Deployment (April 8, 2026)
+- [x] Deployed to Vercel (production)
+- [x] Environment variables: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+### Tech Stack
+- **Frontend:** Next.js 16.2.3 (App Router, Turbopack), Material UI v7, Recharts
+- **Backend:** Supabase (PostgreSQL) — pre-computed predictions, no live model inference
+- **Deployment:** Vercel
+- **Data Bridge:** Python scripts aggregate local_pipeline parquets → Supabase REST API
 
 ---
 
 ## Changelog
+
+### 2026-04-08
+- **Phase 6 complete** — Next.js portfolio web app deployed to Vercel
+- Created Supabase project with 7 tables (lookup_labels, stage1_allowed_amounts, stage2_oop_estimates, lstm_forecasts, state_summary, model_metrics, feature_importances)
+- Pre-computed Stage 1 allowed amounts by (specialty × bucket × state × POS): 32,818 groups from 103M rows
+- Pre-computed Stage 2 OOP quantiles by (specialty × bucket × region × dual × supplemental × age × income): 23,424 groups
+- Built 6-page Next.js app: Dashboard, Cost Estimator, Forecast Explorer, Model Comparison, Data Explorer, About
+- Cost Estimator: two-stage flow with Supabase lookups, auto-detected census region, P10/P50/P90 OOP
+- Forecast Explorer: interactive Recharts chart + pre-generated LSTM specialty trend plots
+- Model Comparison: metrics table, RF feature importance chart, methodology accordions
+- **Phase 3 LSTM trained** — ran in WSL Ubuntu with PyTorch CUDA on RTX 5070 Ti
+- LSTM: R²=0.886, MAE=$8.84 (val 2022-2023), early stop epoch 19, 213K params
+- Fixed `train_lstm_local.py`: label_encoders list→dict handling, numpy array `.index()` → `np.where()`
+- **Phase 5 OOP trained** — XGBoost quantile regression in WSL
+- OOP: P50 R²=0.40, P50 coverage=50.0%, P90 coverage=90.0%
 
 ### 2026-04-07
 - **Phase 4 code complete** — MCBS integration pipeline (download + Bronze + Silver + crosswalk)

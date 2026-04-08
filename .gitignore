@@ -21,6 +21,11 @@ venv/
 mlruns/
 mlartifacts/
 
+# Web app
+web/node_modules/
+web/.next/
+web/.env.local
+
 # OS
 .DS_Store
 Thumbs.db
