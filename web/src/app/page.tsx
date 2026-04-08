@@ -31,7 +31,7 @@ export default function HomePage() {
     <Box>
       <Box sx={{ textAlign: 'center', py: { xs: 4, md: 6 } }}>
         <Typography variant="h3" gutterBottom>
-          Medicare Provider Cost Analysis
+          AllowanceMap
         </Typography>
         <Typography variant="h6" color="text.secondary" sx={{ maxWidth: 700, mx: 'auto', mb: 4 }}>
           Explore Medicare allowed amounts, predict patient out-of-pocket costs, and view LSTM-powered cost forecasts across 103M+ provider service records (2013-2023).

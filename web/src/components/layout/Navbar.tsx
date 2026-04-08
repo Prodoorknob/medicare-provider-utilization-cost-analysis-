@@ -37,7 +37,7 @@ export default function Navbar() {
           )}
           <LocalHospitalIcon sx={{ mr: 1 }} />
           <Typography variant="h6" component={Link} href="/" sx={{ flexGrow: 1, textDecoration: 'none', color: 'inherit', fontWeight: 700 }}>
-            Medicare Cost Analysis
+            AllowanceMap
           </Typography>
           {!isMobile && NAV_LINKS.map((link) => (
             <Button
@@ -61,7 +61,7 @@ export default function Navbar() {
       <Drawer anchor="left" open={drawerOpen} onClose={() => setDrawerOpen(false)}>
         <Box sx={{ width: 260, pt: 2 }}>
           <Typography variant="h6" sx={{ px: 2, pb: 1, fontWeight: 700, color: 'primary.main' }}>
-            Medicare Cost Analysis
+            AllowanceMap
           </Typography>
           <List>
             {NAV_LINKS.map((link) => (

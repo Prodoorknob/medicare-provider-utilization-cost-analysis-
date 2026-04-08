@@ -6,7 +6,7 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 
 export const metadata: Metadata = {
-  title: 'Medicare Provider Cost Analysis',
+  title: 'AllowanceMap',
   description: 'Explore Medicare allowed amounts, patient out-of-pocket costs, and LSTM-powered cost forecasts across 103M+ provider records.',
 };
 
