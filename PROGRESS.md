@@ -122,46 +122,138 @@ Avg_Sbmtd_Chrg | srvcs_per_bene | Avg_Mdcr_Alowd_Amt (TARGET)
 
 ---
 
-## Phase 3 — LSTM Time-Series Forecasting 🔜 NEXT
+## Phase 3 — LSTM Time-Series Forecasting 🏗️ CODE COMPLETE (pending training)
 
 **Goal:** Build LSTM model on year-indexed sequences to forecast allowed amounts 2-3 years forward by specialty × HCPCS bucket × state.
 
-### Planned Milestones
-- [ ] 3.1 — PyTorch LSTM model architecture (sequence input → forecast output)
-- [ ] 3.2 — Train on years 2013-2021, validate on 2022-2023
-- [ ] 3.3 — Confidence-bounded forecast generation (2024-2026 projections)
-- [ ] 3.4 — Specialty trend visualization charts
-- [ ] 3.5 — MLflow logging alongside Stage 1 models
-- [ ] 3.6 — Forecast output: `forecast_2024_2026.parquet`
+### Milestone 3.1 — PyTorch LSTM Architecture (April 7, 2026)
+- [x] `MedicareLSTM` model: static embeddings (provider_type, state, hcpcs_bucket) + 2-layer LSTM + linear head
+- [x] Teacher forcing: input=seq[:-1] → predict seq[1:]
+- [x] ~50-80K params, CUDA auto-detection, batch_first=True
+- [x] MC Dropout for inference-time uncertainty
+
+### Milestone 3.2 — Temporal Train/Val Split (April 7, 2026)
+- [x] Train on years ≤ 2021, validate on 2022-2023 predictions
+- [x] `MedicareSequenceDataset` with variable-length padding and val_mask
+- [x] Early stopping (patience=10), ReduceLROnPlateau, gradient clipping
+- [x] Masked MSE loss (ignores padding positions)
+
+### Milestone 3.3 — Confidence-Bounded Forecasting (April 7, 2026)
+- [x] Autoregressive rollout 3 years forward (2024-2026)
+- [x] MC Dropout: 50 stochastic passes per group for uncertainty bounds
+- [x] Output: forecast_mean, forecast_std, P10/P50/P90 per group per year
+- [x] Saved to `local_pipeline/lstm/forecast_2024_2026.parquet`
+
+### Milestone 3.4 — Specialty Trend Visualization (April 7, 2026)
+- [x] `specialty_trends.png` — 4x3 grid, top 12 specialties with P10-P90 forecast bands
+- [x] `forecast_distribution.png` — histogram of 2026 forecast means
+- [x] `top_growth_specialties.png` — top 15 specialties by projected cost growth %
+
+### Milestone 3.5 — MLflow Logging (April 7, 2026)
+- [x] Run name: `lstm_local`, same experiment as Stage 1 models
+- [x] Logs: all hyperparams, test_mae/rmse/r2, PyTorch model, forecast parquet, plots
+- [x] Integrated into `compare_models_local.py` (LSTM added to MODEL_RUN_NAMES)
+
+### Milestone 3.6 — Forecast Output (April 7, 2026)
+- [x] Schema: group keys + forecast_year + forecast_mean/std/p10/p50/p90 + last_known_year/value + n_history_years
 
 ### Input Data Ready
 - `local_pipeline/lstm/sequences.parquet` — 23,672 groups
 - 10,540 groups with all 11 years (2013-2023)
 - 2,771 groups with < 3 years (will be filtered)
 
+### Status
+**Code complete.** Training deferred — run `python modeling/train_lstm_local.py` when GPU is available.
+
 ---
 
-## Phase 4 — MCBS Integration (Planned)
+## Phase 4 — MCBS Integration 🏗️ CODE COMPLETE (pending data download)
 
 **Goal:** Ingest Medicare Current Beneficiary Survey data, build parallel Bronze/Silver pipeline, create crosswalk.
 
-### Planned Milestones
-- [ ] 4.1 — MCBS PUF download script
-- [ ] 4.2 — MCBS Bronze ingest notebook
-- [ ] 4.3 — MCBS Silver cleaning notebook
-- [ ] 4.4 — Region × specialty crosswalk table (Census regions map to our `CENSUS_REGIONS` dict)
+### Milestone 4.1 — MCBS PUF Download Script (April 7, 2026)
+- [x] `pull_mcbs_data.py` — downloads Survey File + Cost Supplement ZIPs from data.cms.gov
+- [x] Survey File URLs: 2015-2022 (8 years)
+- [x] Cost Supplement URLs: 2018-2022 (5 years)
+- [x] Streaming download with resume detection, ZIP extraction to CSV
+- [x] `--url` override for when CMS URLs change
+- [x] No Data Use Agreement required (PUF is public)
+
+### Milestone 4.2 — MCBS Bronze Ingest (April 7, 2026)
+- [x] `notebooks/06_mcbs_bronze_local.py` — CSV → per-year Parquet with provenance
+- [x] Reads with `dtype=str` to prevent type inference (same as provider pipeline)
+- [x] BASEID validation (auto-detects variant column names)
+- [x] Output: `mcbs_bronze/survey_{YEAR}.parquet`, `mcbs_bronze/cost_{YEAR}.parquet`
+
+### Milestone 4.3 — MCBS Silver Cleaning (April 7, 2026)
+- [x] `notebooks/07_mcbs_silver_local.py` — Cost Supplement cleaning (primary Stage 2 input)
+- [x] COST_RENAME: maps actual CMS columns (PAMTOOP, CSP_AGE, etc.) to canonical names
+- [x] Derived features: age_band, oop_share, has_medicaid, has_private_ins
+- [x] Global IQR outlier removal on pay_oop (3x IQR, non-zero values)
+- [x] Survey weight preserved (CSPUFWGT) for population estimates
+- [x] Output: `mcbs_silver/{YEAR}.parquet`
+
+### Milestone 4.4 — Specialty × MCBS Crosswalk (April 7, 2026)
+- [x] `notebooks/08_mcbs_crosswalk_local.py` — national-level bridge table
+- [x] Provider aggregation: (specialty × bucket × year) → mean allowed amt, risk, charge
+- [x] MCBS aggregation: (year) → mean OOP, OOP share, age, chronic, income, Medicaid/private rates
+- [x] Join on year (national level — see PUF constraints below)
+- [x] Output: `mcbs_crosswalk/crosswalk.parquet`
+
+### PUF Constraints Discovered
+- **No Census region** in MCBS PUF (suppressed for privacy) — crosswalk is national, not regional
+- **Survey File and Cost Supplement PUF_IDs do NOT overlap** — independent samples, cannot join at beneficiary level
+- **Survey File** has 3 seasonal rounds (fall/winter/summer) with different columns per round, merged on PUF_ID
+- **Cost Supplement** has its own demographics (CSP_AGE, CSP_SEX, CSP_RACE, CSP_INCOME, CSP_NCHRNCND) — self-contained for Stage 2
+- **OOP target variable:** `PAMTOOP` (renamed to `pay_oop` in Silver)
+
+### Milestone 4.5 — Dual-Track Architecture (April 7, 2026)
+- [x] **Track A (Real PUF):** National-level annual OOP from public data — already built
+- [x] **Track B (Synthetic LDS):** `generate_synthetic_mcbs.py` — per-service OOP with Census region
+- [x] Synthetic data derived from real MCBS distributions + real provider gold data
+- [x] Demographic sampling: age, sex, income, chronic_count from real MCBS year distributions
+- [x] OOP modulation: dual_eligible (-85%), supplemental (-35%), chronic count scaling, log-normal noise
+- [x] `08_mcbs_crosswalk_local.py` now has `--mode puf|synthetic` flag
+- [x] Synthetic mode: aggregates by (region, specialty, bucket, year) instead of just (year)
+- [x] Metadata + clear "SYNTHETIC" labeling for reproducibility
+- [x] Drop-in replacement: users with real MCBS LDS can swap the synthetic parquet and run the same pipeline
+
+### Status
+**Code complete.** Run pipeline:
+- Track A: `python pull_mcbs_data.py` → `06_mcbs_bronze` → `07_mcbs_silver` → `08_mcbs_crosswalk --mode puf`
+- Track B: `python generate_synthetic_mcbs.py` → `08_mcbs_crosswalk --mode synthetic`
 
 ---
 
-## Phase 5 — Stage 2 OOP Model (Planned)
+## Phase 5 — Stage 2 OOP Model 🏗️ CODE COMPLETE (pending training)
 
 **Goal:** Train quantile regression on MCBS features to predict patient out-of-pocket costs (P10/P50/P90).
 
-### Planned Milestones
-- [ ] 5.1 — Stage 2 gold feature matrix (MCBS + Stage 1 predicted allowed amount)
-- [ ] 5.2 — Quantile GBM training (P10, P50, P90 simultaneously)
-- [ ] 5.3 — Evaluation on held-out MCBS year
-- [ ] 5.4 — MLflow logging in unified experiment
+### Milestone 5.1 — Stage 2 Feature Matrix (April 7, 2026)
+- [x] 12-feature matrix combining provider-side and beneficiary-side columns
+- [x] Provider features: Avg_Mdcr_Alowd_Amt (Stage 1 target → Stage 2 feature), risk score, specialty, bucket, POS
+- [x] Beneficiary features: census_region, age, sex, income, chronic_count, dual_eligible, has_supplemental
+- [x] Data source: `mcbs_synthetic/synthetic_oop.parquet` (10.3M rows) — drop-in replaceable with real LDS
+
+### Milestone 5.2 — Quantile XGBoost Training (April 7, 2026)
+- [x] `modeling/train_oop_local.py` — 3 separate XGBoost boosters (P10, P50, P90)
+- [x] Objective: `reg:quantileerror` with `quantile_alpha` = 0.1, 0.5, 0.9
+- [x] Same hyperparams as Stage 1: lr=0.05, max_depth=6, subsample=0.8, hist, CUDA auto-detect
+- [x] Early stopping (patience=30), 300 rounds default
+
+### Milestone 5.3 — Evaluation (April 7, 2026)
+- [x] 80/20 random split (random_state=42, matches Stage 1)
+- [x] Metrics per quantile: MAE, RMSE, R2, coverage (should be ~10/50/90%), pinball loss
+- [x] P50 metrics logged as `test_mae/rmse/r2` for comparison table compatibility
+
+### Milestone 5.4 — MLflow Logging (April 7, 2026)
+- [x] Run name: `xgb_quantile_oop_local`, same experiment as Stage 1
+- [x] 3 model artifacts: `xgb_oop_p10`, `xgb_oop_p50`, `xgb_oop_p90`
+- [x] Feature importances per quantile
+- [x] `compare_models_local.py` updated with Stage 2 OOP section (separate from Stage 1 table)
+
+### Status
+**Code complete.** Run `python modeling/train_oop_local.py` (~3-4 GB RAM with default --sample 0.3).
 
 ---
 
@@ -178,6 +270,33 @@ Avg_Sbmtd_Chrg | srvcs_per_bene | Avg_Mdcr_Alowd_Amt (TARGET)
 ---
 
 ## Changelog
+
+### 2026-04-07
+- **Phase 4 code complete** — MCBS integration pipeline (download + Bronze + Silver + crosswalk)
+- Created `pull_mcbs_data.py`: downloads Survey File (2015-2022) + Cost Supplement (2018-2023) ZIPs from CMS
+- Created `06_mcbs_bronze_local.py`: handles CMS dir structure (SFPUF/CSPUF subdirs), merges 3 survey rounds on PUF_ID
+- Created `07_mcbs_silver_local.py`: Cost Supplement cleaning with actual CMS column names (PAMTOOP, CSP_AGE, etc.)
+- Created `08_mcbs_crosswalk_local.py`: national-level crosswalk (no region in PUF), join on year
+- **Key PUF constraints discovered:** no Census region, Survey/Cost PUF_IDs don't overlap, Cost Supplement self-contained
+- Derived features: age_band, oop_share, has_medicaid, has_private_ins
+- **Dual-track architecture** — Track A (real PUF, national) + Track B (synthetic LDS, regional)
+- Created `generate_synthetic_mcbs.py`: samples demographics from real MCBS, modulates OOP by dual/supplemental/chronic
+- Updated `08_mcbs_crosswalk_local.py` with `--mode puf|synthetic` flag
+- Synthetic data clearly labeled; drop-in replacement for real LDS data
+- **Phase 5 code complete** — Stage 2 OOP quantile regression
+- Created `modeling/train_oop_local.py`: 3 XGBoost quantile boosters (P10/P50/P90) on 12 features
+- Avg_Mdcr_Alowd_Amt (Stage 1 target) becomes Stage 2 input feature — two-stage pipeline connected
+- Metrics: MAE, RMSE, R2, coverage, pinball loss per quantile
+- Updated `compare_models_local.py` with Stage 2 OOP section (separate table)
+- **Phase 3 code complete** — LSTM time-series forecasting (training deferred)
+- Created `modeling/train_lstm_local.py`: MedicareLSTM with static embeddings, temporal split, MC Dropout forecasting
+- Architecture: 2-layer LSTM, embed_dim=8 for group keys, AdamW + ReduceLROnPlateau + early stopping
+- Temporal split: train on years <= 2021, validate on 2022-2023 predictions
+- Autoregressive forecast 2024-2026 with 50 MC Dropout samples for P10/P50/P90 confidence bounds
+- 3 visualization charts: specialty trends with forecast bands, forecast distribution, top growth specialties
+- MLflow integration: run_name=`lstm_local`, logs model + forecast parquet + plots
+- Updated `compare_models_local.py`: LSTM added to MODEL_RUN_NAMES, excluded from paired t-test (sequence model)
+- Updated CLAUDE.md with LSTM commands, torch dependency, file layout
 
 ### 2026-04-04
 - **Phase 2 complete** — national scale training with 10-feature gold schema

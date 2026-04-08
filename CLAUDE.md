@@ -20,6 +20,10 @@ CMS API (by Provider)           → pull_provider_data.py (Bene_Avg_Risk_Scre)
 Bronze (raw ingest + year) → Silver (typed, cleaned, IQR on allowed amt) → Gold (features + encoding, per-state) → EDA + Modeling
                                                                              ↓
                                                                           LSTM sequences (05_lstm_sequences)
+
+CMS MCBS PUF (Survey + Cost) → pull_mcbs_data.py → 06_mcbs_bronze → 07_mcbs_silver → 08_mcbs_crosswalk
+                                                                                        ↓
+                                              generate_synthetic_mcbs.py → 08_mcbs_crosswalk --mode synthetic
 ```
 
 ### Local pipeline outputs (`local_pipeline/`, gitignored)
@@ -29,6 +33,13 @@ Bronze (raw ingest + year) → Silver (typed, cleaned, IQR on allowed amt) → G
 - `gold/{STATE}.parquet` — model-ready features, one file per state
 - `gold/label_encoders.json` — persisted LabelEncoder classes for consistent encoding
 - `lstm/sequences.parquet` — LSTM-ready time-series sequences (Phase 3 input)
+- `lstm/forecast_2024_2026.parquet` — LSTM forecast output with confidence bounds
+- `lstm/plots/` — specialty trend and forecast visualizations
+- `mcbs_bronze/survey_{YEAR}.parquet`, `cost_{YEAR}.parquet` — raw MCBS ingest
+- `mcbs_silver/{YEAR}.parquet` — cleaned MCBS (survey + cost joined)
+- `mcbs_crosswalk/crosswalk.parquet` — region x specialty bridge table
+- `mcbs_synthetic/synthetic_oop.parquet` — synthetic per-service OOP with region (Track B)
+- `mcbs_synthetic/synthetic_metadata.json` — provenance and replacement instructions
 - `eda/` — plots and summaries
 
 ## Key Conventions
@@ -49,7 +60,8 @@ Bronze (raw ingest + year) → Silver (typed, cleaned, IQR on allowed amt) → G
 - **Removed (data leakage):** `Avg_Mdcr_Pymt_Amt`, `Avg_Mdcr_Stdzd_Amt` (derived from allowed amount)
 - **Train/test split:** 80/20, `random_state=42` (consistent across all models)
 - **Local scripts use `log1p` target transform** for skew correction
-- **Three models:** GLM (SGD baseline), Random Forest (warm_start or RandomizedSearchCV), XGBoost (incremental or early stopping)
+- **Four models:** GLM (SGD baseline), Random Forest (warm_start or RandomizedSearchCV), XGBoost (incremental or early stopping), LSTM (PyTorch, temporal split + MC Dropout forecasting)
+- **LSTM specifics:** Temporal split (train ≤ 2021, val 2022-2023), autoregressive forecast 2024-2026, MC Dropout confidence bounds, static embeddings for group keys
 - **MLflow experiment:** All local runs log to `{user_home}/medicare_models` (unified experiment)
 
 ### Training modes
@@ -88,7 +100,15 @@ TERRITORIES: AA, AE, AP, AS, FM, GU, MP, PR, PW, VI
 │   ├── train_glm.py / _local.py
 │   ├── train_rf.py  / _local.py          # --mode batch|full
 │   ├── train_xgb.py / _local.py          # --mode batch|full
+│   ├── train_lstm_local.py               # PyTorch LSTM forecasting
+│   ├── train_oop_local.py                # Stage 2 OOP quantile regression (P10/P50/P90)
 │   └── compare_models.py / _local.py
+├── pull_mcbs_data.py                     # MCBS PUF download (Survey + Cost)
+├── notebooks/
+│   ├── 06_mcbs_bronze_local.py           # MCBS Bronze ingest
+│   ├── 07_mcbs_silver_local.py           # MCBS Silver cleaning + join
+│   └── 08_mcbs_crosswalk_local.py        # Region × specialty crosswalk (--mode puf|synthetic)
+├── generate_synthetic_mcbs.py            # Synthetic per-service OOP (Track B)
 └── local_pipeline/                       # gitignored
 ```
 
@@ -118,14 +138,32 @@ python modeling/train_xgb_local.py --mode batch
 python modeling/train_rf_local.py --mode full --sample 0.5
 python modeling/train_xgb_local.py --mode full --sample 0.5
 
+# Train LSTM (Phase 3 — time-series forecasting)
+python modeling/train_lstm_local.py
+python modeling/train_lstm_local.py --epochs 100 --hidden-size 128
+
 # Compare models
 python modeling/compare_models_local.py
+
+# MCBS pipeline — Track A (real PUF, national)
+python pull_mcbs_data.py --type both
+python notebooks/06_mcbs_bronze_local.py
+python notebooks/07_mcbs_silver_local.py
+python notebooks/08_mcbs_crosswalk_local.py
+
+# MCBS pipeline — Track B (synthetic LDS, regional per-service OOP)
+python generate_synthetic_mcbs.py --sample 0.1
+python notebooks/08_mcbs_crosswalk_local.py --mode synthetic
+
+# Train Stage 2 OOP quantile regression (P10/P50/P90)
+python modeling/train_oop_local.py
+python modeling/train_oop_local.py --sample 0.3 --rounds 500
 ```
 
 ## Environment
 
-- **Python deps:** pandas, pyarrow, scikit-learn, xgboost, mlflow, matplotlib, seaborn, scipy, requests, pyspark (Databricks only)
-- **Optional GPU deps:** cudf-cu12 (RAPIDS for gold features), cuml-cu12 (RAPIDS for RF full mode)
+- **Python deps:** pandas, pyarrow, scikit-learn, xgboost, mlflow, matplotlib, seaborn, scipy, requests, torch, pyspark (Databricks only)
+- **Optional GPU deps:** cudf-cu12 (RAPIDS for gold features), cuml-cu12 (RAPIDS for RF full mode), torch CUDA (for LSTM)
 - **Env vars (`.env`, gitignored):** `DATABRICKS_HOST`, `DATABRICKS_TOKEN`
 - **Platform:** Windows 11 + WSL2 Ubuntu, NVIDIA 5070 Ti (16GB VRAM)
 
@@ -133,7 +171,7 @@ python modeling/compare_models_local.py
 
 See `PROGRESS.md` for detailed milestone tracking, changelogs, model results, and phase-by-phase execution log. Update PROGRESS.md after every phase/milestone completion.
 
-**Current status:** Phase 2 complete. Phase 3 (LSTM) next.
+**Current status:** Phases 3-5 code complete. LSTM training pending (GPU). MCBS pipeline done. OOP model ready to train.
 
 ## Notes
 

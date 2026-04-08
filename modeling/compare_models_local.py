@@ -33,6 +33,12 @@ MODEL_RUN_NAMES = {
     "GLM":          "glm_sgd_local",
     "RandomForest": "rf_randomized_search_local",
     "XGBoost":      "xgb_extmem_local",
+    "LSTM":         "lstm_local",
+}
+
+# Stage 2 OOP model (separate target: per_service_oop, not Avg_Mdcr_Alowd_Amt)
+OOP_RUN_NAMES = {
+    "XGB_Quantile_OOP": "xgb_quantile_oop_local",
 }
 
 
@@ -120,6 +126,14 @@ def compute_residuals(run_id: str, X_test: pd.DataFrame, y_test: pd.Series) -> n
         model_uri = f"runs:/{run_id}/glm_model"
         model     = mlflow.sklearn.load_model(model_uri)
         return (y_test.values - model.predict(X_test)).astype(float)
+    except Exception:
+        pass
+    try:
+        # LSTM operates on sequences, not flat features — skip residual computation
+        model_uri = f"runs:/{run_id}/lstm_model"
+        mlflow.pytorch.load_model(model_uri)
+        print(f"  [INFO] LSTM model found but residuals not applicable (sequence model)")
+        return None
     except Exception as e:
         print(f"  [WARN] Could not load model for run {run_id}: {e}")
         return None
@@ -150,6 +164,28 @@ def main(data_path: str):
                 paired_t_test(residuals[a], residuals[b], a, b)
     else:
         print(f"\n[INFO] Gold parquet not found at '{data_path}' — skipping t-test.")
+
+    # Stage 2 OOP model (different target — separate section)
+    print("\n=== Stage 2: OOP Quantile Model (fetched from Databricks MLflow) ===")
+    oop_rows = []
+    for model_name, run_name in OOP_RUN_NAMES.items():
+        run_id, metrics = fetch_best_run(experiment_name, run_name)
+        if run_id is None:
+            print(f"  [INFO] No OOP model run found yet — train with: python modeling/train_oop_local.py")
+            break
+        oop_rows.append({
+            "Model":        model_name,
+            "Run ID":       (run_id or "")[:8],
+            "P10 MAE":      round(metrics.get("p10_mae",      float("nan")), 2),
+            "P50 MAE":      round(metrics.get("p50_mae",      float("nan")), 2),
+            "P90 MAE":      round(metrics.get("p90_mae",      float("nan")), 2),
+            "P10 Coverage": round(metrics.get("p10_coverage",  float("nan")), 3),
+            "P50 Coverage": round(metrics.get("p50_coverage",  float("nan")), 3),
+            "P90 Coverage": round(metrics.get("p90_coverage",  float("nan")), 3),
+        })
+    if oop_rows:
+        oop_table = pd.DataFrame(oop_rows)
+        print(oop_table.to_string(index=False))
 
     print("\nDone.")
 
