@@ -115,7 +115,7 @@ export default function AboutPage() {
             <Card sx={{ mb: 3 }}>
               <CardContent>
                 <Typography variant="h6" gutterBottom>Overview</Typography>
-                <Typography variant="body1" paragraph>
+                <Typography variant="body1" sx={{ mb: 1.5 }}>
                   An end-to-end data science pipeline predicting Medicare provider costs and patient out-of-pocket expenses. Processes over 103 million provider-service records from the CMS Medicare Physician &amp; Other Practitioners dataset spanning 2013–2023.
                 </Typography>
                 <Typography variant="body1">
@@ -127,10 +127,10 @@ export default function AboutPage() {
             <Card sx={{ mb: 3 }}>
               <CardContent>
                 <Typography variant="h6" gutterBottom>Data Sources</Typography>
-                <Typography variant="body1" paragraph>
+                <Typography variant="body1" sx={{ mb: 1.5 }}>
                   <strong>CMS Medicare Physician &amp; Other Practitioners (2013–2023)</strong> — Provider-level utilization and payment data for Part B services. Over 10 million records per year across all 50 states and territories.
                 </Typography>
-                <Typography variant="body1" paragraph>
+                <Typography variant="body1" sx={{ mb: 1.5 }}>
                   <strong>CMS Medicare Current Beneficiary Survey (MCBS)</strong> — Public Use Files for beneficiary demographics, insurance coverage, and cost data. Used for Stage 2 patient cost modeling.
                 </Typography>
                 <Typography variant="body1">
@@ -142,7 +142,7 @@ export default function AboutPage() {
             <Card sx={{ mb: 3 }}>
               <CardContent>
                 <Typography variant="h6" gutterBottom color="primary">Stage 1 — Medicare Allowed Amount</Typography>
-                <Typography variant="body2" color="text.secondary" paragraph>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
                   Random Forest (R²=0.884), XGBoost (R²=0.833), LSTM (R²=0.886, best), GLM/SGD
                 </Typography>
                 <Divider sx={{ my: 1.5 }} />
@@ -178,7 +178,7 @@ export default function AboutPage() {
             <Card sx={{ mb: 3 }}>
               <CardContent>
                 <Typography variant="h6" gutterBottom>Links</Typography>
-                <Typography variant="body2" paragraph>
+                <Typography variant="body2" sx={{ mb: 1.5 }}>
                   <Link href="https://github.com/Prodoorknob/medicare-provider-utilization-cost-analysis-" target="_blank" rel="noopener">
                     GitHub Repository
                   </Link>
@@ -358,7 +358,7 @@ export default function AboutPage() {
             <Card sx={{ mb: 3 }}>
               <CardContent>
                 <Typography variant="h6" gutterBottom>Medallion Architecture</Typography>
-                <Typography variant="body2" color="text.secondary" paragraph>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
                   Bronze → Silver → Gold pipeline with two execution modes: PySpark + Delta Lake on Databricks for production, pandas + pyarrow locally for development. All models log to Databricks MLflow.
                 </Typography>
                 <Box component="pre" sx={{
@@ -438,10 +438,10 @@ CMS MCBS PUF
             <Card sx={{ mb: 3 }}>
               <CardContent>
                 <Typography variant="h6" gutterBottom>LSTM Forecasting</Typography>
-                <Typography variant="body2" color="text.secondary" paragraph>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
                   2-layer PyTorch LSTM with static embeddings for specialty, state, and service bucket.
                 </Typography>
-                <Typography variant="body2" color="text.secondary" paragraph>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
                   <strong>Train:</strong> 2013–2021 · <strong>Val:</strong> 2022–2023
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
@@ -454,7 +454,7 @@ CMS MCBS PUF
               <CardContent>
                 <Typography variant="h6" gutterBottom>Training Modes</Typography>
                 <Typography variant="body2" fontWeight={600} color="primary.main">batch (default)</Typography>
-                <Typography variant="body2" color="text.secondary" paragraph>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
                   Incremental by Census region. Memory-efficient. XGBoost: 125 rounds/region. RF: warm_start adds 125 trees/region.
                 </Typography>
                 <Typography variant="body2" fontWeight={600} color="primary.main">full</Typography>
@@ -470,7 +470,7 @@ CMS MCBS PUF
                 <Typography variant="body2" sx={{ fontFamily: '"IBM Plex Mono", monospace', color: 'primary.main', mb: 1, fontSize: 12 }}>
                   Avg_Mdcr_Alowd_Amt
                 </Typography>
-                <Typography variant="body2" color="text.secondary" paragraph>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
                   Medicare allowed amount per service — what Medicare pays the provider (Stage 1).
                 </Typography>
                 <Typography variant="body2" color="text.secondary" fontSize={12}>
