@@ -87,7 +87,7 @@ export default function AboutPage() {
   return (
     <Box>
       <Box sx={{ pb: 3, mb: 0, borderBottom: '1px solid', borderColor: 'divider' }}>
-        <Typography variant="h4" fontWeight={800} letterSpacing="-0.02em" gutterBottom>
+        <Typography variant="h4" sx={{ fontWeight: 800, letterSpacing: '-0.02em' }} gutterBottom>
           About & Methodology
         </Typography>
         <Typography variant="body1" color="text.secondary">

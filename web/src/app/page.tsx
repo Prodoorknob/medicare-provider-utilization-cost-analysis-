@@ -84,7 +84,7 @@ export default function HomePage() {
     <Box>
       {/* Slim masthead */}
       <Box sx={{ pb: 3, mb: 4, borderBottom: '1px solid', borderColor: 'divider' }}>
-        <Typography variant="h4" fontWeight={800} letterSpacing="-0.02em" gutterBottom>
+        <Typography variant="h4" sx={{ fontWeight: 800, letterSpacing: '-0.02em' }} gutterBottom>
           Medicare Cost Estimator
         </Typography>
         <Typography variant="body1" color="text.secondary">
