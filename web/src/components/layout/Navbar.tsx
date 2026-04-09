@@ -28,15 +28,15 @@ export default function Navbar() {
 
   return (
     <>
-      <AppBar position="sticky" elevation={0} sx={{ bgcolor: 'primary.dark' }}>
+      <AppBar position="sticky" elevation={0} sx={{ bgcolor: 'background.paper', borderBottom: '1px solid', borderColor: 'divider' }}>
         <Toolbar>
           {isMobile && (
-            <IconButton color="inherit" edge="start" onClick={() => setDrawerOpen(true)} sx={{ mr: 1 }}>
+            <IconButton edge="start" onClick={() => setDrawerOpen(true)} sx={{ mr: 1, color: 'text.primary' }}>
               <MenuIcon />
             </IconButton>
           )}
-          <LocalHospitalIcon sx={{ mr: 1 }} />
-          <Typography variant="h6" component={Link} href="/" sx={{ flexGrow: 1, textDecoration: 'none', color: 'inherit', fontWeight: 700 }}>
+          <LocalHospitalIcon sx={{ mr: 1, color: 'primary.main' }} />
+          <Typography variant="h6" component={Link} href="/" sx={{ flexGrow: 1, textDecoration: 'none', color: 'primary.main', fontWeight: 700 }}>
             AllowanceMap
           </Typography>
           {!isMobile && NAV_LINKS.map((link) => (
@@ -44,10 +44,12 @@ export default function Navbar() {
               key={link.href}
               component={Link}
               href={link.href}
-              color="inherit"
               sx={{
                 mx: 0.5,
-                borderBottom: pathname === link.href ? '2px solid white' : '2px solid transparent',
+                color: pathname === link.href ? 'primary.main' : 'text.secondary',
+                fontWeight: pathname === link.href ? 600 : 500,
+                borderBottom: '2px solid',
+                borderColor: pathname === link.href ? 'primary.main' : 'transparent',
                 borderRadius: 0,
                 pb: 0.5,
               }}

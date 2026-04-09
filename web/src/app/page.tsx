@@ -1,101 +1,300 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Grid from '@mui/material/Grid';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
+import Autocomplete from '@mui/material/Autocomplete';
+import TextField from '@mui/material/TextField';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
+import FormControl from '@mui/material/FormControl';
+import InputLabel from '@mui/material/InputLabel';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
+import ToggleButton from '@mui/material/ToggleButton';
+import Switch from '@mui/material/Switch';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import Button from '@mui/material/Button';
-import Link from 'next/link';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
-import BarChartIcon from '@mui/icons-material/BarChart';
-import PsychologyIcon from '@mui/icons-material/Psychology';
-
-const STATS = [
-  { label: 'Records Analyzed', value: '103M+', icon: <BarChartIcon fontSize="large" /> },
-  { label: 'States & Territories', value: '63', icon: <LocalHospitalIcon fontSize="large" /> },
-  { label: 'Model Families', value: '4', icon: <PsychologyIcon fontSize="large" /> },
-  { label: 'Forecast Through', value: '2026', icon: <TrendingUpIcon fontSize="large" /> },
-];
-
-const FINDINGS = [
-  { title: 'R\u00B2 = 0.886', subtitle: 'LSTM achieves the best validation accuracy for temporal cost prediction (2022-2023 holdout).' },
-  { title: '62% Explained by Charge', subtitle: 'Submitted charge amount is the single strongest predictor of Medicare allowed amounts.' },
-  { title: 'P10-P90 OOP Range', subtitle: 'Quantile regression provides low/typical/high out-of-pocket estimates, not just a single number.' },
-];
+import Alert from '@mui/material/Alert';
+import Divider from '@mui/material/Divider';
+import CircularProgress from '@mui/material/CircularProgress';
+import Chip from '@mui/material/Chip';
+import { getLabels, getStage1Estimate, getStage2Estimate } from '@/lib/queries';
+import { STATE_TO_REGION, CENSUS_REGION_NAMES, HCPCS_BUCKET_NAMES, AGE_GROUP_LABELS, INCOME_LABELS } from '@/lib/constants';
+import { formatDollars, formatNumber } from '@/lib/formatters';
+import type { LookupLabel, Stage1Estimate, Stage2Estimate } from '@/lib/types';
 
 export default function HomePage() {
+  const [specialties, setSpecialties] = useState<LookupLabel[]>([]);
+  const [states, setStates] = useState<LookupLabel[]>([]);
+  const [selectedSpecialty, setSelectedSpecialty] = useState<LookupLabel | null>(null);
+  const [selectedState, setSelectedState] = useState<LookupLabel | null>(null);
+  const [bucket, setBucket] = useState<number>(4);
+  const [pos, setPos] = useState<number>(0);
+
+  const [ageGroup, setAgeGroup] = useState<number>(2);
+  const [income, setIncome] = useState<number>(1);
+  const [dual, setDual] = useState(false);
+  const [supplemental, setSupplemental] = useState(false);
+
+  const [s1Result, setS1Result] = useState<Stage1Estimate | null>(null);
+  const [s2Result, setS2Result] = useState<Stage2Estimate | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    Promise.all([getLabels('specialty'), getLabels('state')]).then(([sp, st]) => {
+      setSpecialties(sp);
+      setStates(st);
+    });
+  }, []);
+
+  const censusRegion = selectedState
+    ? STATE_TO_REGION[selectedState.label] ?? null
+    : null;
+
+  const handleEstimate = async () => {
+    if (!selectedSpecialty || !selectedState) return;
+    setLoading(true);
+    setError(null);
+    setS1Result(null);
+    setS2Result(null);
+
+    try {
+      const s1 = await getStage1Estimate(selectedSpecialty.idx, bucket, selectedState.idx, pos);
+      setS1Result(s1);
+
+      if (s1 && censusRegion) {
+        const s2 = await getStage2Estimate(
+          selectedSpecialty.idx, bucket, censusRegion,
+          dual ? 1 : 0, supplemental ? 1 : 0, ageGroup, income
+        );
+        setS2Result(s2);
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to fetch estimates');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <Box>
-      <Box sx={{ textAlign: 'center', py: { xs: 4, md: 6 } }}>
-        <Typography variant="h3" gutterBottom>
-          AllowanceMap
+      {/* Slim masthead */}
+      <Box sx={{ pb: 3, mb: 4, borderBottom: '1px solid', borderColor: 'divider' }}>
+        <Typography variant="h4" fontWeight={800} letterSpacing="-0.02em" gutterBottom>
+          Medicare Cost Estimator
         </Typography>
-        <Typography variant="h6" color="text.secondary" sx={{ maxWidth: 700, mx: 'auto', mb: 4 }}>
-          Explore Medicare allowed amounts, predict patient out-of-pocket costs, and view LSTM-powered cost forecasts across 103M+ provider service records (2013-2023).
+        <Typography variant="body1" color="text.secondary">
+          Predict what Medicare allows for a service and estimate patient out-of-pocket costs — built on 103M+ CMS records (2013–2023).
         </Typography>
-        <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <Button variant="contained" size="large" component={Link} href="/estimator" endIcon={<ArrowForwardIcon />}>
-            Cost Estimator
-          </Button>
-          <Button variant="outlined" size="large" component={Link} href="/forecast">
-            View Forecasts
-          </Button>
-        </Box>
       </Box>
 
-      <Grid container spacing={3} sx={{ mb: 6 }}>
-        {STATS.map((s) => (
-          <Grid key={s.label} size={{ xs: 6, md: 3 }}>
-            <Card sx={{ textAlign: 'center', py: 2 }}>
-              <CardContent>
-                <Box sx={{ color: 'primary.main', mb: 1 }}>{s.icon}</Box>
-                <Typography variant="h4">{s.value}</Typography>
-                <Typography variant="body2" color="text.secondary">{s.label}</Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
-
-      <Typography variant="h5" gutterBottom>Two-Stage Pipeline</Typography>
-      <Grid container spacing={3} sx={{ mb: 6 }}>
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Card sx={{ height: '100%', borderLeft: '4px solid', borderColor: 'primary.main' }}>
+      <Grid container spacing={4}>
+        {/* Left: Forms */}
+        <Grid size={{ xs: 12, md: 5 }}>
+          <Card sx={{ mb: 3 }}>
             <CardContent>
-              <Typography variant="h6" color="primary">Stage 1: Medicare Allowed Amount</Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                Given provider specialty, state, procedure category, and service details, predict what Medicare allows for a service. Trained on 103M+ real CMS records using Random Forest, XGBoost, and LSTM models.
+              <Typography variant="overline" color="text.disabled" display="block" sx={{ mb: 2 }}>
+                Stage 1 · Provider Details
               </Typography>
+
+              <Autocomplete
+                options={specialties}
+                getOptionLabel={(o) => o.label}
+                value={selectedSpecialty}
+                onChange={(_, v) => setSelectedSpecialty(v)}
+                renderInput={(params) => <TextField {...params} label="Provider Specialty" size="small" />}
+                sx={{ mb: 2 }}
+              />
+
+              <Autocomplete
+                options={states}
+                getOptionLabel={(o) => o.label}
+                value={selectedState}
+                onChange={(_, v) => setSelectedState(v)}
+                renderInput={(params) => <TextField {...params} label="State" size="small" />}
+                sx={{ mb: 2 }}
+              />
+
+              <FormControl fullWidth size="small" sx={{ mb: 2 }}>
+                <InputLabel>Service Category</InputLabel>
+                <Select value={bucket} label="Service Category" onChange={(e) => setBucket(Number(e.target.value))}>
+                  {Object.entries(HCPCS_BUCKET_NAMES).map(([k, v]) => (
+                    <MenuItem key={k} value={Number(k)}>{v}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>Place of Service</Typography>
+              <ToggleButtonGroup value={pos} exclusive onChange={(_, v) => v !== null && setPos(v)} size="small" fullWidth>
+                <ToggleButton value={0}>Office</ToggleButton>
+                <ToggleButton value={1}>Facility</ToggleButton>
+              </ToggleButtonGroup>
             </CardContent>
           </Card>
-        </Grid>
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Card sx={{ height: '100%', borderLeft: '4px solid', borderColor: 'secondary.main' }}>
+
+          <Card sx={{ mb: 3 }}>
             <CardContent>
-              <Typography variant="h6" color="secondary">Stage 2: Patient Out-of-Pocket</Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                Using the Stage 1 allowed amount plus beneficiary demographics (age, income, insurance status), estimate patient OOP costs at the 10th, 50th, and 90th percentiles via quantile XGBoost.
+              <Typography variant="overline" color="text.disabled" display="block" sx={{ mb: 2 }}>
+                Stage 2 · Patient Details
               </Typography>
+
+              {censusRegion && (
+                <Chip label={`Region: ${CENSUS_REGION_NAMES[censusRegion]}`} color="secondary" variant="outlined" size="small" sx={{ mb: 2 }} />
+              )}
+
+              <FormControl fullWidth size="small" sx={{ mb: 2 }}>
+                <InputLabel>Age Group</InputLabel>
+                <Select value={ageGroup} label="Age Group" onChange={(e) => setAgeGroup(Number(e.target.value))}>
+                  {Object.entries(AGE_GROUP_LABELS).map(([k, v]) => (
+                    <MenuItem key={k} value={Number(k)}>{v}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <FormControl fullWidth size="small" sx={{ mb: 2 }}>
+                <InputLabel>Income Bracket</InputLabel>
+                <Select value={income} label="Income Bracket" onChange={(e) => setIncome(Number(e.target.value))}>
+                  {Object.entries(INCOME_LABELS).map(([k, v]) => (
+                    <MenuItem key={k} value={Number(k)}>{v}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <FormControlLabel
+                control={<Switch checked={dual} onChange={(e) => setDual(e.target.checked)} color="secondary" />}
+                label={<Typography variant="body2">Dual Eligible (Medicare + Medicaid)</Typography>}
+              />
+              <FormControlLabel
+                control={<Switch checked={supplemental} onChange={(e) => setSupplemental(e.target.checked)} color="secondary" />}
+                label={<Typography variant="body2">Has Supplemental Insurance</Typography>}
+              />
             </CardContent>
           </Card>
-        </Grid>
-      </Grid>
 
-      <Typography variant="h5" gutterBottom>Key Findings</Typography>
-      <Grid container spacing={3}>
-        {FINDINGS.map((f) => (
-          <Grid key={f.title} size={{ xs: 12, md: 4 }}>
-            <Card sx={{ height: '100%' }}>
+          <Button
+            variant="contained"
+            fullWidth
+            size="large"
+            onClick={handleEstimate}
+            disabled={!selectedSpecialty || !selectedState || loading}
+          >
+            {loading ? <CircularProgress size={22} color="inherit" /> : 'Estimate Costs'}
+          </Button>
+        </Grid>
+
+        {/* Right: Results */}
+        <Grid size={{ xs: 12, md: 7 }}>
+          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+
+          {s1Result && (
+            <Card sx={{ mb: 3, borderLeft: '4px solid', borderColor: 'primary.main' }}>
               <CardContent>
-                <Typography variant="h5" color="primary" gutterBottom>{f.title}</Typography>
-                <Typography variant="body2" color="text.secondary">{f.subtitle}</Typography>
+                <Typography variant="overline" color="primary" display="block" sx={{ mb: 1 }}>
+                  Stage 1 · Medicare Allowed Amount
+                </Typography>
+                <Typography variant="h3" color="primary.main" sx={{ fontFamily: '"IBM Plex Mono", monospace', mb: 0.5 }}>
+                  {formatDollars(s1Result.mean_allowed)}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  average amount Medicare allows for this service profile
+                </Typography>
+                <Divider sx={{ my: 2 }} />
+                <Grid container spacing={2}>
+                  <Grid size={3}>
+                    <Box sx={{ bgcolor: 'primary.50', borderRadius: 1, p: 1, textAlign: 'center' }}>
+                      <Typography variant="body2" color="text.secondary" fontSize={11}>Low (P10)</Typography>
+                      <Typography variant="h6" color="primary.main" sx={{ fontFamily: '"IBM Plex Mono", monospace' }}>
+                        {formatDollars(s1Result.p10_allowed)}
+                      </Typography>
+                    </Box>
+                  </Grid>
+                  <Grid size={3}>
+                    <Box sx={{ bgcolor: 'primary.50', borderRadius: 1, p: 1, textAlign: 'center' }}>
+                      <Typography variant="body2" color="text.secondary" fontSize={11}>Median</Typography>
+                      <Typography variant="h6" color="primary.main" sx={{ fontFamily: '"IBM Plex Mono", monospace' }}>
+                        {formatDollars(s1Result.median_allowed)}
+                      </Typography>
+                    </Box>
+                  </Grid>
+                  <Grid size={3}>
+                    <Box sx={{ bgcolor: 'primary.50', borderRadius: 1, p: 1, textAlign: 'center' }}>
+                      <Typography variant="body2" color="text.secondary" fontSize={11}>High (P90)</Typography>
+                      <Typography variant="h6" color="primary.main" sx={{ fontFamily: '"IBM Plex Mono", monospace' }}>
+                        {formatDollars(s1Result.p90_allowed)}
+                      </Typography>
+                    </Box>
+                  </Grid>
+                  <Grid size={3}>
+                    <Box sx={{ bgcolor: 'grey.50', borderRadius: 1, p: 1, textAlign: 'center' }}>
+                      <Typography variant="body2" color="text.secondary" fontSize={11}>Records</Typography>
+                      <Typography variant="h6" color="text.secondary" sx={{ fontFamily: '"IBM Plex Mono", monospace' }}>
+                        {formatNumber(s1Result.n_records)}
+                      </Typography>
+                    </Box>
+                  </Grid>
+                </Grid>
+                {s1Result.mean_charge != null && (
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
+                    Avg. submitted charge: {formatDollars(s1Result.mean_charge)} &middot;
+                    Avg. risk score: {s1Result.mean_risk_score?.toFixed(2) ?? 'N/A'}
+                  </Typography>
+                )}
               </CardContent>
             </Card>
-          </Grid>
-        ))}
+          )}
+
+          {s2Result && (
+            <Card sx={{ borderLeft: '4px solid', borderColor: 'secondary.main' }}>
+              <CardContent>
+                <Typography variant="overline" color="secondary" display="block" sx={{ mb: 1 }}>
+                  Stage 2 · Patient Out-of-Pocket
+                </Typography>
+                <Grid container spacing={0} sx={{ textAlign: 'center', mt: 1, mb: 2, borderRadius: 2, overflow: 'hidden', border: '1px solid', borderColor: 'divider' }}>
+                  <Grid size={4} sx={{ p: 2, borderRight: '1px solid', borderColor: 'divider' }}>
+                    <Typography variant="body2" color="text.disabled" fontSize={11}>BEST CASE · P10</Typography>
+                    <Typography variant="h5" color="secondary.light" sx={{ fontFamily: '"IBM Plex Mono", monospace', mt: 0.5 }}>
+                      {formatDollars(s2Result.oop_p10)}
+                    </Typography>
+                  </Grid>
+                  <Grid size={4} sx={{ p: 2, borderRight: '1px solid', borderColor: 'divider', bgcolor: 'secondary.50' }}>
+                    <Typography variant="body2" color="text.disabled" fontSize={11}>TYPICAL · P50</Typography>
+                    <Typography variant="h4" color="secondary.main" sx={{ fontFamily: '"IBM Plex Mono", monospace', fontWeight: 700, mt: 0.5 }}>
+                      {formatDollars(s2Result.oop_p50)}
+                    </Typography>
+                  </Grid>
+                  <Grid size={4} sx={{ p: 2 }}>
+                    <Typography variant="body2" color="text.disabled" fontSize={11}>HIGH END · P90</Typography>
+                    <Typography variant="h5" color="secondary.dark" sx={{ fontFamily: '"IBM Plex Mono", monospace', mt: 0.5 }}>
+                      {formatDollars(s2Result.oop_p90)}
+                    </Typography>
+                  </Grid>
+                </Grid>
+                <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', mb: 2 }}>
+                  Based on {formatNumber(s2Result.n_records)} records for this patient profile
+                </Typography>
+                <Box sx={{ bgcolor: '#FDF4EA', borderLeft: '3px solid #B8763A', borderRadius: 1, p: 1.5 }}>
+                  <Typography variant="body2" color="text.secondary" fontSize={12}>
+                    OOP estimates use synthetic beneficiary data modeled after MCBS distributions. Actual costs depend on specific plan details, deductibles, and coverage terms.
+                  </Typography>
+                </Box>
+              </CardContent>
+            </Card>
+          )}
+
+          {!s1Result && !loading && !error && (
+            <Card sx={{ py: 10, textAlign: 'center', border: '1px dashed', borderColor: 'divider', boxShadow: 'none', bgcolor: 'transparent' }}>
+              <CardContent>
+                <Typography variant="body1" color="text.disabled">
+                  Select provider and patient details, then click Estimate Costs
+                </Typography>
+              </CardContent>
+            </Card>
+          )}
+        </Grid>
       </Grid>
     </Box>
   );

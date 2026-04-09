@@ -51,10 +51,7 @@ export const FEATURE_DISPLAY_NAMES: Record<string, string> = {
 };
 
 export const NAV_LINKS = [
-  { label: 'Dashboard', href: '/' },
-  { label: 'Cost Estimator', href: '/estimator' },
+  { label: 'Estimator', href: '/' },
   { label: 'Forecast', href: '/forecast' },
-  { label: 'Models', href: '/models' },
-  { label: 'Explorer', href: '/explorer' },
   { label: 'About', href: '/about' },
 ];
