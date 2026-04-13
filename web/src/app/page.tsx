@@ -24,6 +24,7 @@ import Chip from '@mui/material/Chip';
 import { getLabels, getFullPrediction } from '@/lib/queries';
 import { STATE_TO_REGION, CENSUS_REGION_NAMES, HCPCS_BUCKET_NAMES, AGE_GROUP_LABELS, INCOME_LABELS } from '@/lib/constants';
 import { formatDollars } from '@/lib/formatters';
+import { PALETTE } from '@/app/theme';
 import type { LookupLabel, FullPredictionResponse } from '@/lib/types';
 
 export default function HomePage() {
@@ -98,8 +99,12 @@ export default function HomePage() {
         <Grid size={{ xs: 12, md: 5 }}>
           <Card sx={{ mb: 3 }}>
             <CardContent>
-              <Typography variant="overline" color="text.disabled" sx={{ display: 'block', mb: 2 }}>
-                Stage 1 · Provider Details
+              <Typography
+                variant="overline"
+                color="primary"
+                sx={{ display: 'block', mb: 2, letterSpacing: '0.08em', fontWeight: 600 }}
+              >
+                Stage 1 &middot; Provider Details
               </Typography>
 
               <Autocomplete
@@ -139,8 +144,12 @@ export default function HomePage() {
 
           <Card sx={{ mb: 3 }}>
             <CardContent>
-              <Typography variant="overline" color="text.disabled" sx={{ display: 'block', mb: 2 }}>
-                Stage 2 · Patient Details
+              <Typography
+                variant="overline"
+                color="secondary"
+                sx={{ display: 'block', mb: 2, letterSpacing: '0.08em', fontWeight: 600 }}
+              >
+                Stage 2 &middot; Patient Details
               </Typography>
 
               {censusRegion && (
@@ -193,77 +202,113 @@ export default function HomePage() {
 
           {result && (
             <>
+              {/* Stage 1 result */}
               <Card sx={{ mb: 3, borderLeft: '4px solid', borderColor: 'primary.main' }}>
                 <CardContent>
-                  <Typography variant="overline" color="primary" sx={{ display: 'block', mb: 1 }}>
-                    Stage 1 · Medicare Allowed Amount
+                  <Typography
+                    variant="overline"
+                    color="primary"
+                    sx={{ display: 'block', mb: 1, letterSpacing: '0.08em', fontWeight: 600 }}
+                  >
+                    Stage 1 &middot; Medicare Allowed Amount
                   </Typography>
-                  <Typography variant="h3" color="primary.main" sx={{ fontFamily: '"IBM Plex Mono", monospace', mb: 0.5 }}>
+                  <Typography
+                    variant="h3"
+                    color="primary.main"
+                    sx={{ fontFamily: '"IBM Plex Mono", monospace', fontWeight: 700, mb: 0.5 }}
+                  >
                     {formatDollars(result.stage1.predicted_allowed_amount)}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    predicted amount Medicare allows for this service (LightGBM, R² = 0.943)
+                    Predicted amount Medicare allows for this service (LightGBM, R&sup2; = 0.943)
                   </Typography>
                   <Divider sx={{ my: 2 }} />
                   <Grid container spacing={2}>
-                    <Grid size={4}>
-                      <Box sx={{ bgcolor: 'primary.50', borderRadius: 1, p: 1, textAlign: 'center' }}>
-                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Specialty</Typography>
-                        <Typography variant="body1" color="primary.main" sx={{ fontWeight: 600 }}>
-                          {result.stage1.provider_type}
-                        </Typography>
-                      </Box>
-                    </Grid>
-                    <Grid size={4}>
-                      <Box sx={{ bgcolor: 'primary.50', borderRadius: 1, p: 1, textAlign: 'center' }}>
-                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Category</Typography>
-                        <Typography variant="body1" color="primary.main" sx={{ fontWeight: 600 }}>
-                          {result.stage1.hcpcs_bucket_name}
-                        </Typography>
-                      </Box>
-                    </Grid>
-                    <Grid size={4}>
-                      <Box sx={{ bgcolor: 'primary.50', borderRadius: 1, p: 1, textAlign: 'center' }}>
-                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>Setting</Typography>
-                        <Typography variant="body1" color="primary.main" sx={{ fontWeight: 600 }}>
-                          {result.stage1.place_of_service === 1 ? 'Facility' : 'Office'}
-                        </Typography>
-                      </Box>
-                    </Grid>
+                    {[
+                      { label: 'Specialty', value: result.stage1.provider_type },
+                      { label: 'Category', value: result.stage1.hcpcs_bucket_name },
+                      { label: 'Setting', value: result.stage1.place_of_service === 1 ? 'Facility' : 'Office' },
+                    ].map((pill) => (
+                      <Grid key={pill.label} size={4}>
+                        <Box sx={{ bgcolor: PALETTE.primarySubtle, borderRadius: 1, p: 1.5, textAlign: 'center' }}>
+                          <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                            {pill.label}
+                          </Typography>
+                          <Typography variant="body1" color="primary.main" sx={{ fontWeight: 600, mt: 0.5 }}>
+                            {pill.value}
+                          </Typography>
+                        </Box>
+                      </Grid>
+                    ))}
                   </Grid>
                 </CardContent>
               </Card>
 
+              {/* Stage 2 result */}
               <Card sx={{ borderLeft: '4px solid', borderColor: 'secondary.main' }}>
                 <CardContent>
-                  <Typography variant="overline" color="secondary" sx={{ display: 'block', mb: 1 }}>
-                    Stage 2 · Patient Out-of-Pocket
+                  <Typography
+                    variant="overline"
+                    color="secondary"
+                    sx={{ display: 'block', mb: 1, letterSpacing: '0.08em', fontWeight: 600 }}
+                  >
+                    Stage 2 &middot; Patient Out-of-Pocket
                   </Typography>
-                  <Grid container spacing={0} sx={{ textAlign: 'center', mt: 1, mb: 2, borderRadius: 2, overflow: 'hidden', border: '1px solid', borderColor: 'divider' }}>
+
+                  {/* Percentile bar */}
+                  <Grid
+                    container
+                    spacing={0}
+                    sx={{
+                      textAlign: 'center', mt: 1, mb: 2,
+                      borderRadius: 2, overflow: 'hidden',
+                      border: '1px solid', borderColor: 'divider',
+                    }}
+                  >
                     <Grid size={4} sx={{ p: 2, borderRight: '1px solid', borderColor: 'divider' }}>
-                      <Typography variant="body2" color="text.disabled" sx={{ fontSize: 11 }}>BEST CASE · P10</Typography>
-                      <Typography variant="h5" color="secondary.light" sx={{ fontFamily: '"IBM Plex Mono", monospace', mt: 0.5 }}>
+                      <Typography variant="body2" color="text.disabled" sx={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                        Best Case &middot; P10
+                      </Typography>
+                      <Typography
+                        variant="h5"
+                        sx={{ fontFamily: '"IBM Plex Mono", monospace', mt: 0.5, color: SECONDARY_LIGHT }}
+                      >
                         {formatDollars(result.stage2.oop_p10)}
                       </Typography>
                     </Grid>
-                    <Grid size={4} sx={{ p: 2, borderRight: '1px solid', borderColor: 'divider', bgcolor: 'secondary.50' }}>
-                      <Typography variant="body2" color="text.disabled" sx={{ fontSize: 11 }}>TYPICAL · P50</Typography>
-                      <Typography variant="h4" color="secondary.main" sx={{ fontFamily: '"IBM Plex Mono", monospace', fontWeight: 700, mt: 0.5 }}>
+                    <Grid size={4} sx={{ p: 2, borderRight: '1px solid', borderColor: 'divider', bgcolor: PALETTE.secondarySubtle }}>
+                      <Typography variant="body2" color="text.disabled" sx={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                        Typical &middot; P50
+                      </Typography>
+                      <Typography
+                        variant="h4"
+                        color="secondary.main"
+                        sx={{ fontFamily: '"IBM Plex Mono", monospace', fontWeight: 700, mt: 0.5 }}
+                      >
                         {formatDollars(result.stage2.oop_p50)}
                       </Typography>
                     </Grid>
                     <Grid size={4} sx={{ p: 2 }}>
-                      <Typography variant="body2" color="text.disabled" sx={{ fontSize: 11 }}>HIGH END · P90</Typography>
-                      <Typography variant="h5" color="secondary.dark" sx={{ fontFamily: '"IBM Plex Mono", monospace', mt: 0.5 }}>
+                      <Typography variant="body2" color="text.disabled" sx={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                        High End &middot; P90
+                      </Typography>
+                      <Typography
+                        variant="h5"
+                        color="secondary.dark"
+                        sx={{ fontFamily: '"IBM Plex Mono", monospace', mt: 0.5 }}
+                      >
                         {formatDollars(result.stage2.oop_p90)}
                       </Typography>
                     </Grid>
                   </Grid>
+
                   <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', mb: 2 }}>
                     Region: {result.stage2.census_region_name}
                   </Typography>
-                  <Box sx={{ bgcolor: '#FDF4EA', borderLeft: '3px solid #B8763A', borderRadius: 1, p: 1.5 }}>
-                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: 12 }}>
+
+                  {/* Disclaimer callout */}
+                  <Box sx={{ bgcolor: PALETTE.accentBg, borderLeft: `3px solid ${PALETTE.accent}`, borderRadius: 1, p: 1.5 }}>
+                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: 12, lineHeight: 1.6 }}>
                       OOP estimates use synthetic beneficiary data modeled after MCBS distributions. Actual costs depend on specific plan details, deductibles, and coverage terms.
                     </Typography>
                   </Box>
@@ -286,3 +331,6 @@ export default function HomePage() {
     </Box>
   );
 }
+
+// Need secondary light accessible outside theme for inline sx
+const SECONDARY_LIGHT = '#1CA082';
