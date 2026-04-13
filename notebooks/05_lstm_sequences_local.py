@@ -115,7 +115,7 @@ def build_sequences(gold_dir: str, output_dir: str):
     os.makedirs(output_dir, exist_ok=True)
     out_path = os.path.join(output_dir, "sequences.parquet")
     sequences.to_parquet(out_path, index=False)
-    print(f"\nLSTM sequences written → {out_path} ({n_groups:,} groups)")
+    print(f"\nLSTM sequences written -> {out_path} ({n_groups:,} groups)")
 
 
 if __name__ == "__main__":

@@ -52,7 +52,7 @@ def run_eda(silver_dir: str, eda_dir: str, sample_frac: float):
     out = os.path.join(eda_dir, "01_distributions.png")
     plt.savefig(out, dpi=120, bbox_inches="tight")
     plt.close()
-    print(f"  Saved → {out}")
+    print(f"  Saved -> {out}")
 
     # ── 2. Correlation heatmap ─────────────────────────────────────────────────
     present = [c for c in NUM_COLS if c in df.columns]
@@ -64,7 +64,7 @@ def run_eda(silver_dir: str, eda_dir: str, sample_frac: float):
     out = os.path.join(eda_dir, "02_correlation_heatmap.png")
     plt.savefig(out, dpi=120, bbox_inches="tight")
     plt.close()
-    print(f"  Saved → {out}")
+    print(f"  Saved -> {out}")
 
     # ── 3. Top 20 provider types by median payment ────────────────────────────
     if "Rndrng_Prvdr_Type" in df.columns and "Avg_Mdcr_Alowd_Amt" in df.columns:
@@ -82,7 +82,7 @@ def run_eda(silver_dir: str, eda_dir: str, sample_frac: float):
         out = os.path.join(eda_dir, "03_top_provider_types.png")
         plt.savefig(out, dpi=120, bbox_inches="tight")
         plt.close()
-        print(f"  Saved → {out}")
+        print(f"  Saved -> {out}")
 
     # ── 4. State-level summary CSV ────────────────────────────────────────────
     if "Rndrng_Prvdr_State_Abrvtn" in df.columns and "Avg_Mdcr_Alowd_Amt" in df.columns:
@@ -94,7 +94,7 @@ def run_eda(silver_dir: str, eda_dir: str, sample_frac: float):
         )
         out = os.path.join(eda_dir, "04_state_summary.csv")
         state_summary.to_csv(out, index=False)
-        print(f"  Saved → {out}")
+        print(f"  Saved -> {out}")
         print(state_summary.head(10).to_string(index=False))
 
     print(f"\nEDA complete. All outputs in {eda_dir}/")

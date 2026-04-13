@@ -1,6 +1,6 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC # 01 · Bronze Ingest — S3 → Delta Table
+# MAGIC # 01 · Bronze Ingest — S3 -> Delta Table
 # MAGIC Reads raw Medicare physician/practitioner CSVs from S3 and writes
 # MAGIC them as-is into the Bronze Delta table. No transformations here.
 

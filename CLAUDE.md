@@ -60,7 +60,7 @@ CMS MCBS PUF (Survey + Cost) → pull_mcbs_data.py → 06_mcbs_bronze → 07_mcb
 - **Removed (data leakage):** `Avg_Mdcr_Pymt_Amt`, `Avg_Mdcr_Stdzd_Amt` (derived from allowed amount)
 - **Train/test split:** 80/20, `random_state=42` (consistent across all models)
 - **Local scripts use `log1p` target transform** for skew correction
-- **Four models:** GLM (SGD baseline), Random Forest (warm_start or RandomizedSearchCV), XGBoost (incremental or early stopping), LSTM (PyTorch, temporal split + MC Dropout forecasting)
+- **Six models:** GLM (SGD baseline), Random Forest (warm_start or RandomizedSearchCV), XGBoost (incremental or early stopping), CatBoost (native categoricals via ordered target statistics), LightGBM (GOSS + leaf-wise growth), LSTM (PyTorch, temporal split + MC Dropout forecasting)
 - **LSTM specifics:** Temporal split (train ≤ 2021, val 2022-2023), autoregressive forecast 2024-2026, MC Dropout confidence bounds, static embeddings for group keys
 - **MLflow experiment:** All local runs log to `{user_home}/medicare_models` (unified experiment)
 
@@ -68,10 +68,10 @@ CMS MCBS PUF (Survey + Cost) → pull_mcbs_data.py → 06_mcbs_bronze → 07_mcb
 
 XGBoost and RF support `--mode batch|full`:
 
-| Mode | XGBoost | Random Forest |
-|------|---------|---------------|
-| `batch` (default) | Incremental by Census region — passes booster forward via `xgb_model` param, 125 rounds/region | warm_start by Census region — adds 125 trees/region, sklearn only |
-| `full` | Single DMatrix, early stopping, 500 rounds | RandomizedSearchCV, cuML/sklearn auto-detect |
+| Mode | XGBoost | Random Forest | CatBoost | LightGBM |
+|------|---------|---------------|----------|----------|
+| `batch` (default) | Incremental by region via `xgb_model`, 125 rounds/region | warm_start by region, 125 trees/region, sklearn only | Incremental by region via `init_model`, 125 iters/region | Incremental by region via `init_model`, 125 rounds/region |
+| `full` | Single DMatrix, early stopping, 500 rounds | RandomizedSearchCV, cuML/sklearn auto-detect | Single Pool, early stopping, 500 iters | Single Dataset, early stopping, 500 rounds, GOSS |
 
 ### Census regions (for batch training)
 
@@ -100,6 +100,8 @@ TERRITORIES: AA, AE, AP, AS, FM, GU, MP, PR, PW, VI
 │   ├── train_glm.py / _local.py
 │   ├── train_rf.py  / _local.py          # --mode batch|full
 │   ├── train_xgb.py / _local.py          # --mode batch|full
+│   ├── train_catboost_local.py           # --mode batch|full, native categoricals
+│   ├── train_lgbm_local.py              # --mode batch|full, GOSS + leaf-wise
 │   ├── train_lstm_local.py               # PyTorch LSTM forecasting
 │   ├── train_oop_local.py                # Stage 2 OOP quantile regression (P10/P50/P90)
 │   └── compare_models.py / _local.py
@@ -133,10 +135,14 @@ python notebooks/04_eda_local.py
 python modeling/train_glm_local.py
 python modeling/train_rf_local.py --mode batch
 python modeling/train_xgb_local.py --mode batch
+python modeling/train_catboost_local.py --mode batch
+python modeling/train_lgbm_local.py --mode batch
 
 # Train models — full mode (needs more RAM/VRAM)
 python modeling/train_rf_local.py --mode full --sample 0.5
 python modeling/train_xgb_local.py --mode full --sample 0.5
+python modeling/train_catboost_local.py --mode full --sample 0.5
+python modeling/train_lgbm_local.py --mode full --sample 0.5
 
 # Train LSTM (Phase 3 — time-series forecasting)
 python modeling/train_lstm_local.py

@@ -37,6 +37,8 @@ FEATURES     = [
     "HCPCS_Cd_idx", "hcpcs_bucket", "place_of_srvc_flag",
     "Bene_Avg_Risk_Scre", "log_srvcs", "log_benes",
     "Avg_Sbmtd_Chrg", "srvcs_per_bene",
+    "specialty_bucket", "pos_bucket", "hcpcs_target_enc",
+    # year, is_covid_era: added after silver is re-run with year injection
 ]
 LOAD_COLS = FEATURES + [TARGET]
 
@@ -93,7 +95,7 @@ def configure_databricks_mlflow() -> str:
     )
     resp.raise_for_status()
     username = resp.json().get("userName", "unknown")
-    print(f"MLflow tracking URI → Databricks: {host}  (user: {username})")
+    print(f"MLflow tracking URI -> Databricks: {host}  (user: {username})")
     return f"/Users/{username}"
 
 
@@ -106,21 +108,49 @@ def _list_gold_files(gold_dir: str) -> dict[str, str]:
     return files
 
 
-def _load_region(gold_files: dict[str, str], states: list[str], sample: float = 1.0):
-    """Load and concat gold parquets for a list of states, column-pruned."""
+def _load_region(
+    gold_files: dict[str, str],
+    states: list[str],
+    active_features: list[str],
+    sample: float = 1.0,
+):
+    """
+    Load and concat gold parquets for a list of states, column-pruned.
+    active_features controls which columns become X (allows --no-charge ablation).
+    year is always loaded for temporal split.
+    """
+    load_cols = list(dict.fromkeys(active_features + [TARGET, "year"]))
     parts = []
     for st in states:
         if st in gold_files:
-            df = pd.read_parquet(gold_files[st], columns=LOAD_COLS).dropna()
+            avail = set(pq.read_schema(gold_files[st]).names)
+            cols  = [c for c in load_cols if c in avail]
+            df = pd.read_parquet(gold_files[st], columns=cols).dropna(
+                subset=active_features + [TARGET]
+            )
             parts.append(df)
     if not parts:
-        return None, None
+        return None, None, None
     df = pd.concat(parts, ignore_index=True)
     if sample < 1.0:
         df = df.sample(frac=sample, random_state=42)
-    X = df[FEATURES].astype("float64").values
-    y = np.log1p(df[TARGET].astype("float64").values)
-    return X, y
+    X    = df[active_features].astype("float64").values
+    y    = np.log1p(df[TARGET].astype("float64").values)
+    year = df["year"].values if "year" in df.columns else None
+    return X, y, year
+
+
+def _temporal_split(X, y, year):
+    """Train on years <= 2021, test on years >= 2022."""
+    if year is None:
+        raise ValueError("year column not available for temporal split")
+    train_mask = year <= 2021
+    test_mask  = year >= 2022
+    n_train, n_test = train_mask.sum(), test_mask.sum()
+    if n_test == 0:
+        raise ValueError("No test records with year >= 2022. Check gold data contains 2022-2023.")
+    print(f"  Temporal split: {n_train:,} train (≤2021) / {n_test:,} test (≥2022)")
+    return X[train_mask], X[test_mask], y[train_mask], y[test_mask]
 
 
 def log_metrics(y_true_log, y_pred_log, prefix=""):
@@ -135,20 +165,23 @@ def log_metrics(y_true_log, y_pred_log, prefix=""):
 
 # ── Batch mode: incremental training by Census region ────────────────────────
 
-def train_batch(gold_dir: str, sample: float):
+def train_batch(gold_dir: str, sample: float, active_features: list[str], split: str):
     user_home  = configure_databricks_mlflow()
     gold_files = _list_gold_files(gold_dir)
     print(f"Found {len(gold_files)} gold state parquets in '{gold_dir}'")
     print(f"Device: {XGB_PARAMS['device']}")
+    print(f"Features ({len(active_features)}): {active_features}")
 
-    # Accumulate validation data across all regions
     X_val_parts, y_val_parts = [], []
     booster = None
     total_rounds = 0
     regions_trained = 0
 
+    ablation = "Avg_Sbmtd_Chrg" not in active_features
+    run_name = "xgb_no_charge_local" if ablation else "xgb_extmem_local"
+
     mlflow.set_experiment(f"{user_home}/medicare_models")
-    with mlflow.start_run(run_name="xgb_extmem_local"):
+    with mlflow.start_run(run_name=run_name):
         mlflow.log_params({
             **XGB_PARAMS,
             "rounds_per_region": ROUNDS_PER_REGION,
@@ -157,24 +190,35 @@ def train_batch(gold_dir: str, sample: float):
             "strategy": "incremental_region_batch",
             "target_transform": "log1p",
             "sample_frac": sample,
+            "split_strategy": split,
+            "n_features": len(active_features),
+            "ablation_avg_submitted_charge": ablation,
         })
 
         for region_name, states in CENSUS_REGIONS.items():
-            X, y = _load_region(gold_files, states, sample)
+            X, y, year = _load_region(gold_files, states, active_features, sample)
             if X is None:
                 print(f"\n  [{region_name}] No data found — skipping")
                 continue
 
-            # 80/20 split within region
-            n_val  = max(1, int(len(y) * 0.2))
-            idx    = np.random.RandomState(42).permutation(len(y))
-            val_idx, train_idx = idx[:n_val], idx[n_val:]
+            if split == "temporal":
+                X_train, X_val, y_train, y_val = _temporal_split(X, y, year)
+            else:
+                n_val  = max(1, int(len(y) * 0.2))
+                idx    = np.random.RandomState(42).permutation(len(y))
+                val_idx, train_idx = idx[:n_val], idx[n_val:]
+                X_train, X_val = X[train_idx], X[val_idx]
+                y_train, y_val = y[train_idx], y[val_idx]
 
-            X_val_parts.append(X[val_idx])
-            y_val_parts.append(y[val_idx])
+            if len(X_train) == 0:
+                print(f"  [{region_name}] No training rows after split — skipping")
+                continue
 
-            dtrain = xgb.DMatrix(X[train_idx], label=y[train_idx], feature_names=FEATURES)
-            dval   = xgb.DMatrix(X[val_idx],   label=y[val_idx],   feature_names=FEATURES)
+            X_val_parts.append(X_val)
+            y_val_parts.append(y_val)
+
+            dtrain = xgb.DMatrix(X_train, label=y_train, feature_names=active_features)
+            dval   = xgb.DMatrix(X_val,   label=y_val,   feature_names=active_features)
 
             booster = xgb.train(
                 XGB_PARAMS,
@@ -186,17 +230,16 @@ def train_batch(gold_dir: str, sample: float):
             )
             total_rounds += ROUNDS_PER_REGION
             regions_trained += 1
-            print(f"  [{region_name}] {len(train_idx):,} train / {n_val:,} val — "
+            print(f"  [{region_name}] {len(X_train):,} train / {len(X_val):,} val — "
                   f"cumulative rounds: {total_rounds}")
 
-        # Final evaluation on aggregated validation set
         if not X_val_parts:
             print("No validation data collected — aborting.")
             return
 
         X_val_all = np.vstack(X_val_parts)
         y_val_all = np.concatenate(y_val_parts)
-        dval_all  = xgb.DMatrix(X_val_all, label=y_val_all, feature_names=FEATURES)
+        dval_all  = xgb.DMatrix(X_val_all, label=y_val_all, feature_names=active_features)
 
         mlflow.log_params({"total_rounds": total_rounds, "regions_trained": regions_trained})
         y_pred = booster.predict(dval_all)
@@ -215,28 +258,35 @@ def train_batch(gold_dir: str, sample: float):
 
 # ── Full mode: load everything into one DMatrix ──────────────────────────────
 
-def train_full(gold_dir: str, sample: float):
+def train_full(gold_dir: str, sample: float, active_features: list[str], split: str):
     user_home  = configure_databricks_mlflow()
     gold_files = _list_gold_files(gold_dir)
     print(f"Found {len(gold_files)} gold state parquets in '{gold_dir}'")
     print(f"Device: {XGB_PARAMS['device']}")
+    print(f"Features ({len(active_features)}): {active_features}")
 
-    X, y = _load_region(gold_files, list(gold_files.keys()), sample)
+    X, y, year = _load_region(gold_files, list(gold_files.keys()), active_features, sample)
     if X is None:
         raise RuntimeError("No gold data found.")
 
-    # 80/20 split
-    n_val  = int(len(y) * 0.2)
-    idx    = np.random.RandomState(42).permutation(len(y))
-    val_idx, train_idx = idx[:n_val], idx[n_val:]
+    if split == "temporal":
+        X_train, X_test, y_train, y_test = _temporal_split(X, y, year)
+    else:
+        n_val  = int(len(y) * 0.2)
+        idx    = np.random.RandomState(42).permutation(len(y))
+        val_idx, train_idx = idx[:n_val], idx[n_val:]
+        X_train, X_test = X[train_idx], X[val_idx]
+        y_train, y_test = y[train_idx], y[val_idx]
 
-    dtrain = xgb.DMatrix(X[train_idx], label=y[train_idx], feature_names=FEATURES)
-    dval   = xgb.DMatrix(X[val_idx],   label=y[val_idx],   feature_names=FEATURES)
+    dtrain = xgb.DMatrix(X_train, label=y_train, feature_names=active_features)
+    dval   = xgb.DMatrix(X_test,  label=y_test,  feature_names=active_features)
+    print(f"Train: {len(y_train):,} rows  |  Val: {len(y_test):,} rows")
 
-    print(f"Train: {len(train_idx):,} rows  |  Val: {n_val:,} rows")
+    ablation = "Avg_Sbmtd_Chrg" not in active_features
+    run_name = "xgb_no_charge_local" if ablation else "xgb_extmem_local"
 
     mlflow.set_experiment(f"{user_home}/medicare_models")
-    with mlflow.start_run(run_name="xgb_extmem_local"):
+    with mlflow.start_run(run_name=run_name):
         n_rounds = 500
         mlflow.log_params({
             **XGB_PARAMS,
@@ -246,6 +296,9 @@ def train_full(gold_dir: str, sample: float):
             "strategy": "full_dmatrix",
             "target_transform": "log1p",
             "sample_frac": sample,
+            "split_strategy": split,
+            "n_features": len(active_features),
+            "ablation_avg_submitted_charge": ablation,
         })
 
         evals_result = {}
@@ -260,7 +313,7 @@ def train_full(gold_dir: str, sample: float):
 
         mlflow.log_param("best_iteration", booster.best_iteration)
         y_pred = booster.predict(dval)
-        log_metrics(y[val_idx], y_pred, prefix="test_")
+        log_metrics(y_test, y_pred, prefix="test_")
 
         importances = booster.get_score(importance_type="gain")
         mlflow.log_dict(importances, "feature_importances.json")
@@ -276,9 +329,15 @@ if __name__ == "__main__":
                         help="Training mode: 'batch' (incremental by region) or 'full'")
     parser.add_argument("--sample", type=float, default=0.3,
                         help="Fraction of rows to load per region/globally (default: 0.3)")
+    parser.add_argument("--no-charge", action="store_true",
+                        help="Ablation: exclude Avg_Sbmtd_Chrg from features")
+    parser.add_argument("--split", choices=["random", "temporal"], default="random",
+                        help="Split strategy: 'random' (80/20) or 'temporal' (train≤2021, test≥2022)")
     args = parser.parse_args()
 
+    active_features = [f for f in FEATURES if not (args.no_charge and f == "Avg_Sbmtd_Chrg")]
+
     if args.mode == "batch":
-        train_batch(args.data, args.sample)
+        train_batch(args.data, args.sample, active_features, args.split)
     else:
-        train_full(args.data, args.sample)
+        train_full(args.data, args.sample, active_features, args.split)

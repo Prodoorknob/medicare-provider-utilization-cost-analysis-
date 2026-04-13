@@ -363,11 +363,16 @@ def evaluate(model, val_dl, device):
     mae  = mean_absolute_error(targets, preds)
     rmse = np.sqrt(mean_squared_error(targets, preds))
     r2   = r2_score(targets, preds)
-    print(f"\n  Validation (2022-2023):")
+    n_points = len(targets)
+    print(f"\n  Validation (2022-2023) — GROUP-LEVEL temporal predictions:")
+    print(f"    N    = {n_points:,} group-year observations (specialty × bucket × state × year)")
     print(f"    MAE  = ${mae:,.2f}")
     print(f"    RMSE = ${rmse:,.2f}")
     print(f"    R2   = {r2:.4f}")
-    return {"test_mae": mae, "test_rmse": rmse, "test_r2": r2}
+    print(f"  NOTE: R² is computed on ~{n_points:,} group-year means, NOT on individual")
+    print(f"        service records (RF/XGB evaluate on millions of individual rows).")
+    print(f"        Group means are smoother — direct R² comparison is misleading.")
+    return {"test_mae": mae, "test_rmse": rmse, "test_r2": r2, "eval_n_groups": n_points}
 
 
 # ---------------------------------------------------------------------------
@@ -671,10 +676,13 @@ def main(args):
             "source":          "local",
         })
         mlflow.log_metrics({
-            "test_mae":  metrics["test_mae"],
-            "test_rmse": metrics["test_rmse"],
-            "test_r2":   metrics["test_r2"],
+            "test_mae":      metrics["test_mae"],
+            "test_rmse":     metrics["test_rmse"],
+            "test_r2":       metrics["test_r2"],
+            "eval_n_groups": metrics["eval_n_groups"],
         })
+        mlflow.log_param("eval_level",
+                         "group_temporal_2022_2023 — NOT comparable to RF/XGB individual-record R²")
         mlflow.pytorch.log_model(model, artifact_path="lstm_model")
         mlflow.log_artifact(forecast_path, artifact_path="forecasts")
         for p in plot_paths:

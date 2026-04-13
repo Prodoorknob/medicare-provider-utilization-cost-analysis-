@@ -41,7 +41,7 @@ DEFAULT_PROV   = os.path.join(_PROJECT_ROOT, "..", "data")
 CAT_COLS = ["Rndrng_Prvdr_Type", "Rndrng_Prvdr_State_Abrvtn", "HCPCS_Cd"]
 
 FEATURE_COLS = [
-    "year",                            # temporal metadata (not a model feature)
+    "year",                            # temporal feature (2013-2023)
     "Rndrng_Prvdr_Type_idx",           # encoded categoricals
     "Rndrng_Prvdr_State_Abrvtn_idx",
     "HCPCS_Cd_idx",
@@ -52,6 +52,11 @@ FEATURE_COLS = [
     "log_benes",                       # log1p(Tot_Benes)
     "Avg_Sbmtd_Chrg",                  # submitted charge
     "srvcs_per_bene",                  # Tot_Srvcs / Tot_Benes ratio
+    # --- derived features ---
+    "specialty_bucket",                # interaction: Rndrng_Prvdr_Type_idx * 6 + hcpcs_bucket
+    "pos_bucket",                      # interaction: place_of_srvc_flag * 6 + hcpcs_bucket
+    "hcpcs_target_enc",                # target encoding: mean allowed amt per HCPCS code
+    "is_covid_era",                    # binary: 1 if year in [2020, 2021]
     "Avg_Mdcr_Alowd_Amt",             # TARGET
 ]
 
@@ -65,8 +70,12 @@ GOLD_SCHEMA = pa.schema([
     pa.field("Bene_Avg_Risk_Scre",             pa.float64()),
     pa.field("log_srvcs",                      pa.float64()),
     pa.field("log_benes",                      pa.float64()),
-    pa.field("Avg_Sbmtd_Chrg",                pa.float64()),
+    pa.field("Avg_Sbmtd_Chrg",               pa.float64()),
     pa.field("srvcs_per_bene",                 pa.float64()),
+    pa.field("specialty_bucket",               pa.float64()),
+    pa.field("pos_bucket",                     pa.float64()),
+    pa.field("hcpcs_target_enc",               pa.float64()),
+    pa.field("is_covid_era",                   pa.float64()),
     pa.field("Avg_Mdcr_Alowd_Amt",            pa.float64()),
 ])
 
@@ -102,10 +111,10 @@ def hcpcs_to_bucket(hcpcs_series) -> pd.Series:
     """
     s = hcpcs_series.astype(str).str.strip()
 
-    # Alpha-prefix codes → HCPCS Level II
+    # Alpha-prefix codes -> HCPCS Level II
     is_alpha = s.str[0].str.isalpha().fillna(False)
 
-    # Numeric codes → parse and bucket
+    # Numeric codes -> parse and bucket
     numeric = pd.to_numeric(s, errors="coerce")
     buckets = pd.Series(np.nan, index=s.index, dtype="float64")
 
@@ -161,20 +170,54 @@ def load_provider_risk_scores(provider_data_dir: str) -> pd.DataFrame:
 
 # ── Pass 1: fit global label encoders ────────────────────────────────────────
 
-def fit_encoders(silver_files: list[str]) -> dict[str, LabelEncoder]:
-    print("Pass 1/2: Collecting unique category values for LabelEncoder fitting...")
+def fit_encoders_and_target_enc(
+    silver_files: list[str],
+) -> tuple[dict[str, LabelEncoder], dict[str, float], float]:
+    """
+    Combined pass over silver files:
+      1. Collect unique category values for LabelEncoder fitting.
+      2. Compute per-HCPCS mean allowed amount for target encoding.
+
+    Returns (encoders, hcpcs_target_enc, global_mean_amt).
+    hcpcs_target_enc maps HCPCS code string -> mean Avg_Mdcr_Alowd_Amt.
+    global_mean_amt is used as fallback for unseen codes.
+    """
+    print("Pass 1/2: Fitting encoders and computing HCPCS target encoding...")
 
     unique: dict[str, set] = {col: set() for col in CAT_COLS}
+    hcpcs_sums: dict[str, list] = {}   # code -> [sum, count]
+    global_sum, global_count = 0.0, 0
+
     for f in silver_files:
         try:
-            cols_present = [c for c in CAT_COLS if c in pq.read_schema(f).names]
-            if not cols_present:
-                continue
-            chunk = pd.read_parquet(f, columns=cols_present)
-            for col in cols_present:
+            schema_names = pq.read_schema(f).names
+            read_cols = [c for c in CAT_COLS + ["Avg_Mdcr_Alowd_Amt"] if c in schema_names]
+            chunk = pd.read_parquet(f, columns=read_cols)
+
+            for col in [c for c in CAT_COLS if c in chunk.columns]:
                 unique[col].update(chunk[col].fillna("UNKNOWN").astype(str).unique())
+
+            if "HCPCS_Cd" in chunk.columns and "Avg_Mdcr_Alowd_Amt" in chunk.columns:
+                valid = chunk[["HCPCS_Cd", "Avg_Mdcr_Alowd_Amt"]].copy()
+                valid["HCPCS_Cd"] = valid["HCPCS_Cd"].fillna("UNKNOWN").astype(str)
+                valid["Avg_Mdcr_Alowd_Amt"] = pd.to_numeric(
+                    valid["Avg_Mdcr_Alowd_Amt"], errors="coerce"
+                )
+                valid = valid.dropna()
+                agg = valid.groupby("HCPCS_Cd")["Avg_Mdcr_Alowd_Amt"].agg(["sum", "count"])
+                for code, row in agg.iterrows():
+                    if code not in hcpcs_sums:
+                        hcpcs_sums[code] = [0.0, 0]
+                    hcpcs_sums[code][0] += row["sum"]
+                    hcpcs_sums[code][1] += int(row["count"])
+                global_sum   += valid["Avg_Mdcr_Alowd_Amt"].sum()
+                global_count += len(valid)
+
         except Exception as e:
             print(f"  [WARN] Could not read {f}: {e}")
+
+    global_mean_amt = global_sum / max(global_count, 1)
+    hcpcs_target_enc = {k: v[0] / v[1] for k, v in hcpcs_sums.items() if v[1] > 0}
 
     encoders: dict[str, LabelEncoder] = {}
     for col in CAT_COLS:
@@ -184,7 +227,9 @@ def fit_encoders(silver_files: list[str]) -> dict[str, LabelEncoder]:
             encoders[col] = le
             print(f"  {col}: {len(le.classes_):,} unique values")
 
-    return encoders
+    print(f"  HCPCS target encoding: {len(hcpcs_target_enc):,} codes, "
+          f"global mean=${global_mean_amt:.2f}")
+    return encoders, hcpcs_target_enc, global_mean_amt
 
 
 def save_encoders(encoders: dict[str, LabelEncoder], gold_dir: str):
@@ -192,15 +237,32 @@ def save_encoders(encoders: dict[str, LabelEncoder], gold_dir: str):
     path = os.path.join(gold_dir, "label_encoders.json")
     with open(path, "w") as f:
         json.dump(mapping, f, indent=2)
-    print(f"  Encoder classes saved → {path}")
+    print(f"  Encoder classes saved -> {path}")
+
+
+def save_target_enc(hcpcs_target_enc: dict[str, float], global_mean: float, gold_dir: str):
+    data = {"global_mean": global_mean, "codes": hcpcs_target_enc}
+    path = os.path.join(gold_dir, "hcpcs_target_enc.json")
+    with open(path, "w") as f:
+        json.dump(data, f)
+    print(f"  HCPCS target encoding saved -> {path} ({len(hcpcs_target_enc):,} codes)")
 
 
 # ── Feature engineering ──────────────────────────────────────────────────────
 
-def engineer_df(df, encoders: dict[str, LabelEncoder], xp, using_gpu: bool):
+def engineer_df(
+    df,
+    encoders: dict[str, LabelEncoder],
+    xp,
+    using_gpu: bool,
+    hcpcs_target_enc: dict[str, float],
+    global_mean_enc: float,
+):
     """
-    df    — cudf.DataFrame (GPU) or pandas.DataFrame (CPU)
-    xp    — cudf or pandas module
+    df               — cudf.DataFrame (GPU) or pandas.DataFrame (CPU)
+    xp               — cudf or pandas module
+    hcpcs_target_enc — dict of HCPCS code -> mean allowed amount (from pass 1)
+    global_mean_enc  — fallback mean for unseen HCPCS codes
     """
     # Place of service flag: F=1 (facility), O=0 (office)
     if "Place_Of_Srvc" in df.columns:
@@ -216,6 +278,13 @@ def engineer_df(df, encoders: dict[str, LabelEncoder], xp, using_gpu: bool):
             df["hcpcs_bucket"] = hcpcs_to_bucket(hcpcs_pd).values
         else:
             df["hcpcs_bucket"] = hcpcs_to_bucket(df["HCPCS_Cd"])
+
+    # HCPCS target encoding: mean allowed amount per procedure code
+    if "HCPCS_Cd" in df.columns:
+        hcpcs_col = (
+            df["HCPCS_Cd"].to_pandas() if using_gpu else df["HCPCS_Cd"]
+        ).fillna("UNKNOWN").astype(str)
+        df["hcpcs_target_enc"] = hcpcs_col.map(hcpcs_target_enc).fillna(global_mean_enc).values
 
     # Log-transformed counts
     for raw_col, log_col in [("Tot_Srvcs", "log_srvcs"), ("Tot_Benes", "log_benes")]:
@@ -246,12 +315,21 @@ def engineer_df(df, encoders: dict[str, LabelEncoder], xp, using_gpu: bool):
         df = df.merge(lookup, on=col, how="left")
         df[f"{col}_idx"] = df[f"{col}_idx"].fillna(float(fallback))
 
-    # Cast year to int16
+    # Interaction features (computed after label encoding so _idx cols exist)
+    if "Rndrng_Prvdr_Type_idx" in df.columns and "hcpcs_bucket" in df.columns:
+        df["specialty_bucket"] = df["Rndrng_Prvdr_Type_idx"] * 6.0 + df["hcpcs_bucket"]
+    if "place_of_srvc_flag" in df.columns and "hcpcs_bucket" in df.columns:
+        df["pos_bucket"] = df["place_of_srvc_flag"] * 6.0 + df["hcpcs_bucket"]
+
+    # Cast year to int16, then derive COVID-era indicator
     if "year" in df.columns:
         if using_gpu:
             df["year"] = df["year"].astype("int16")
+            yr_pd = df["year"].to_pandas()
         else:
             df["year"] = pd.to_numeric(df["year"], errors="coerce").astype("Int16")
+            yr_pd = df["year"]
+        df["is_covid_era"] = yr_pd.isin([2020, 2021]).astype("float64").values
 
     present = [c for c in FEATURE_COLS if c in df.columns]
     df_out = df[present].dropna()
@@ -282,10 +360,11 @@ def engineer(silver_dir: str, gold_dir: str, provider_data_dir: str, force_cpu: 
     print(f"Found {len(silver_files)} silver state files in '{silver_dir}'")
 
     xp, using_gpu = _load_backend(force_cpu)
-    encoders      = fit_encoders(silver_files)
+    encoders, hcpcs_target_enc, global_mean_enc = fit_encoders_and_target_enc(silver_files)
 
     os.makedirs(gold_dir, exist_ok=True)
     save_encoders(encoders, gold_dir)
+    save_target_enc(hcpcs_target_enc, global_mean_enc, gold_dir)
 
     # Load provider risk scores for NPI join
     risk_df = load_provider_risk_scores(provider_data_dir)
@@ -295,7 +374,7 @@ def engineer(silver_dir: str, gold_dir: str, provider_data_dir: str, force_cpu: 
     else:
         global_median_risk = 1.0  # CMS national average is ~1.0
 
-    print(f"\nPass 2/2: Engineering features ({'GPU' if using_gpu else 'CPU'}) → {gold_dir}/")
+    print(f"\nPass 2/2: Engineering features ({'GPU' if using_gpu else 'CPU'}) -> {gold_dir}/")
     total_rows = 0
 
     for i, f in enumerate(silver_files, 1):
@@ -334,13 +413,18 @@ def engineer(silver_dir: str, gold_dir: str, provider_data_dir: str, force_cpu: 
             else:
                 df["Bene_Avg_Risk_Scre"] = global_median_risk
 
-            df_gold = engineer_df(df, encoders, xp, using_gpu)
+            df_gold = engineer_df(df, encoders, xp, using_gpu, hcpcs_target_enc, global_mean_enc)
 
             if df_gold.empty:
                 print(f"  [{i:>2}/{len(silver_files)}] {state:<6}  (no rows after engineering)")
                 continue
 
-            table    = pa.Table.from_pandas(df_gold, schema=GOLD_SCHEMA, preserve_index=False)
+            # Build schema dynamically — only include fields present in df_gold.
+            # year/is_covid_era are absent until silver is re-run with year injection.
+            available_fields = {f.name: f for f in GOLD_SCHEMA}
+            dynamic_schema   = pa.schema([available_fields[c] for c in df_gold.columns
+                                          if c in available_fields])
+            table    = pa.Table.from_pandas(df_gold, schema=dynamic_schema, preserve_index=False)
             out_path = os.path.join(gold_dir, f"{state}.parquet")
             pq.write_table(table, out_path)
 
@@ -350,7 +434,7 @@ def engineer(silver_dir: str, gold_dir: str, provider_data_dir: str, force_cpu: 
         except Exception as e:
             print(f"  [WARN] Skipping {state}: {e}")
 
-    print(f"\nGold layer complete — {total_rows:,} rows across {len(silver_files)} states → {gold_dir}/")
+    print(f"\nGold layer complete — {total_rows:,} rows across {len(silver_files)} states -> {gold_dir}/")
 
 
 if __name__ == "__main__":

@@ -28,11 +28,15 @@ FEATURES      = [
     "HCPCS_Cd_idx", "hcpcs_bucket", "place_of_srvc_flag",
     "Bene_Avg_Risk_Scre", "log_srvcs", "log_benes",
     "Avg_Sbmtd_Chrg", "srvcs_per_bene",
+    "specialty_bucket", "pos_bucket", "hcpcs_target_enc",
+    # year, is_covid_era: added after silver is re-run with year injection
 ]
 MODEL_RUN_NAMES = {
     "GLM":          "glm_sgd_local",
     "RandomForest": "rf_randomized_search_local",
     "XGBoost":      "xgb_extmem_local",
+    "CatBoost":     "catboost_local",
+    "LightGBM":     "lgbm_local",
     "LSTM":         "lstm_local",
 }
 
@@ -129,7 +133,21 @@ def compute_residuals(run_id: str, X_test: pd.DataFrame, y_test: pd.Series) -> n
     except Exception:
         pass
     try:
-        # LSTM operates on sequences, not flat features — skip residual computation
+        model_uri = f"runs:/{run_id}/catboost_model"
+        import mlflow.catboost
+        model     = mlflow.catboost.load_model(model_uri)
+        return (y_test.values - model.predict(X_test.values)).astype(float)
+    except Exception:
+        pass
+    try:
+        model_uri = f"runs:/{run_id}/lgbm_model"
+        import mlflow.lightgbm
+        model     = mlflow.lightgbm.load_model(model_uri)
+        return (y_test.values - model.predict(X_test.values)).astype(float)
+    except Exception:
+        pass
+    try:
+        # LSTM operates on sequences, not flat features -- skip residual computation
         model_uri = f"runs:/{run_id}/lstm_model"
         mlflow.pytorch.load_model(model_uri)
         print(f"  [INFO] LSTM model found but residuals not applicable (sequence model)")
@@ -146,6 +164,12 @@ def main(data_path: str):
     print("=== Model Comparison (fetched from Databricks MLflow) ===")
     table, run_ids = build_comparison_table(experiment_name)
     print(table.to_string(index=False))
+    print()
+    print("  NOTE — LSTM R² is NOT comparable to GLM/RF/XGB:")
+    print("    GLM/RF/XGB: R² on millions of individual service records (80/20 random split)")
+    print("    LSTM:       R² on ~17K group-year means (specialty×bucket×state, 2022-2023 temporal split)")
+    print("    Group means are smoother -> LSTM R² is structurally inflated vs. individual-record models.")
+    print("    For apples-to-apples, run RF/XGB with --split temporal and compare at group level.")
 
     # Paired t-test — requires loading the held-out test split locally
     if os.path.exists(data_path):
@@ -158,7 +182,11 @@ def main(data_path: str):
         _, X_test, _, y_test = train_test_split(df[present], df[TARGET], test_size=0.2, random_state=42)
 
         residuals = {name: compute_residuals(rid, X_test, y_test) for name, rid in run_ids.items()}
-        pairs     = [("RandomForest", "XGBoost"), ("GLM", "XGBoost"), ("GLM", "RandomForest")]
+        pairs     = [
+            ("CatBoost", "XGBoost"), ("CatBoost", "LightGBM"),
+            ("LightGBM", "XGBoost"), ("RandomForest", "XGBoost"),
+            ("GLM", "XGBoost"), ("GLM", "RandomForest"),
+        ]
         for a, b in pairs:
             if residuals.get(a) is not None and residuals.get(b) is not None:
                 paired_t_test(residuals[a], residuals[b], a, b)

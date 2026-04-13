@@ -2,7 +2,7 @@
 
 ## Project Timeline & Milestones
 
-> Last updated: 2026-04-04
+> Last updated: 2026-04-11
 > Author: Raj Vedire (rvedire@iu.edu)
 > Repo: medicare-provider-utilization-cost-analysis-
 
@@ -292,7 +292,160 @@ Avg_Sbmtd_Chrg | srvcs_per_bene | Avg_Mdcr_Alowd_Amt (TARGET)
 
 ---
 
+## Phase 7 — V2 Full-Data Model Improvements 🏗️ IN PROGRESS
+
+**Goal:** Train on all 126.8M rows (no sampling/batching) on Google Colab Pro A100, add CatBoost + LightGBM + ensemble, ablation analysis.
+
+### Milestone 7.1 — Colab Pro Infrastructure (April 9, 2026)
+- [x] V2_MODEL_SPEC.md — full implementation spec (8 notebooks, CU budget, execution order)
+- [x] Gold parquets (1.9 GB) + MCBS synthetic + LSTM sequences uploaded to Google Drive (`AllowanceMap/V2/`)
+- [x] External covariates pulled: Medicare CF, Medical CPI (BLS API), sequestration, MACRA/MIPS, COVID indicators
+- [x] `pull_external_covariates.py` — BLS API integration with hardcoded fallback
+- [x] Colab notebooks: V2_01 through V2_03 built, validated (syntax + smoke test on 1% CA sample)
+- [x] Memory-safe pattern: save train/test split to Colab local SSD, each model cell reloads independently
+
+### Milestone 7.2 — V2_01 Full-Data Training (April 9-10, 2026)
+- [x] XGBoost: R²=0.9452, MAE=$7.73, RMSE=$15.43 (1000 rounds, 504s on A100 GPU)
+- [x] CatBoost: R²=0.9070, MAE=$10.88, RMSE=$20.10 (3000 iters, 7204s on A100 GPU)
+- [x] LightGBM: R²=0.9575, MAE=$6.73, RMSE=$13.59 (1000 rounds, CPU, GOSS)
+- [x] All 3 models logged to Databricks MLflow, saved to Drive
+- [x] CatBoost GPU fixes: `bootstrap_type='MVS'`, removed `rsm`, increased to 3000 iterations
+- [x] LightGBM GPU fix: switched to CPU (`device='cpu'`) due to `max_bin > 255` error with high-cardinality categoricals
+
+### Milestone 7.3 — V2_02 No-Charge Ablation (April 10, 2026)
+- [x] XGBoost no-charge: R²=0.9295 (delta: -0.016 from with-charge)
+- [x] CatBoost no-charge: R²=0.8974 (delta: -0.010)
+- [x] LightGBM no-charge: R²=0.9428 (delta: -0.015)
+- [x] **Key finding:** Avg_Sbmtd_Chrg removal drops R² by only 0.01-0.02, not the predicted 0.25-0.30
+- [x] hcpcs_target_enc + HCPCS_Cd_idx capture the same pricing signal via procedure identity
+- [x] No-charge LightGBM (R²=0.943) still beats all V1 models (best V1: RF R²=0.884)
+
+### Milestone 7.4 — V2_03 Stacked Ensemble (April 10-11, 2026)
+- [x] 5-fold OOF stacking with RidgeCV meta-learner (alpha=0.1)
+- [x] Ensemble: R²=0.9580, MAE=$6.68, RMSE=$13.50
+- [x] **Ensemble lift: +0.0004 over LightGBM alone — negligible**
+- [x] Ridge weights: LGB=1.120, XGB=-0.097, CB=-0.023 (ensemble = ~LightGBM only)
+- [x] Training time: 13.3 hours on A100 (CU budget severely underestimated: ~149 CU vs 12-16 est.)
+- [x] Root cause: correlated error patterns across all 3 boosters on same feature set
+
+### V2 Stage 1 Final Results
+| Model | MAE | RMSE | R² | vs V1 Best |
+|---|---|---|---|---|
+| **LightGBM V2** | **$6.73** | **$13.59** | **0.9575** | **+0.073** |
+| XGBoost V2 | $7.73 | $15.43 | 0.9452 | +0.061 |
+| Ensemble V2 | $6.68 | $13.50 | 0.9580 | +0.074 |
+| CatBoost V2 | $10.88 | $20.10 | 0.9070 | +0.023 |
+| LGB no-charge | $7.70 | $15.77 | 0.9428 | +0.058 |
+
+### CU Consumption (Colab Pro, A100 @ 11.2 CU/hr)
+| Notebook | Hours | CU |
+|---|---|---|
+| V2_01 (3 models) | ~2.5 | ~28 |
+| V2_02 (3 ablation) | ~3 | ~34 |
+| V2_03 (5-fold ensemble) | 13.3 | ~149 |
+| **Total** | ~19 | **~211 / 300** |
+
+### Milestone 7.5 — V2_04 CatBoost Monotonic OOP (April 11, 2026)
+- [x] CatBoost quantile regression (P10/P50/P90) with monotonicity constraints on 10.3M OOP rows
+- [x] CatBoost GPU doesn't support `monotone_constraints` — switched to CPU
+- [x] P10 early-stopped at 5 iterations (quantile loss flat at floor — most P10 values near $0)
+- [x] P50 needed 4000 iterations at LR=0.1 to converge on CPU
+- [x] Non-crossing correction: post-hoc sort (P10 ≤ P50 ≤ P90)
+- [x] CQR calibration with 60/20/20 split (train/calibration/test)
+- [x] **Result: P50 R²=0.173, MAE=$10.55** — worse than V1 XGB Quantile (R²=0.400)
+- [x] **Root cause:** Monotonicity constraints too restrictive on synthetic data where assumed relationships (income→OOP, chronic→OOP) don't hold cleanly
+
+### Milestone 7.6 — V2_05 Zero-Inflated OOP (April 11, 2026)
+- [x] Two-stage model: CatBoost gate classifier P(OOP=0) + CatBoost conditional regression on non-zero OOP
+- [x] Gate classifier with `auto_class_weights='Balanced'` for class imbalance
+- [x] Combined prediction: `(1 - p_zero) * predicted_oop`
+- [x] **Result: P50 R²=-0.054, MAE=$11.95** — predicting worse than the mean
+- [x] **Root cause:** Gate classifier and conditional regression compound errors; synthetic OOP distribution doesn't have a clean zero-inflation pattern
+
+### Milestone 7.7 — V2_06 TFT Forecasting (April 11, 2026)
+- [x] Temporal Fusion Transformer with 5 external covariates (Medicare CF, Medical CPI, sequestration, COVID, MACRA/MIPS)
+- [x] `pytorch-forecasting==1.1.1` + `lightning==2.2.5` (pinned for compatibility)
+- [x] Fixed: Drive FUSE timeout (copy to local SSD), PyTorch 2.6 `weights_only` checkpoint issue, numpy binary incompatibility
+- [x] 16,184 groups (filtered from 23,672 for minimum sequence length)
+- [x] Encoder length=6, prediction length=2, `allow_missing_timesteps=True`
+- [x] **Result: R²=0.846, MAE=$11.48, RMSE=$20.48** — worse than V1 LSTM (R²=0.886)
+- [x] **Root cause:** Short sequences (4-11 years per group) don't give TFT's attention mechanism enough data; LSTM's simpler architecture better suited for thin time series
+
+### Milestone 7.8 — V2_07 Hierarchical Reconciliation (April 11, 2026)
+- [x] 3-level hierarchy: National (1) → State (63) → Bottom specialty×bucket×state (23,672)
+- [x] MinTrace with shrinkage (lambda=0.5), `hierarchicalforecast` library
+- [x] Coherence verification: PASS (national = sum of states, states = sum of bottom)
+- [x] **Result: Reconciliation had no effect** — base forecasts already coherent (built bottom-up from naive last-value forecasts)
+- [x] MinTrace only adds value when base forecasts are independently generated at each level
+
+### Milestone 7.9 — V2_08 Comparison Report (April 11, 2026)
+- [x] V1 vs V2 comparison across all stages (Stage 1, ablation, Stage 2 OOP, forecasting)
+- [x] Comparison plots saved to `v2_artifacts/plots/`
+- [x] All runs pulled from Databricks MLflow
+
+### V2 Complete Results
+
+**Stage 1: Allowed Amount — V2 dominant**
+| Model | MAE | RMSE | R² | vs V1 Best |
+|---|---|---|---|---|
+| **LightGBM V2** | **$6.73** | **$13.59** | **0.9575** | **+0.073** |
+| XGBoost V2 | $7.73 | $15.43 | 0.9452 | +0.061 |
+| Ensemble V2 | $6.68 | $13.50 | 0.9580 | +0.074 |
+| CatBoost V2 | $10.88 | $20.10 | 0.9070 | +0.023 |
+| LGB no-charge | $7.70 | $15.77 | 0.9428 | +0.058 |
+
+**Stage 2: OOP — V1 wins**
+| Model | MAE | RMSE | R² | Notes |
+|---|---|---|---|---|
+| **XGB Quantile V1** | **$9.78** | **$18.28** | **0.400** | **Best OOP model** |
+| CatBoost Mono V2 | $10.55 | $21.34 | 0.173 | Monotonicity too restrictive |
+| CatBoost ZI V2 | $11.95 | $24.15 | -0.054 | Zero-inflation hurts on synthetic data |
+
+**Forecasting — V1 wins**
+| Model | MAE | RMSE | R² | Notes |
+|---|---|---|---|---|
+| **LSTM V1** | **$8.84** | **$17.69** | **0.886** | **Best forecast model** |
+| TFT V2 | $11.48 | $20.48 | 0.846 | Short sequences limit attention |
+
+### Key Takeaways
+1. **Stage 1 production model: LightGBM V2 (R²=0.958).** Full data was the unlock, not model architecture.
+2. **Stage 2 production model: XGB Quantile V1 (R²=0.40).** Monotonicity constraints and zero-inflation don't help on synthetic OOP data. Real MCBS LDS data with actual OOP distributions would likely change this.
+3. **Forecast production model: LSTM V1 (R²=0.886).** TFT needs longer time series (100+ steps) to outperform; 4-11 years per group is too thin for attention.
+4. **Ensemble not worth it:** +0.0004 R² for 13.3 hrs compute. Deploy LightGBM alone.
+5. **Charge ablation insight:** Removing `Avg_Sbmtd_Chrg` only drops R² by 0.01-0.02 — models genuinely predictive via procedure identity.
+
+### Remaining Work
+- [ ] Update web app with V2 Stage 1 model results (LightGBM V2 as production)
+- [ ] Update Supabase model_metrics and feature_importances tables
+
+---
+
 ## Changelog
+
+### 2026-04-11 (evening)
+- **V2 complete** — all 8 Colab notebooks (V2_01 through V2_08) executed on Colab Pro T4
+- V2_04: CatBoost monotonic OOP — P50 R²=0.173, monotonicity constraints too restrictive on synthetic data
+- V2_05: Zero-inflated OOP — P50 R²=-0.054, gate+regression compound errors
+- V2_06: TFT forecasting — R²=0.846 with 5 external covariates, underperforms V1 LSTM (0.886)
+- V2_07: Hierarchical reconciliation — coherence PASS but no adjustment (bottom-up already coherent)
+- V2_08: Final comparison report — all runs pulled from MLflow, plots generated
+- CatBoost GPU doesn't support monotone_constraints — switched V2_04/V2_05 to CPU
+- pytorch-forecasting version conflicts: pinned ==1.1.1 + lightning==2.2.5, numpy binary compat fix
+- PyTorch 2.6 weights_only=True breaks checkpoint loading — used trained model directly
+- Drive FUSE timeouts — added shutil.copy to local SSD pattern across V2_04-V2_06
+- **Production model decisions:** LightGBM V2 (Stage 1), XGB Quantile V1 (Stage 2), LSTM V1 (Forecast)
+
+### 2026-04-11 (morning)
+- **V2 Stage 1 complete** — full-data training on Colab Pro A100, 126.8M rows, no sampling
+- LightGBM V2: R²=0.9575, MAE=$6.73 — best single model, +$5.31 MAE improvement over V1 RF
+- XGBoost V2: R²=0.9452, MAE=$7.73 — full data closes V1 gap (was 0.833 at 30% sample)
+- CatBoost V2: R²=0.9070, MAE=$10.88 — needed 3000 iterations, slowest convergence
+- Ensemble V2: R²=0.9580, lift +0.0004 over LightGBM — not worth 13.3 hrs compute
+- No-charge ablation: R² drop only 0.01-0.02, models genuinely predictive without billed charge
+- Created 3 Colab notebooks (V2_01 through V2_03) with memory-safe SSD-split pattern
+- Added `pull_external_covariates.py` (BLS API + hardcoded Medicare CF, sequestration, MACRA/MIPS)
+- Added `modeling/train_catboost_local.py` and `modeling/train_lgbm_local.py`
+- CU budget: ~211 of 300 consumed (estimate was 26-38 — 6.5x underestimate)
 
 ### 2026-04-08
 - **Phase 6 complete** — Next.js portfolio web app deployed to Vercel

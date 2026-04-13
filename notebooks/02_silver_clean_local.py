@@ -131,7 +131,7 @@ def clean(input_dir: str, output_dir: str):
 
     os.makedirs(output_dir, exist_ok=True)
 
-    print(f"\nPass 2/2: Cleaning and writing per-state silver parquets → {output_dir}/")
+    print(f"\nPass 2/2: Cleaning and writing per-state silver parquets -> {output_dir}/")
     total_rows = 0
     for i, state_dir in enumerate(state_dirs, 1):
         state     = os.path.basename(state_dir)

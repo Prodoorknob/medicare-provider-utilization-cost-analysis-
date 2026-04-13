@@ -35,23 +35,30 @@ FEATURES     = [
     "HCPCS_Cd_idx", "hcpcs_bucket", "place_of_srvc_flag",
     "Bene_Avg_Risk_Scre", "log_srvcs", "log_benes",
     "Avg_Sbmtd_Chrg", "srvcs_per_bene",
+    "specialty_bucket", "pos_bucket", "hcpcs_target_enc",
+    # year, is_covid_era: added after silver is re-run with year injection
 ]
 LOAD_COLS = FEATURES + [TARGET]
 
 SGD_PARAMS = {
-    "loss":          "huber",        # robust to outliers; squared_error diverges on heavy-tailed cost data
-    "epsilon":       0.1,            # huber threshold
-    "penalty":       "l2",
-    "alpha":         0.0001,
-    "learning_rate": "adaptive",     # reduces lr when loss stops improving — prevents oscillation
-    "eta0":          0.01,           # conservative starting learning rate
+    # squared_error gives gradients proportional to residual magnitude, which is
+    # essential for convergence. The previous "huber" with epsilon=0.1 caused ALL
+    # log-space residuals (range ~0-10) to get constant ±1 gradients, making SGD
+    # behave like a perceptron and diverge (R²=-102.80).
+    "loss":          "squared_error",
+    "penalty":       "elasticnet",   # L1+L2 for feature selection + stability
+    "alpha":         0.001,          # stronger regularization than default (0.0001)
+    "l1_ratio":      0.15,           # mostly L2, slight L1 for sparsity
+    "learning_rate": "invscaling",   # lr = eta0 / (t^power_t) — stable long-run decay
+    "eta0":          0.05,
+    "power_t":       0.25,
     "tol":           1e-4,
     "max_iter":      1,              # one epoch per partial_fit call
     "random_state":  42,
     "warm_start":    True,
 }
-# Clip ratio features to this range after scaling to prevent gradient explosions
-RATIO_CLIP = 10.0
+# Clip standardized features to prevent gradient explosions from extreme outliers
+RATIO_CLIP = 5.0
 
 
 def configure_databricks_mlflow() -> str:
@@ -74,7 +81,7 @@ def configure_databricks_mlflow() -> str:
     )
     resp.raise_for_status()
     username = resp.json().get("userName", "unknown")
-    print(f"MLflow tracking URI → Databricks: {host}  (user: {username})")
+    print(f"MLflow tracking URI -> Databricks: {host}  (user: {username})")
     return f"/Users/{username}"
 
 
@@ -138,8 +145,10 @@ def main(data_path: str, n_epochs: int = 3):
     mlflow.set_experiment(f"{user_home}/medicare_models")
     with mlflow.start_run(run_name="glm_sgd_local"):
         mlflow.log_params({**SGD_PARAMS, "n_epochs": n_epochs,
+                           "n_features": len(FEATURES),
                            "source": "local", "strategy": "partial_fit",
-                           "target_transform": "log1p"})
+                           "target_transform": "log1p",
+                           "ratio_clip": RATIO_CLIP})
 
         # ── Pass 2: stream row groups for n_epochs ────────────────────────────
         print(f"\nPass 2/2: Training SGD for {n_epochs} epoch(s)...")

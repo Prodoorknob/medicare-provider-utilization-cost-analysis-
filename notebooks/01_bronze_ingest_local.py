@@ -59,7 +59,7 @@ def ingest(input_dir: str, output_dir: str):
     os.makedirs(output_dir, exist_ok=True)
     out_path = os.path.join(output_dir, BRONZE_FILE)
     bronze.to_parquet(out_path, index=False)
-    print(f"Bronze parquet written → {out_path}")
+    print(f"Bronze parquet written -> {out_path}")
 
 
 if __name__ == "__main__":
