@@ -40,6 +40,19 @@ async def fetch_feature_importances() -> list[dict]:
     return result.data
 
 
+async def fetch_specialty_history(specialty_idx: int) -> list[dict]:
+    """Yearly average allowed amounts for a specialty (2013-2023)."""
+    client = get_client()
+    result = (
+        client.table("specialty_yearly_avg")
+        .select("*")
+        .eq("specialty_idx", specialty_idx)
+        .order("year")
+        .execute()
+    )
+    return result.data
+
+
 async def fetch_forecasts(
     specialty_idx: int,
     state_idx: int | None = None,

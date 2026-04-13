@@ -1,6 +1,6 @@
 import type {
   LookupLabel, FullPredictionResponse,
-  LstmForecast, StateSummary, ModelMetric, FeatureImportance,
+  LstmForecast, SpecialtyYearlyAvg, StateSummary, ModelMetric, FeatureImportance,
 } from './types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
@@ -33,6 +33,10 @@ export async function getModelMetrics(): Promise<ModelMetric[]> {
 
 export async function getFeatureImportances(): Promise<FeatureImportance[]> {
   return apiFetch<FeatureImportance[]>('/feature-importances');
+}
+
+export async function getSpecialtyHistory(specialtyIdx: number): Promise<SpecialtyYearlyAvg[]> {
+  return apiFetch<SpecialtyYearlyAvg[]>(`/specialty-history?specialty_idx=${specialtyIdx}`);
 }
 
 // -- Forecasts --

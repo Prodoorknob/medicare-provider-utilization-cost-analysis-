@@ -1,11 +1,12 @@
 """Reference data endpoints — proxies Supabase tables."""
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 
 from services.supabase import (
     fetch_feature_importances,
     fetch_labels,
     fetch_model_metrics,
+    fetch_specialty_history,
     fetch_state_summary,
 )
 
@@ -37,6 +38,18 @@ async def model_metrics():
     """Model performance metrics."""
     try:
         data = await fetch_model_metrics()
+    except Exception as e:
+        raise HTTPException(502, f"Supabase query failed: {e}")
+    return data
+
+
+@router.get("/specialty-history")
+async def specialty_history(
+    specialty_idx: int = Query(..., description="Specialty index"),
+):
+    """Yearly average allowed amounts for a specialty (2013-2023)."""
+    try:
+        data = await fetch_specialty_history(specialty_idx)
     except Exception as e:
         raise HTTPException(502, f"Supabase query failed: {e}")
     return data

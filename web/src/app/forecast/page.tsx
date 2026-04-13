@@ -20,10 +20,10 @@ import {
   ResponsiveContainer, ComposedChart, LineChart, Line, Area, Bar, BarChart,
   XAxis, YAxis, Tooltip, CartesianGrid, Legend, ReferenceLine, ErrorBar,
 } from 'recharts';
-import { getLabels, getForecasts } from '@/lib/queries';
+import { getLabels, getForecasts, getSpecialtyHistory } from '@/lib/queries';
 import { formatDollars, formatPercent } from '@/lib/formatters';
 import { HCPCS_BUCKET_NAMES } from '@/lib/constants';
-import type { LookupLabel, LstmForecast } from '@/lib/types';
+import type { LookupLabel, LstmForecast, SpecialtyYearlyAvg } from '@/lib/types';
 import {
   TOP_SPECIALTY_IDXS, SPECIALTY_COLORS,
 } from '@/lib/v2-model-data';
@@ -32,6 +32,7 @@ export default function ForecastPage() {
   const [specialties, setSpecialties] = useState<LookupLabel[]>([]);
   const [selectedSpecialty, setSelectedSpecialty] = useState<LookupLabel | null>(null);
   const [forecasts, setForecasts] = useState<LstmForecast[]>([]);
+  const [history, setHistory] = useState<SpecialtyYearlyAvg[]>([]);
   const [loading, setLoading] = useState(false);
 
   // Multi-specialty data for trend charts
@@ -60,18 +61,30 @@ export default function ForecastPage() {
       .finally(() => setTrendsLoading(false));
   }, [specialties]);
 
-  // Fetch selected specialty forecasts
+  // Fetch selected specialty forecasts + history
   useEffect(() => {
-    if (!selectedSpecialty) { setForecasts([]); return; }
+    if (!selectedSpecialty) { setForecasts([]); setHistory([]); return; }
     setLoading(true);
-    getForecasts(selectedSpecialty.idx)
-      .then(setForecasts)
+    Promise.all([
+      getForecasts(selectedSpecialty.idx),
+      getSpecialtyHistory(selectedSpecialty.idx),
+    ])
+      .then(([fc, hist]) => { setForecasts(fc); setHistory(hist); })
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, [selectedSpecialty]);
 
-  // ── Chart data for selected specialty ──
+  // ── Chart data for selected specialty (historical + forecast) ──
   const chartData = useMemo(() => {
     if (!forecasts.length) return [];
+
+    // Historical years from specialty_yearly_avg
+    const points: { year: number; mean: number; p10: number | null; p90: number | null; isHistorical: boolean }[] = [];
+    for (const h of history) {
+      points.push({ year: h.year, mean: h.mean_allowed, p10: null, p90: null, isHistorical: true });
+    }
+
+    // Forecast years (aggregated across states/buckets)
     const byYear: Record<number, { means: number[]; p10s: number[]; p90s: number[] }> = {};
     for (const f of forecasts) {
       if (!byYear[f.forecast_year]) byYear[f.forecast_year] = { means: [], p10s: [], p90s: [] };
@@ -79,19 +92,17 @@ export default function ForecastPage() {
       byYear[f.forecast_year].p10s.push(f.forecast_p10);
       byYear[f.forecast_year].p90s.push(f.forecast_p90);
     }
-    const lastKnown = forecasts.find((f) => f.last_known_year && f.last_known_value);
-    const points = [];
-    if (lastKnown?.last_known_year && lastKnown?.last_known_value) {
-      points.push({
-        year: lastKnown.last_known_year,
-        mean: lastKnown.last_known_value,
-        p10: lastKnown.last_known_value,
-        p90: lastKnown.last_known_value,
-        isHistorical: true,
-      });
+
+    // If no history data, use the single anchor point from forecasts
+    if (history.length === 0) {
+      const lastKnown = forecasts.find((f) => f.last_known_year && f.last_known_value);
+      if (lastKnown?.last_known_year && lastKnown?.last_known_value) {
+        points.push({ year: lastKnown.last_known_year, mean: lastKnown.last_known_value, p10: null, p90: null, isHistorical: true });
+      }
     }
+
+    const avg = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / arr.length;
     for (const [yr, vals] of Object.entries(byYear)) {
-      const avg = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / arr.length;
       points.push({
         year: Number(yr),
         mean: avg(vals.means),
@@ -100,12 +111,20 @@ export default function ForecastPage() {
         isHistorical: false,
       });
     }
-    return points.sort((a, b) => a.year - b.year);
-  }, [forecasts]);
+
+    // Deduplicate by year (prefer historical for overlapping years)
+    const yearMap = new Map<number, typeof points[0]>();
+    for (const p of points) {
+      if (!yearMap.has(p.year) || p.isHistorical) yearMap.set(p.year, p);
+    }
+    return Array.from(yearMap.values()).sort((a, b) => a.year - b.year);
+  }, [forecasts, history]);
 
   // ── Summary stats ──
-  const lastKnownValue = chartData.find((d) => d.isHistorical)?.mean ?? null;
-  const lastKnownYear = chartData.find((d) => d.isHistorical)?.year ?? null;
+  const historicalPoints = chartData.filter((d) => d.isHistorical);
+  const lastHistorical = historicalPoints.length > 0 ? historicalPoints[historicalPoints.length - 1] : null;
+  const lastKnownValue = lastHistorical?.mean ?? null;
+  const lastKnownYear = lastHistorical?.year ?? null;
   const p50_2026 = chartData.find((d) => d.year === 2026)?.mean ?? null;
   const growthPct = lastKnownValue && p50_2026
     ? ((p50_2026 / lastKnownValue - 1) * 100)
@@ -305,7 +324,7 @@ export default function ForecastPage() {
               {selectedSpecialty?.label}: Cost Forecast
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Historical anchor ({lastKnownYear}) + projected 2024 to 2026 with P10/P90 confidence bounds
+              Historical ({history.length > 0 ? `${history[0].year} to ${lastKnownYear}` : lastKnownYear}) + projected 2024 to 2026 with P10/P90 confidence bounds
             </Typography>
             <ResponsiveContainer width="100%" height={400}>
               <ComposedChart data={chartData} margin={{ top: 10, right: 30, left: 20, bottom: 0 }}>

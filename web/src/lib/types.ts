@@ -75,6 +75,12 @@ export interface LstmForecast {
   n_history_years: number | null;
 }
 
+export interface SpecialtyYearlyAvg {
+  specialty_idx: number;
+  year: number;
+  mean_allowed: number;
+}
+
 export interface StateSummary {
   state_abbrev: string;
   state_idx: number;
