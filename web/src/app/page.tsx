@@ -153,7 +153,19 @@ export default function HomePage() {
               </Typography>
 
               {censusRegion && (
-                <Chip label={`Region: ${CENSUS_REGION_NAMES[censusRegion]}`} color="secondary" variant="outlined" size="small" sx={{ mb: 2 }} />
+                <Chip
+                  label={`Region: ${CENSUS_REGION_NAMES[censusRegion]}`}
+                  size="small"
+                  sx={{
+                    mb: 2,
+                    color: PALETTE.secondarySubtle && 'secondary.main',
+                    bgcolor: PALETTE.secondarySubtle,
+                    borderColor: PALETTE.secondaryTint,
+                    border: '1px solid',
+                    fontWeight: 500,
+                    fontSize: 12,
+                  }}
+                />
               )}
 
               <FormControl fullWidth size="small" sx={{ mb: 2 }}>
@@ -213,8 +225,7 @@ export default function HomePage() {
                     Stage 1 &middot; Medicare Allowed Amount
                   </Typography>
                   <Typography
-                    color="primary.main"
-                    sx={{ fontFamily: '"IBM Plex Mono", monospace', fontWeight: 700, fontSize: 36, lineHeight: 1.1, mb: 0.5 }}
+                    sx={{ fontFamily: '"IBM Plex Mono", monospace', fontWeight: 700, fontSize: 36, lineHeight: 1.1, mb: 0.5, color: 'primary.main' }}
                   >
                     {formatDollars(result.stage1.predicted_allowed_amount)}
                   </Typography>
@@ -233,7 +244,7 @@ export default function HomePage() {
                           <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
                             {pill.label}
                           </Typography>
-                          <Typography color="primary.main" sx={{ fontSize: 13, fontWeight: 600, mt: 0.5 }}>
+                          <Typography sx={{ fontSize: 13, fontWeight: 600, mt: 0.5, color: 'primary.main' }}>
                             {pill.value}
                           </Typography>
                         </Box>
@@ -279,8 +290,7 @@ export default function HomePage() {
                         Typical &middot; P50
                       </Typography>
                       <Typography
-                        color="secondary.main"
-                        sx={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 26, fontWeight: 700, mt: 0.5, lineHeight: 1 }}
+                        sx={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 26, fontWeight: 700, mt: 0.5, lineHeight: 1, color: 'secondary.main' }}
                       >
                         {formatDollars(result.stage2.oop_p50)}
                       </Typography>
@@ -290,8 +300,7 @@ export default function HomePage() {
                         High End &middot; P90
                       </Typography>
                       <Typography
-                        color="secondary.dark"
-                        sx={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 20, mt: 0.5, lineHeight: 1 }}
+                        sx={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 20, mt: 0.5, lineHeight: 1, color: 'secondary.dark' }}
                       >
                         {formatDollars(result.stage2.oop_p90)}
                       </Typography>
