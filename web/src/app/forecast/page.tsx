@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Grid from '@mui/material/Grid';
@@ -29,6 +30,15 @@ import {
 } from '@/lib/v2-model-data';
 
 export default function ForecastPage() {
+  return (
+    <Suspense>
+      <ForecastContent />
+    </Suspense>
+  );
+}
+
+function ForecastContent() {
+  const searchParams = useSearchParams();
   const [specialties, setSpecialties] = useState<LookupLabel[]>([]);
   const [selectedSpecialty, setSelectedSpecialty] = useState<LookupLabel | null>(null);
   const [forecasts, setForecasts] = useState<LstmForecast[]>([]);
@@ -42,6 +52,21 @@ export default function ForecastPage() {
   useEffect(() => {
     getLabels('specialty').then(setSpecialties);
   }, []);
+
+  // Pre-select specialty from URL search params (from Estimator link)
+  useEffect(() => {
+    if (specialties.length === 0 || selectedSpecialty) return;
+    const idxParam = searchParams.get('idx');
+    const nameParam = searchParams.get('specialty');
+    if (idxParam) {
+      const match = specialties.find((s) => s.idx === Number(idxParam));
+      if (match) { setSelectedSpecialty(match); return; }
+    }
+    if (nameParam) {
+      const match = specialties.find((s) => s.label === nameParam);
+      if (match) setSelectedSpecialty(match);
+    }
+  }, [specialties, searchParams, selectedSpecialty]);
 
   // Fetch top specialties for trend charts on mount
   useEffect(() => {

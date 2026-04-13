@@ -21,6 +21,8 @@ import Alert from '@mui/material/Alert';
 import Divider from '@mui/material/Divider';
 import CircularProgress from '@mui/material/CircularProgress';
 import Chip from '@mui/material/Chip';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import Link from 'next/link';
 import { getLabels, getFullPrediction } from '@/lib/queries';
 import { STATE_TO_REGION, CENSUS_REGION_NAMES, HCPCS_BUCKET_NAMES, AGE_GROUP_LABELS, INCOME_LABELS } from '@/lib/constants';
 import { formatDollars } from '@/lib/formatters';
@@ -319,6 +321,18 @@ export default function HomePage() {
                   </Box>
                 </CardContent>
               </Card>
+
+              {/* Forecast link */}
+              <Button
+                component={Link}
+                href={`/forecast?specialty=${encodeURIComponent(selectedSpecialty?.label ?? '')}&idx=${selectedSpecialty?.idx ?? ''}`}
+                variant="outlined"
+                fullWidth
+                startIcon={<TrendingUpIcon />}
+                sx={{ mt: 2, py: 1.5, borderColor: 'divider', color: 'primary.main', fontWeight: 500, textTransform: 'none' }}
+              >
+                View {selectedSpecialty?.label} cost trends and 2024 to 2026 forecast
+              </Button>
             </>
           )}
 
