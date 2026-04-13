@@ -22,6 +22,7 @@ import numpy as np
 from scipy import stats
 
 DEFAULT_DATA  = os.path.join("local_pipeline", "gold")
+FOUNDATION_METRICS = os.path.join("local_pipeline", "lstm", "foundation_metrics.json")
 TARGET        = "Avg_Mdcr_Alowd_Amt"
 FEATURES      = [
     "Rndrng_Prvdr_Type_idx", "Rndrng_Prvdr_State_Abrvtn_idx",
@@ -192,6 +193,34 @@ def main(data_path: str):
                 paired_t_test(residuals[a], residuals[b], a, b)
     else:
         print(f"\n[INFO] Gold parquet not found at '{data_path}' — skipping t-test.")
+
+    # Foundation models (from local JSON, not MLflow)
+    if os.path.exists(FOUNDATION_METRICS):
+        print("\n=== Foundation Model Forecasts (from local metrics) ===")
+        import json
+        with open(FOUNDATION_METRICS) as f:
+            fm_data = json.load(f)
+        fm_rows = []
+        for model_name, metrics in fm_data.items():
+            if model_name.startswith("_"):
+                continue
+            fm_rows.append({
+                "Model":     model_name,
+                "Run ID":    "local",
+                "Test MAE":  round(metrics.get("test_mae",  float("nan")), 2),
+                "Test RMSE": round(metrics.get("test_rmse", float("nan")), 2),
+                "Test R²":   round(metrics.get("test_r2",   float("nan")), 4),
+            })
+        if fm_rows:
+            fm_table = pd.DataFrame(fm_rows).sort_values("Test RMSE")
+            print(fm_table.to_string(index=False))
+            print()
+            print("  NOTE — Foundation model R² uses same evaluation as LSTM:")
+            print("    Both evaluated on ~17K group-year means (2022-2023 temporal split).")
+            print("    NOT comparable to GLM/RF/XGB individual-record R².")
+    else:
+        print(f"\n[INFO] No foundation metrics found at '{FOUNDATION_METRICS}'.")
+        print("       Run: python modeling/train_foundation_local.py")
 
     # Stage 2 OOP model (different target — separate section)
     print("\n=== Stage 2: OOP Quantile Model (fetched from Databricks MLflow) ===")
