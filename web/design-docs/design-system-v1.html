@@ -1,0 +1,1485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AllowanceMap · Design System · v1.0</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+
+/* ============================================================
+   ALLOWANCEMAP DESIGN SYSTEM — v1.0
+   Source of truth for the AllowanceMap web application.
+   Built on MUI v9. Light-themed, healthcare-first.
+
+   AUDIENCE: Beneficiaries, caregivers, healthcare researchers,
+   policy analysts. The tool must feel trustworthy and approachable,
+   not clinical or government-issued.
+
+   PERSONALITY: Calm, confident, transparent. Not a marketing site.
+   Not a dashboard for data scientists only. A public-facing tool
+   that demystifies Medicare costs with professional intent.
+   ============================================================ */
+
+
+/* ─────────────────────────────────────────────
+   DESIGN TOKENS — LIGHT (DEFAULT + ONLY MODE)
+   Light-themed only. No dark mode. Healthcare
+   contexts demand readability and trust at a glance.
+   ───────────────────────────────────────────── */
+
+:root {
+  /* Backgrounds — 3 depth levels */
+  --bg:        #FAFAF8;             /* warm page background — slight warmth vs cold gray */
+  --surface:   #FFFFFF;             /* card, modal, panel */
+  --surface2:  #F2F0ED;            /* inset areas, code blocks, form fields */
+
+  /* Borders */
+  --border:    rgba(0, 0, 0, 0.08); /* default dividers, card outlines */
+  --border2:   rgba(0, 0, 0, 0.15); /* hover, stronger dividers, focused inputs */
+
+  /* Text — 4 levels */
+  --text:      #1C1917;             /* primary — headings, labels, bold values */
+  --text2:     #57534E;             /* secondary — descriptions, supporting copy */
+  --text3:     #A8A29E;             /* tertiary — metadata, timestamps, placeholders */
+  --muted:     #D6D3D1;             /* decorative only — rules, disabled states */
+
+  /* Primary — Slate Teal (Medicare allowed amounts) ✓ CHOSEN */
+  --primary:        #0F6E8C;        /* Medicare allowed amounts, navigation, CTA */
+  --primary-light:  #1389AC;        /* hover states, lighter accents */
+  --primary-dark:   #0A4F66;        /* pressed, high-contrast text on light bg */
+  --primary-subtle: rgba(15, 110, 140, 0.08); /* hover backgrounds, tinted fills */
+  --primary-tint:   #D0EEF5;        /* very light tint for Stage 1 result cards */
+
+  /* Secondary — Warm Teal-Green (Patient OOP costs) */
+  --secondary:        #15755D;      /* out-of-pocket amounts, patient data */
+  --secondary-light:  #1CA082;      /* hover, lighter OOP accents */
+  --secondary-dark:   #0E5241;      /* pressed, high-contrast on light */
+  --secondary-subtle: rgba(21, 117, 93, 0.08);
+  --secondary-tint:   #E8F7F3;      /* very light tint for Stage 2 result cards */
+
+  /* Accent — Warm Amber (CTAs, highlights, caution notes) */
+  --accent:        #B8763A;         /* call-to-action emphasis, warnings, disclaimers */
+  --accent-light:  #D4944D;
+  --accent-tint:   #FDF4EA;         /* disclaimer boxes, info alerts */
+
+  /* Semantic Colors */
+  --success:  #10b981;              /* confirmed, valid selection */
+  --warning:  #D97706;              /* caution, synthetic data note */
+  --error:    #DC2626;              /* validation errors */
+
+  /* Shadows */
+  --shadow-sm:  0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md:  0 4px 16px rgba(0, 0, 0, 0.08);
+  --shadow-lg:  0 8px 32px rgba(0, 0, 0, 0.10);
+  --shadow-focus: 0 0 0 3px rgba(26, 79, 138, 0.20); /* focus ring */
+
+  /* Typography */
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', 'Fira Code', 'JetBrains Mono', monospace;
+  /* NOTE: Inter for all UI, prose, headings.
+     IBM Plex Mono ONLY for dollar amounts in result cards,
+     HCPCS codes, metric values in model tables, and code snippets.
+     No display fonts. No serif. Legibility over expressiveness. */
+
+  /* Spacing scale (8px base) */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  24px;
+  --space-6:  32px;
+  --space-7:  48px;
+  --space-8:  64px;
+  --space-9:  96px;
+
+  /* Border Radii */
+  --radius-sm:  4px;
+  --radius-md:  8px;
+  --radius-lg:  12px;   /* default MUI card radius */
+  --radius-xl:  16px;   /* large modals, result panels */
+  --radius-full: 999px; /* pills, chips, badges */
+
+  /* Transitions */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-fast:   150ms;
+  --duration-normal: 250ms;
+  --duration-slow:   400ms;
+}
+
+
+/* ============================================================
+   DOC SHELL — styles for this reference document only
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg); color: var(--text);
+  font-family: var(--font-body); font-size: 15px;
+  line-height: 1.65; -webkit-font-smoothing: antialiased;
+}
+.doc-page { max-width: 980px; margin: 0 auto; padding: 0 28px 140px; }
+.doc-section { padding: 64px 0 0; border-top: 1px solid var(--border); margin-top: 64px; }
+.doc-section:first-child { border-top: none; margin-top: 0; }
+.doc-label {
+  font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+  letter-spacing: 0.18em; text-transform: uppercase; color: var(--text3); margin-bottom: 6px;
+}
+.doc-heading {
+  font-family: var(--font-body); font-size: 32px; font-weight: 800; color: var(--text);
+  line-height: 1.1; margin-bottom: 12px; letter-spacing: -0.02em;
+}
+.doc-heading span { color: var(--primary); }
+.doc-desc { font-size: 15px; color: var(--text2); line-height: 1.7; max-width: 640px; margin-bottom: 40px; }
+.doc-sub {
+  font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--text3);
+  margin: 48px 0 16px; display: flex; align-items: center; gap: 12px;
+}
+.doc-sub::after { content: ''; flex: 1; height: 1px; background: var(--border2); }
+.doc-row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; align-items: flex-start; }
+.doc-col { flex: 1; min-width: 260px; }
+.doc-note {
+  font-family: var(--font-mono); font-size: 11px; color: var(--text2);
+  line-height: 1.75; margin-top: 8px; padding: 14px 18px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+.doc-note .do   { color: var(--success); font-weight: 700; }
+.doc-note .dont { color: var(--error); font-weight: 700; }
+.doc-note .note { color: var(--accent); font-weight: 700; }
+.doc-code {
+  font-family: var(--font-mono); font-size: 11px; color: var(--primary);
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 2px 8px; display: inline-block;
+}
+.swatch-row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+.swatch { display: flex; flex-direction: column; gap: 6px; }
+.swatch-block { width: 80px; height: 52px; border-radius: var(--radius-sm); border: 1px solid var(--border); }
+.swatch-name { font-family: var(--font-mono); font-size: 9px; color: var(--text3); letter-spacing: 0.08em; }
+.swatch-hex  { font-family: var(--font-mono); font-size: 9px; color: var(--text2); }
+
+/* Component previews */
+.preview-box {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 32px; margin-bottom: 16px;
+}
+.preview-box.white { background: var(--surface); }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 3px; }
+
+/* Code block */
+.code-block {
+  font-family: var(--font-mono); font-size: 12px; line-height: 1.8;
+  background: #1C1917; color: #F5F5F4; padding: 24px 28px;
+  border-radius: var(--radius-md); overflow-x: auto; margin: 16px 0;
+}
+.code-block .kw  { color: #93C5FD; } /* keywords */
+.code-block .str { color: #86EFAC; } /* strings/values */
+.code-block .cmt { color: #78716C; } /* comments */
+.code-block .num { color: #FCD34D; } /* numbers/hex */
+
+
+</style>
+</head>
+<body>
+<div class="doc-page">
+
+
+<!-- ============================================================
+     HEADER
+     ============================================================ -->
+<div class="doc-section" style="padding-top:80px;">
+  <div class="doc-label">allowancemap · design system · v1.0 · april 2026</div>
+  <div class="doc-heading">AllowanceMap <span>Design System</span></div>
+  <div class="doc-desc">
+    Source of truth for colors, typography, layout, components, and interaction patterns
+    for the AllowanceMap web application — a Medicare cost estimation and forecasting tool
+    built on Next.js 16 + MUI v9 + Supabase. Covers both design intent and MUI
+    implementation tokens.
+  </div>
+  <div class="doc-note">
+    <span class="note">STACK:</span> Next.js 16 (App Router) · MUI v9.0.0 · Recharts 3.8 · Supabase · TypeScript 5.<br>
+    <span class="note">THEME:</span> Light-only. No dark mode. Healthcare legibility is the priority.<br>
+    <span class="note">AUDIENCE:</span> Medicare beneficiaries, caregivers, policy researchers, healthcare analysts.
+  </div>
+</div>
+
+
+<!-- ============================================================
+     01. IDENTITY & PRINCIPLES
+     ============================================================ -->
+<div class="doc-section">
+  <div class="doc-label">01</div>
+  <div class="doc-heading">Identity & <span>Principles</span></div>
+  <div class="doc-desc">
+    AllowanceMap is a public-facing cost transparency tool for Medicare services. It must
+    earn trust in the first ten seconds — the estimator is the first thing a user sees
+    and interacts with. Every design decision serves that goal.
+  </div>
+
+  <div class="doc-sub">Brand Identity</div>
+  <div class="doc-row">
+    <div class="doc-col">
+      <strong style="font-size:14px;">Product:</strong> AllowanceMap<br>
+      <strong style="font-size:14px;">Tagline:</strong> Medicare cost transparency, built on data.<br>
+      <strong style="font-size:14px;">Primary Brand Color:</strong> Warm Navy (#1A4F8A)<br>
+      <strong style="font-size:14px;">Data Coverage:</strong> 2013–2026, 103M+ records, 63 state/territory markets
+    </div>
+    <div class="doc-col">
+      <strong style="font-size:14px;">Voice:</strong> Plain English. Confident but never clinical. Explain
+      what the numbers mean, not just what they are. Acknowledge uncertainty (P10/P90 bounds
+      make this explicit). Never sensationalize healthcare costs.<br>
+      <strong style="font-size:14px;">Not:</strong> Government-document dense, startup-flashy, jargon-heavy.
+    </div>
+  </div>
+
+  <div class="doc-sub">Design Principles</div>
+  <div class="doc-row">
+    <div class="doc-col">
+      <strong>1. Estimator first.</strong><br>
+      <span style="color:var(--text2);font-size:13px;">
+        The cost estimator is the product. It must appear on the homepage without
+        any scrolling past a marketing hero. A minimal identity header (name + one-line
+        description) precedes the form, then immediately the tool. No testimonials,
+        no feature lists, no marketing above the fold.
+      </span>
+    </div>
+    <div class="doc-col">
+      <strong>2. Trust through transparency.</strong><br>
+      <span style="color:var(--text2);font-size:13px;">
+        Show confidence intervals (P10/P50/P90), never just a point estimate.
+        Label synthetic vs. real data clearly. Disclaimers must be visible without
+        being alarming — amber info alerts, not red warnings.
+        State "based on 103M CMS records, 2013–2023" where space allows.
+      </span>
+    </div>
+  </div>
+  <div class="doc-row">
+    <div class="doc-col">
+      <strong>3. Warmth without clutter.</strong><br>
+      <span style="color:var(--text2);font-size:13px;">
+        Healthcare is stressful. The UI should feel calm and organized. Use warm
+        white backgrounds, generous whitespace, and soft shadows. No gradients on
+        backgrounds, no animated heroes. Color is reserved for data meaning, not
+        decoration.
+      </span>
+    </div>
+    <div class="doc-col">
+      <strong>4. Dense where it belongs.</strong><br>
+      <span style="color:var(--text2);font-size:13px;">
+        The About page serves analysts and researchers who want methodology depth.
+        That page can be information-dense (tabbed sections, in-page anchors, model
+        metrics tables). The estimator and forecast pages must stay clean and
+        task-focused.
+      </span>
+    </div>
+  </div>
+  <div class="doc-row">
+    <div class="doc-col">
+      <strong>5. Stage-aware color semantics.</strong><br>
+      <span style="color:var(--text2);font-size:13px;">
+        <strong style="color:var(--primary);">Navy blue (#1A4F8A)</strong> = Medicare
+        allowed amount (Stage 1 — what Medicare pays the provider).<br>
+        <strong style="color:var(--secondary);">Teal-green (#15755D)</strong> = Patient
+        out-of-pocket cost (Stage 2 — what the beneficiary pays).
+        This distinction is applied consistently across all result cards,
+        charts, and labels throughout the app.
+      </span>
+    </div>
+    <div class="doc-col">
+      <strong>6. Numbers as heroes.</strong><br>
+      <span style="color:var(--text2);font-size:13px;">
+        Dollar amounts in result cards use IBM Plex Mono and are significantly
+        larger than surrounding copy — these are the answer the user came for.
+        Everything else (labels, descriptions, footnotes) recedes visually.
+        Never bury the result in paragraph text.
+      </span>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     02. INFORMATION ARCHITECTURE
+     ============================================================ -->
+<div class="doc-section">
+  <div class="doc-label">02</div>
+  <div class="doc-heading">Information <span>Architecture</span></div>
+  <div class="doc-desc">
+    3 pages (current 6 consolidated into 3). Maximum 4 nav items including logo. The
+    current /explorer and /models pages merge into /about as tabbed sections. The
+    homepage becomes the estimator. No orphan pages.
+  </div>
+
+  <div class="doc-sub">Page Structure (3 Pages)</div>
+  <div class="doc-row">
+    <div class="doc-col">
+
+      <!-- Page cards -->
+      <div style="border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:16px;">
+        <div style="background:var(--primary);padding:12px 18px;display:flex;align-items:center;gap:10px;">
+          <span style="font-family:var(--font-mono);font-size:9px;font-weight:700;letter-spacing:0.12em;color:rgba(255,255,255,0.6);text-transform:uppercase;">Page 1 · Primary</span>
+        </div>
+        <div style="padding:18px;">
+          <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:4px;">/ &nbsp; Cost Estimator</div>
+          <div style="font-size:13px;color:var(--text2);line-height:1.6;">
+            <strong>The homepage IS the tool.</strong> A slim masthead (product name, one-line
+            description, nav) then immediately the two-stage estimator form.<br><br>
+            <strong>Sections (single scroll):</strong><br>
+            ① Masthead — name, tagline, 3 nav links<br>
+            ② Estimator — Stage 1 form + results (left/right split)<br>
+            ③ Stage 2 — auto-expands after Stage 1 completes<br>
+            ④ Minimal footer — data attribution, disclaimer link
+          </div>
+        </div>
+      </div>
+
+      <div style="border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:16px;">
+        <div style="background:var(--secondary);padding:12px 18px;">
+          <span style="font-family:var(--font-mono);font-size:9px;font-weight:700;letter-spacing:0.12em;color:rgba(255,255,255,0.6);text-transform:uppercase;">Page 2 · Secondary</span>
+        </div>
+        <div style="padding:18px;">
+          <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:4px;">/forecast &nbsp; Forecast Explorer</div>
+          <div style="font-size:13px;color:var(--text2);line-height:1.6;">
+            LSTM-powered specialty-level forecasts for 2024–2026 with Monte Carlo
+            confidence bounds. Interactive specialty selector + Recharts time-series
+            chart. Three pre-generated static analysis plots below.<br><br>
+            <strong>Sections:</strong><br>
+            ① Page header + specialty selector<br>
+            ② Interactive chart (historical + forecast)<br>
+            ③ Static analysis plots (specialty trends, distribution, growth leaders)
+          </div>
+        </div>
+      </div>
+
+      <div style="border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;">
+        <div style="background:var(--accent);padding:12px 18px;">
+          <span style="font-family:var(--font-mono);font-size:9px;font-weight:700;letter-spacing:0.12em;color:rgba(255,255,255,0.6);text-transform:uppercase;">Page 3 · Research</span>
+        </div>
+        <div style="padding:18px;">
+          <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:4px;">/about &nbsp; About & Methodology</div>
+          <div style="font-size:13px;color:var(--text2);line-height:1.6;">
+            Dense, tabbed methodology page absorbing current /explorer and /models.
+            In-page tab navigation. Sidebar anchor links on desktop.<br><br>
+            <strong>Tabs:</strong><br>
+            ① Overview — project description, data sources, coverage<br>
+            ② Data — EDA plots, state explorer table, feature descriptions<br>
+            ③ Models — performance table, feature importance chart, methodology accordion<br>
+            ④ Pipeline — architecture diagram, stage descriptions, tech stack
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="doc-col">
+      <div class="doc-sub" style="margin-top:0;">Navigation</div>
+
+      <!-- Nav preview -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:16px;">
+        <div style="padding:14px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="width:28px;height:28px;background:var(--primary);border-radius:6px;display:flex;align-items:center;justify-content:center;">
+              <span style="color:#fff;font-size:11px;font-weight:800;">A</span>
+            </div>
+            <span style="font-weight:700;font-size:14px;color:var(--text);">AllowanceMap</span>
+          </div>
+          <div style="display:flex;gap:24px;align-items:center;">
+            <span style="font-size:13px;font-weight:600;color:var(--primary);border-bottom:2px solid var(--primary);padding-bottom:2px;">Estimator</span>
+            <span style="font-size:13px;font-weight:500;color:var(--text2);">Forecast</span>
+            <span style="font-size:13px;font-weight:500;color:var(--text2);">About</span>
+          </div>
+        </div>
+        <div style="padding:10px 20px;font-size:11px;color:var(--text3);font-family:var(--font-mono);">
+          sticky · max-width 1400px · logo left · links right
+        </div>
+      </div>
+
+      <div class="doc-note">
+        <span class="do">NAV RULES:</span><br>
+        · Logo = wordmark "AllowanceMap" with icon mark (A in navy square)<br>
+        · Active page = underline indicator, primary color weight<br>
+        · No dropdowns, no mega-menus<br>
+        · Mobile: hamburger → bottom sheet with 3 links<br>
+        · Sticky on scroll (AppBar position="sticky")<br>
+        · Background: white, border-bottom: 1px solid var(--border)<br><br>
+        <span class="dont">REMOVED PAGES:</span><br>
+        · /explorer → merged into /about tab "Data"<br>
+        · /models → merged into /about tab "Models"<br>
+        · Homepage hero/dashboard → replaced by estimator as homepage
+      </div>
+
+      <div class="doc-sub">URL Map</div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px;font-family:var(--font-mono);">
+        <thead>
+          <tr style="border-bottom:1px solid var(--border2);">
+            <th style="text-align:left;padding:6px 8px;color:var(--text3);font-weight:700;">Route</th>
+            <th style="text-align:left;padding:6px 8px;color:var(--text3);font-weight:700;">Page</th>
+            <th style="text-align:left;padding:6px 8px;color:var(--text3);font-weight:700;">Priority</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:7px 8px;color:var(--primary);">/</td>
+            <td style="padding:7px 8px;color:var(--text);">Cost Estimator</td>
+            <td style="padding:7px 8px;"><span style="background:var(--primary-tint);color:var(--primary);padding:2px 7px;border-radius:var(--radius-full);font-size:9px;font-weight:700;">PRIMARY</span></td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:7px 8px;color:var(--primary);">/forecast</td>
+            <td style="padding:7px 8px;color:var(--text);">Forecast Explorer</td>
+            <td style="padding:7px 8px;"><span style="background:var(--secondary-tint);color:var(--secondary);padding:2px 7px;border-radius:var(--radius-full);font-size:9px;font-weight:700;">SECONDARY</span></td>
+          </tr>
+          <tr>
+            <td style="padding:7px 8px;color:var(--primary);">/about</td>
+            <td style="padding:7px 8px;color:var(--text);">About & Methodology</td>
+            <td style="padding:7px 8px;"><span style="background:var(--accent-tint);color:var(--accent);padding:2px 7px;border-radius:var(--radius-full);font-size:9px;font-weight:700;">RESEARCH</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     03. COLOR SYSTEM
+     ============================================================ -->
+<div class="doc-section">
+  <div class="doc-label">03</div>
+  <div class="doc-heading">Color <span>System</span></div>
+  <div class="doc-desc">
+    Light-only palette. Warm whites, navy-blue primary for Medicare data, teal-green
+    secondary for patient OOP data, warm amber for disclaimers and CTAs. Color carries
+    semantic meaning — blue = allowed, green = OOP.
+  </div>
+
+  <div class="doc-sub">Core Palette</div>
+  <div class="swatch-row">
+    <div class="swatch">
+      <div class="swatch-block" style="background:#FAFAF8;"></div>
+      <div class="swatch-name">--bg</div>
+      <div class="swatch-hex">#FAFAF8</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-block" style="background:#FFFFFF;"></div>
+      <div class="swatch-name">--surface</div>
+      <div class="swatch-hex">#FFFFFF</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-block" style="background:#F2F0ED;"></div>
+      <div class="swatch-name">--surface2</div>
+      <div class="swatch-hex">#F2F0ED</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-block" style="background:#1C1917;"></div>
+      <div class="swatch-name">--text</div>
+      <div class="swatch-hex">#1C1917</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-block" style="background:#57534E;"></div>
+      <div class="swatch-name">--text2</div>
+      <div class="swatch-hex">#57534E</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-block" style="background:#A8A29E;"></div>
+      <div class="swatch-name">--text3</div>
+      <div class="swatch-hex">#A8A29E</div>
+    </div>
+  </div>
+
+  <div class="doc-sub">Brand Colors</div>
+  <div class="swatch-row">
+    <div class="swatch">
+      <div class="swatch-block" style="background:#1A4F8A;"></div>
+      <div class="swatch-name">--primary</div>
+      <div class="swatch-hex">#1A4F8A navy</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-block" style="background:#2E72C8;"></div>
+      <div class="swatch-name">--primary-light</div>
+      <div class="swatch-hex">#2E72C8</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-block" style="background:#0F3563;"></div>
+      <div class="swatch-name">--primary-dark</div>
+      <div class="swatch-hex">#0F3563</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-block" style="background:#EBF2FB;"></div>
+      <div class="swatch-name">--primary-tint</div>
+      <div class="swatch-hex">#EBF2FB</div>
+    </div>
+  </div>
+  <div class="swatch-row">
+    <div class="swatch">
+      <div class="swatch-block" style="background:#15755D;"></div>
+      <div class="swatch-name">--secondary</div>
+      <div class="swatch-hex">#15755D teal</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-block" style="background:#1CA082;"></div>
+      <div class="swatch-name">--secondary-light</div>
+      <div class="swatch-hex">#1CA082</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-block" style="background:#0E5241;"></div>
+      <div class="swatch-name">--secondary-dark</div>
+      <div class="swatch-hex">#0E5241</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-block" style="background:#E8F7F3;"></div>
+      <div class="swatch-name">--secondary-tint</div>
+      <div class="swatch-hex">#E8F7F3</div>
+    </div>
+  </div>
+  <div class="swatch-row">
+    <div class="swatch">
+      <div class="swatch-block" style="background:#B8763A;"></div>
+      <div class="swatch-name">--accent</div>
+      <div class="swatch-hex">#B8763A amber</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-block" style="background:#D4944D;"></div>
+      <div class="swatch-name">--accent-light</div>
+      <div class="swatch-hex">#D4944D</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-block" style="background:#FDF4EA;"></div>
+      <div class="swatch-name">--accent-tint</div>
+      <div class="swatch-hex">#FDF4EA</div>
+    </div>
+  </div>
+
+  <div class="doc-sub">Semantic Usage Rules</div>
+  <div class="doc-row">
+    <div class="doc-col">
+      <table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <thead>
+          <tr style="border-bottom:1px solid var(--border2);">
+            <th style="text-align:left;padding:6px 8px;color:var(--text3);font-weight:700;font-family:var(--font-mono);font-size:10px;">Context</th>
+            <th style="text-align:left;padding:6px 8px;color:var(--text3);font-weight:700;font-family:var(--font-mono);font-size:10px;">Color</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:7px 8px;color:var(--text2);">Stage 1 — Medicare allowed amount</td>
+            <td style="padding:7px 8px;"><span style="color:var(--primary);font-weight:600;">#1A4F8A navy</span></td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:7px 8px;color:var(--text2);">Stage 2 — Patient OOP cost</td>
+            <td style="padding:7px 8px;"><span style="color:var(--secondary);font-weight:600;">#15755D teal</span></td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:7px 8px;color:var(--text2);">Primary CTA (Estimate button)</td>
+            <td style="padding:7px 8px;"><span style="color:var(--primary);font-weight:600;">#1A4F8A contained</span></td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:7px 8px;color:var(--text2);">Disclaimers, synthetic data notices</td>
+            <td style="padding:7px 8px;"><span style="color:var(--accent);font-weight:600;">#B8763A amber tint</span></td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:7px 8px;color:var(--text2);">Forecast chart line &amp; area</td>
+            <td style="padding:7px 8px;"><span style="color:var(--primary);font-weight:600;">#1A4F8A / 10% opacity</span></td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:7px 8px;color:var(--text2);">Active nav link underline</td>
+            <td style="padding:7px 8px;"><span style="color:var(--primary);font-weight:600;">#1A4F8A</span></td>
+          </tr>
+          <tr>
+            <td style="padding:7px 8px;color:var(--text2);">Best model row highlight</td>
+            <td style="padding:7px 8px;"><span style="color:var(--primary);font-weight:600;">#EBF2FB tint row</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="doc-col">
+      <div class="doc-note">
+        <span class="do">DO:</span> Use navy (#1A4F8A) for anything related to what Medicare pays (allowed amount,
+        forecast lines, Stage 1 results). Use teal (#15755D) for patient-facing costs (OOP, P10/P50/P90).
+        Use amber (#B8763A) sparingly — disclaimers and info alerts only.<br><br>
+        <span class="dont">DON'T:</span> Use primary blue on OOP results or teal on allowed amounts —
+        the semantic distinction is load-bearing for user comprehension. Don't use color purely decoratively
+        on backgrounds, borders, or icons. Don't add a third brand color for sections or "variety."<br><br>
+        <span class="note">NOTE:</span> The warm amber is intentionally restrained. If used for more
+        than 2 elements per page it loses its "pay attention" meaning.
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     04. TYPOGRAPHY
+     ============================================================ -->
+<div class="doc-section">
+  <div class="doc-label">04</div>
+  <div class="doc-heading">Typography</div>
+  <div class="doc-desc">
+    Two typefaces. Inter for all UI, headings, body, and labels. IBM Plex Mono exclusively
+    for dollar values in result cards, HCPCS codes, metric scores, and data labels. The
+    distinction signals "this is a number to trust" vs. "this is prose to read."
+  </div>
+
+  <div class="doc-sub">Type Scale</div>
+  <div style="display:flex;flex-direction:column;gap:24px;margin-bottom:32px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:32px;">
+    <div>
+      <span style="font-size:32px;font-weight:800;letter-spacing:-0.02em;line-height:1.1;color:var(--text);">Page Title — 32px / 800</span>
+      <div style="margin-top:4px;"><span class="doc-code">variant="h3" · fontWeight 800 · letterSpacing -0.02em</span></div>
+      <div style="font-size:12px;color:var(--text3);margin-top:4px;font-family:var(--font-mono);">Used once per page. Estimator headline: "What will Medicare cover?"</div>
+    </div>
+    <div>
+      <span style="font-size:22px;font-weight:700;letter-spacing:-0.01em;color:var(--text);">Section Heading — 22px / 700</span>
+      <div style="margin-top:4px;"><span class="doc-code">variant="h5" · fontWeight 700</span></div>
+      <div style="font-size:12px;color:var(--text3);margin-top:4px;font-family:var(--font-mono);">Stage headers, card group titles, tab section titles</div>
+    </div>
+    <div>
+      <span style="font-size:17px;font-weight:600;color:var(--text);">Card Title — 17px / 600</span>
+      <div style="margin-top:4px;"><span class="doc-code">variant="h6" · fontWeight 600</span></div>
+      <div style="font-size:12px;color:var(--text3);margin-top:4px;font-family:var(--font-mono);">Individual result card titles, form section labels</div>
+    </div>
+    <div>
+      <span style="font-size:15px;font-weight:400;color:var(--text);">Body text — 15px / 400. Plain English descriptions, supporting copy, methodology explanations.</span>
+      <div style="margin-top:4px;"><span class="doc-code">variant="body1" · lineHeight 1.65</span></div>
+    </div>
+    <div>
+      <span style="font-size:13px;font-weight:500;color:var(--text2);">Secondary text — 13px / 500. Form field helper text, result card subtitles, table cell descriptions.</span>
+      <div style="margin-top:4px;"><span class="doc-code">variant="body2" · color text.secondary</span></div>
+    </div>
+    <div>
+      <span style="font-family:var(--font-mono);font-size:11px;font-weight:700;color:var(--text3);letter-spacing:0.12em;text-transform:uppercase;">MONO LABEL — 11PX / 700 · FIELD LABELS, DATA TAGS, SECTION MARKERS</span>
+      <div style="margin-top:4px;"><span class="doc-code">variant="overline" · fontFamily mono · letterSpacing 0.12em</span></div>
+    </div>
+    <div>
+      <span style="font-family:var(--font-mono);font-size:36px;font-weight:700;color:var(--primary);">$1,247</span>
+      <span style="font-family:var(--font-mono);font-size:14px;color:var(--text2);margin-left:8px;">median allowed</span>
+      <div style="margin-top:4px;"><span class="doc-code">fontFamily: mono · fontSize 36-48px · fontWeight 700 · color: primary/secondary</span></div>
+      <div style="font-size:12px;color:var(--text3);margin-top:4px;font-family:var(--font-mono);">Result hero numbers only. Never used for anything else.</div>
+    </div>
+  </div>
+
+  <div class="doc-note">
+    <span class="do">DO:</span> Use IBM Plex Mono for dollar amounts, percentile values (P10/P50/P90),
+    HCPCS codes, model metric scores (R², MAE, RMSE), and the year labels on the forecast x-axis.
+    Use Inter for everything else: headings, button text, form labels, descriptions.<br><br>
+    <span class="dont">DON'T:</span> Mix fonts within a label. Never use mono for navigation or
+    button text — buttons must be Inter at all weights. Don't use serif or display fonts for
+    the "healthcare feel" — Inter achieves warmth through weight and spacing, not typeface.
+  </div>
+</div>
+
+
+<!-- ============================================================
+     05. SPACING & LAYOUT
+     ============================================================ -->
+<div class="doc-section">
+  <div class="doc-label">05</div>
+  <div class="doc-heading">Spacing & <span>Layout</span></div>
+  <div class="doc-desc">
+    8px base grid. All spacing is multiples of 8. Max content width 1280px. The estimator
+    uses a fixed 5/7 column split on desktop (form left, results right). The forecast
+    page is full-width for the chart.
+  </div>
+
+  <div class="doc-sub">Spacing Scale (8px base)</div>
+  <div style="display:flex;gap:0;margin-bottom:24px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;">
+    <div style="flex:1;padding:16px;border-right:1px solid var(--border);text-align:center;">
+      <div style="height:4px;background:var(--primary);border-radius:2px;margin-bottom:8px;"></div>
+      <div style="font-family:var(--font-mono);font-size:10px;color:var(--text3);">4px</div>
+      <div style="font-family:var(--font-mono);font-size:9px;color:var(--text3);">space-1</div>
+    </div>
+    <div style="flex:1;padding:16px;border-right:1px solid var(--border);text-align:center;">
+      <div style="height:8px;background:var(--primary);border-radius:2px;margin-bottom:8px;"></div>
+      <div style="font-family:var(--font-mono);font-size:10px;color:var(--text3);">8px</div>
+      <div style="font-family:var(--font-mono);font-size:9px;color:var(--text3);">space-2</div>
+    </div>
+    <div style="flex:1;padding:16px;border-right:1px solid var(--border);text-align:center;">
+      <div style="height:16px;background:var(--primary);border-radius:2px;margin-bottom:8px;"></div>
+      <div style="font-family:var(--font-mono);font-size:10px;color:var(--text3);">16px</div>
+      <div style="font-family:var(--font-mono);font-size:9px;color:var(--text3);">space-4</div>
+    </div>
+    <div style="flex:1;padding:16px;border-right:1px solid var(--border);text-align:center;">
+      <div style="height:24px;background:var(--primary);border-radius:2px;margin-bottom:8px;"></div>
+      <div style="font-family:var(--font-mono);font-size:10px;color:var(--text3);">24px</div>
+      <div style="font-family:var(--font-mono);font-size:9px;color:var(--text3);">space-5</div>
+    </div>
+    <div style="flex:1;padding:16px;border-right:1px solid var(--border);text-align:center;">
+      <div style="height:32px;background:var(--primary);border-radius:2px;margin-bottom:8px;"></div>
+      <div style="font-family:var(--font-mono);font-size:10px;color:var(--text3);">32px</div>
+      <div style="font-family:var(--font-mono);font-size:9px;color:var(--text3);">space-6</div>
+    </div>
+    <div style="flex:1;padding:16px;border-right:1px solid var(--border);text-align:center;">
+      <div style="height:48px;background:var(--primary);border-radius:2px;margin-bottom:8px;"></div>
+      <div style="font-family:var(--font-mono);font-size:10px;color:var(--text3);">48px</div>
+      <div style="font-family:var(--font-mono);font-size:9px;color:var(--text3);">space-7</div>
+    </div>
+    <div style="flex:1;padding:16px;text-align:center;">
+      <div style="height:64px;background:var(--primary);border-radius:2px;margin-bottom:8px;"></div>
+      <div style="font-family:var(--font-mono);font-size:10px;color:var(--text3);">64px</div>
+      <div style="font-family:var(--font-mono);font-size:9px;color:var(--text3);">space-8</div>
+    </div>
+  </div>
+
+  <div class="doc-sub">Page Layout Grid</div>
+  <div class="doc-row">
+    <div class="doc-col">
+      <strong style="font-size:13px;">Estimator Page (Homepage)</strong>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;margin-top:12px;">
+        <!-- Nav bar mockup -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 12px;margin-bottom:8px;font-family:var(--font-mono);font-size:10px;color:var(--text3);">
+          [Nav — sticky · height 64px]
+        </div>
+        <!-- Masthead -->
+        <div style="background:var(--primary-tint);border:1px dashed var(--primary-light);border-radius:6px;padding:8px 12px;margin-bottom:8px;font-family:var(--font-mono);font-size:10px;color:var(--primary);">
+          [Masthead — slim · 80px · title + tagline]
+        </div>
+        <!-- Main split -->
+        <div style="display:flex;gap:8px;margin-bottom:8px;">
+          <div style="flex:5;background:var(--surface2);border-radius:6px;padding:12px;font-family:var(--font-mono);font-size:10px;color:var(--text3);min-height:160px;">
+            [Form Panel · 5 cols]<br><br>
+            Stage 1 inputs<br>
+            Stage 2 inputs
+          </div>
+          <div style="flex:7;background:var(--primary-tint);border-radius:6px;padding:12px;font-family:var(--font-mono);font-size:10px;color:var(--primary);min-height:160px;">
+            [Results Panel · 7 cols]<br><br>
+            Stage 1 result card ↑<br>
+            Stage 2 result card ↓
+          </div>
+        </div>
+        <div style="background:var(--surface2);border-radius:6px;padding:8px 12px;font-family:var(--font-mono);font-size:10px;color:var(--text3);">
+          [Footer — slim · attribution + links]
+        </div>
+      </div>
+    </div>
+    <div class="doc-col">
+      <strong style="font-size:13px;">Layout Rules</strong>
+      <div class="doc-note" style="margin-top:12px;">
+        <strong>Max content width:</strong> 1280px (centered)<br>
+        <strong>Page padding:</strong> 24px mobile → 48px tablet → 64px desktop<br>
+        <strong>Grid system:</strong> MUI Grid2 with 12 columns<br>
+        <strong>Estimator split:</strong> md: 5 (form) / 7 (results)<br>
+        <strong>Card spacing:</strong> MUI spacing={3} = 24px gaps<br>
+        <strong>Section spacing:</strong> 48px between major sections<br><br>
+        <strong>Masthead design:</strong><br>
+        · Background: var(--surface) white<br>
+        · 1px bottom border<br>
+        · Padding: 24px top/bottom<br>
+        · Max 2 lines: product name (h3) + tagline (body2)<br>
+        · NO hero image, NO stats grid, NO feature list<br><br>
+        <strong>The form IS the hero.</strong>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     06. COMPONENT LIBRARY
+     ============================================================ -->
+<div class="doc-section">
+  <div class="doc-label">06</div>
+  <div class="doc-heading">Component <span>Library</span></div>
+  <div class="doc-desc">
+    Key application-specific components. Each has a preview, usage rules, and MUI
+    implementation notes. All components use the 12px border-radius default.
+  </div>
+
+  <!-- 6.1 Estimator Form -->
+  <div class="doc-sub">Estimator Form</div>
+  <div class="doc-row">
+    <div class="doc-col">
+      <!-- Form preview -->
+      <div class="preview-box">
+        <div style="font-size:11px;font-weight:700;color:var(--text3);font-family:var(--font-mono);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:16px;">Stage 1 — Medicare Allowed Amount</div>
+
+        <!-- Specialty field -->
+        <div style="margin-bottom:16px;">
+          <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;">Provider Specialty</div>
+          <div style="background:var(--surface);border:1.5px solid var(--border2);border-radius:var(--radius-md);padding:11px 14px;font-size:14px;color:var(--text3);display:flex;justify-content:space-between;align-items:center;">
+            <span>e.g. Internal Medicine</span>
+            <span style="color:var(--text3);">▼</span>
+          </div>
+        </div>
+
+        <!-- State + Category row -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+          <div>
+            <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;">State</div>
+            <div style="background:var(--surface);border:1.5px solid var(--border2);border-radius:var(--radius-md);padding:11px 14px;font-size:14px;color:var(--text3);">Select state ▼</div>
+          </div>
+          <div>
+            <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;">Service Category</div>
+            <div style="background:var(--surface);border:1.5px solid var(--border2);border-radius:var(--radius-md);padding:11px 14px;font-size:14px;color:var(--text3);">Medicine/E&amp;M ▼</div>
+          </div>
+        </div>
+
+        <!-- Place of service toggle -->
+        <div style="margin-bottom:20px;">
+          <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px;">Place of Service</div>
+          <div style="display:flex;gap:0;border:1.5px solid var(--border2);border-radius:var(--radius-md);overflow:hidden;width:fit-content;">
+            <div style="padding:8px 20px;background:var(--primary);color:white;font-size:13px;font-weight:600;">Office</div>
+            <div style="padding:8px 20px;background:var(--surface);color:var(--text2);font-size:13px;font-weight:500;">Facility</div>
+          </div>
+        </div>
+
+        <!-- CTA -->
+        <button style="width:100%;background:var(--primary);color:white;border:none;border-radius:var(--radius-md);padding:14px;font-size:15px;font-weight:600;font-family:var(--font-body);cursor:pointer;letter-spacing:0;">
+          Estimate Medicare Costs
+        </button>
+      </div>
+    </div>
+    <div class="doc-col">
+      <div class="doc-note">
+        <strong>Form Field Rules:</strong><br>
+        · All inputs: MUI Autocomplete or Select (outlined variant)<br>
+        · Label: body2 weight 600, color text.secondary, above the field<br>
+        · Border: 1.5px solid on focus (not 1px) — healthcare needs clear affordances<br>
+        · Border color focused: var(--primary) #1A4F8A<br>
+        · Placeholder color: text.disabled<br>
+        · Border radius: 8px (radius-md)<br><br>
+        <strong>Place of Service Toggle:</strong><br>
+        · MUI ToggleButtonGroup — not a Select<br>
+        · Selected: primary.main background, white text<br>
+        · Unselected: white background, text2 color<br><br>
+        <strong>CTA Button:</strong><br>
+        · MUI Button variant="contained"<br>
+        · Full width within form panel<br>
+        · size="large" (14px padding top/bottom)<br>
+        · fontWeight 600 (not default 500)<br>
+        · text-transform: none (already in theme)<br>
+        · Hover: primary.dark (#0F3563), slight shadow<br><br>
+        <strong>Section label (Stage 1/2 dividers):</strong><br>
+        · variant="overline" · fontFamily mono · color text.disabled<br>
+        · Thin horizontal rule after label
+      </div>
+    </div>
+  </div>
+
+  <!-- 6.2 Result Cards -->
+  <div class="doc-sub">Result Cards</div>
+  <div class="doc-row">
+    <!-- Stage 1 result card -->
+    <div class="doc-col">
+      <div style="background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--primary);border-radius:var(--radius-lg);padding:24px;box-shadow:var(--shadow-md);">
+        <div style="font-family:var(--font-mono);font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--primary);margin-bottom:12px;">Stage 1 · Medicare Allowed Amount</div>
+        <div style="font-family:var(--font-mono);font-size:42px;font-weight:700;color:var(--primary);line-height:1;margin-bottom:4px;">$1,247</div>
+        <div style="font-size:13px;color:var(--text2);margin-bottom:20px;">median allowed amount per service</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;">
+          <div style="background:var(--primary-tint);border-radius:var(--radius-md);padding:10px;text-align:center;">
+            <div style="font-family:var(--font-mono);font-size:13px;font-weight:700;color:var(--primary);">$620</div>
+            <div style="font-size:10px;color:var(--text3);margin-top:2px;font-family:var(--font-mono);">P10</div>
+          </div>
+          <div style="background:var(--primary-tint);border-radius:var(--radius-md);padding:10px;text-align:center;">
+            <div style="font-family:var(--font-mono);font-size:13px;font-weight:700;color:var(--primary);">$1,247</div>
+            <div style="font-size:10px;color:var(--text3);margin-top:2px;font-family:var(--font-mono);">P50</div>
+          </div>
+          <div style="background:var(--primary-tint);border-radius:var(--radius-md);padding:10px;text-align:center;">
+            <div style="font-family:var(--font-mono);font-size:13px;font-weight:700;color:var(--primary);">$3,104</div>
+            <div style="font-size:10px;color:var(--text3);margin-top:2px;font-family:var(--font-mono);">P90</div>
+          </div>
+          <div style="background:var(--surface2);border-radius:var(--radius-md);padding:10px;text-align:center;">
+            <div style="font-family:var(--font-mono);font-size:13px;font-weight:600;color:var(--text2);">48,291</div>
+            <div style="font-size:10px;color:var(--text3);margin-top:2px;font-family:var(--font-mono);">records</div>
+          </div>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--text3);font-family:var(--font-mono);margin-top:8px;text-align:center;">Stage 1 result card — primary navy theme</div>
+    </div>
+
+    <!-- Stage 2 result card -->
+    <div class="doc-col">
+      <div style="background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--secondary);border-radius:var(--radius-lg);padding:24px;box-shadow:var(--shadow-md);">
+        <div style="font-family:var(--font-mono);font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--secondary);margin-bottom:12px;">Stage 2 · Patient Out-of-Pocket</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;">
+          <div style="text-align:center;">
+            <div style="font-size:11px;color:var(--text3);font-family:var(--font-mono);margin-bottom:4px;">BEST CASE · P10</div>
+            <div style="font-family:var(--font-mono);font-size:22px;font-weight:600;color:var(--secondary-light);">$84</div>
+          </div>
+          <div style="text-align:center;border-left:1px solid var(--border);border-right:1px solid var(--border);">
+            <div style="font-size:11px;color:var(--text3);font-family:var(--font-mono);margin-bottom:4px;">TYPICAL · P50</div>
+            <div style="font-family:var(--font-mono);font-size:28px;font-weight:700;color:var(--secondary);">$217</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-size:11px;color:var(--text3);font-family:var(--font-mono);margin-bottom:4px;">HIGH END · P90</div>
+            <div style="font-family:var(--font-mono);font-size:22px;font-weight:600;color:var(--secondary-dark);">$492</div>
+          </div>
+        </div>
+        <div style="background:var(--accent-tint);border-left:3px solid var(--accent);border-radius:var(--radius-md);padding:10px 14px;font-size:12px;color:var(--text2);">
+          Estimated from synthetic MCBS-derived data. Actual costs vary with plan type,
+          deductible status, and geography.
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--text3);font-family:var(--font-mono);margin-top:8px;text-align:center;">Stage 2 result card — teal theme + amber disclaimer</div>
+    </div>
+  </div>
+  <div class="doc-note">
+    <strong>Card anatomy:</strong> white surface · 1px border-left 4px solid (primary or secondary) · border-radius 12px ·
+    box-shadow md.<br>
+    <strong>Hero number:</strong> IBM Plex Mono · 42px · fontWeight 700 · primary.main or secondary.main.<br>
+    <strong>Percentile grid:</strong> tinted background tiles (primary-tint or secondary-tint) · mono font · P10/P50/P90 labels.<br>
+    <strong>Disclaimer:</strong> accent-tint background · 3px left border accent · 12px body2 text. NOT a MUI Alert —
+    styled div for lower visual weight.<br>
+    <span class="note">IMPORTANT:</span> Stage 1 and Stage 2 cards must never use the same accent color — navy/teal distinction is critical.
+  </div>
+
+  <!-- 6.3 Forecast Chart -->
+  <div class="doc-sub">Forecast Chart</div>
+  <div class="doc-row">
+    <div class="doc-col">
+      <!-- Chart preview mockup -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;box-shadow:var(--shadow-sm);">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;">
+          <div>
+            <div style="font-size:17px;font-weight:600;color:var(--text);">Internal Medicine</div>
+            <div style="font-size:13px;color:var(--text2);">Medicare allowed amount · 2013–2026 forecast</div>
+          </div>
+          <div style="display:flex;gap:16px;align-items:center;font-size:12px;color:var(--text2);">
+            <div style="display:flex;align-items:center;gap:5px;">
+              <div style="width:16px;height:2px;background:var(--primary);"></div>
+              <span>Historical</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:5px;">
+              <div style="width:16px;height:2px;background:var(--primary);border-top:2px dashed var(--primary-light);"></div>
+              <span>Forecast</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:5px;">
+              <div style="width:16px;height:10px;background:rgba(26,79,138,0.12);border-radius:2px;"></div>
+              <span>P10–P90</span>
+            </div>
+          </div>
+        </div>
+        <!-- Simulated chart area -->
+        <div style="height:200px;position:relative;background:var(--surface);border-bottom:1px solid var(--border);border-left:1px solid var(--border);">
+          <!-- Confidence band -->
+          <div style="position:absolute;left:8%;right:10%;top:20%;bottom:50%;background:rgba(26,79,138,0.08);border-radius:2px;"></div>
+          <!-- Line (simplified) -->
+          <svg style="position:absolute;inset:0;width:100%;height:100%;" viewBox="0 0 400 200" preserveAspectRatio="none">
+            <polyline points="0,160 40,145 80,130 120,115 160,110 200,100 240,92 280,88 320,82" style="fill:none;stroke:#1A4F8A;stroke-width:2.5;"/>
+            <polyline points="280,82 320,76 360,70 400,64" style="fill:none;stroke:#1A4F8A;stroke-width:2;stroke-dasharray:6,4;"/>
+            <!-- Forecast region divider -->
+            <line x1="280" y1="0" x2="280" y2="200" style="stroke:var(--border2);stroke-width:1;stroke-dasharray:3,3;"/>
+          </svg>
+          <!-- Year labels -->
+          <div style="position:absolute;bottom:-20px;left:0;right:0;display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:9px;color:var(--text3);">
+            <span>2013</span><span>2016</span><span>2019</span><span>2022</span><span style="color:var(--primary);font-weight:700;">2024</span><span style="color:var(--primary);font-weight:700;">2026</span>
+          </div>
+        </div>
+        <div style="margin-top:28px;font-family:var(--font-mono);font-size:9px;color:var(--text3);text-align:right;">
+          LSTM · MC Dropout · 95% confidence bounds · n=103M records
+        </div>
+      </div>
+    </div>
+    <div class="doc-col">
+      <div class="doc-note">
+        <strong>Chart implementation (Recharts ComposedChart):</strong><br><br>
+        <strong>Historical line:</strong> stroke #1A4F8A · strokeWidth 2.5 · dot={false}<br>
+        <strong>Forecast line:</strong> stroke #1A4F8A · strokeDasharray="6 4" · strokeWidth 2<br>
+        <strong>Confidence area:</strong> fill rgba(26,79,138,0.10) · fillOpacity 1<br>
+        <strong>Confidence lines:</strong> stroke #2E72C8 · strokeWidth 1 · strokeDasharray="3 3"<br>
+        <strong>Historical/forecast divider:</strong> ReferenceLine at first forecast year · stroke var(--border2)<br><br>
+        <strong>Axes:</strong><br>
+        · X: year integers · mono font 11px · color text3<br>
+        · Y: $K formatted (e.g. $1.2K) · mono font 11px · color text3<br>
+        · No axis lines, only subtle grid lines (stroke opacity 0.3)<br><br>
+        <strong>Tooltip:</strong> white background · 1px border · shadow-md ·
+        bold primary for allowed value · mono font for year/value<br><br>
+        <strong>Legend:</strong> above chart right-aligned · 12px body2<br>
+        · "2024 →" label on divider line (small, text3 color)<br><br>
+        <strong>Chart height:</strong> 320px on desktop · 240px on mobile
+      </div>
+    </div>
+  </div>
+
+  <!-- 6.4 About Page Tabs -->
+  <div class="doc-sub">About Page — Tab Navigation</div>
+  <div class="doc-row">
+    <div class="doc-col">
+      <!-- Tab bar preview -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-sm);">
+        <div style="border-bottom:1px solid var(--border);padding:0 24px;display:flex;gap:0;">
+          <div style="padding:16px 20px;font-size:14px;font-weight:600;color:var(--primary);border-bottom:2px solid var(--primary);">Overview</div>
+          <div style="padding:16px 20px;font-size:14px;font-weight:500;color:var(--text2);">Data</div>
+          <div style="padding:16px 20px;font-size:14px;font-weight:500;color:var(--text2);">Models</div>
+          <div style="padding:16px 20px;font-size:14px;font-weight:500;color:var(--text2);">Pipeline</div>
+        </div>
+        <div style="padding:32px;font-size:13px;color:var(--text2);line-height:1.7;">
+          Tab content renders here. Overview tab shows project description, data sources (CMS
+          2013–2023, 103M records), and a coverage summary. Each tab is independently scrollable.
+        </div>
+      </div>
+    </div>
+    <div class="doc-col">
+      <div class="doc-note">
+        <strong>Tab implementation:</strong> MUI Tabs + Tab + TabPanel<br>
+        · variant="scrollable" on mobile<br>
+        · indicatorColor="primary" (navy underline)<br>
+        · textColor="primary"<br>
+        · Tab fontSize: 14px / fontWeight 600 (active) 500 (inactive)<br>
+        · Border-bottom on tab container: 1px solid border<br><br>
+        <strong>Tab contents:</strong><br>
+        · <strong>Overview:</strong> Project description, data sourcing, coverage stats (3-col grid of KPIs), disclaimers<br>
+        · <strong>Data:</strong> EDA plots (static images), state explorer table (sortable, with search)<br>
+        · <strong>Models:</strong> Performance table (4 models), feature importance bar chart, methodology accordions<br>
+        · <strong>Pipeline:</strong> Architecture text diagram, stage descriptions, tech stack chips<br><br>
+        <span class="note">NOTE:</span> The Data tab absorbs the current /explorer page.
+        The Models tab absorbs the current /models page.
+        Content density on this page is intentional — this is a research-depth page.
+      </div>
+    </div>
+  </div>
+
+  <!-- 6.5 Disclaimer Alert -->
+  <div class="doc-sub">Disclaimer / Info Alert</div>
+  <div class="doc-row">
+    <div class="doc-col">
+      <div style="background:var(--accent-tint);border-left:3px solid var(--accent);border-radius:var(--radius-md);padding:14px 18px;display:flex;gap:12px;align-items:flex-start;">
+        <span style="font-size:16px;">⚠</span>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:4px;">Synthetic Data Notice</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.6;">
+            Out-of-pocket estimates are derived from synthetic MCBS-modeled data.
+            Actual costs depend on your specific plan, deductible status, and supplemental
+            coverage. Consult your Medicare plan documentation for exact cost-sharing.
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="doc-col">
+      <div class="doc-note">
+        <strong>Alert styles (styled div, not MUI Alert):</strong><br>
+        · Background: var(--accent-tint) #FDF4EA<br>
+        · Left border: 3px solid var(--accent) #B8763A<br>
+        · Border radius: var(--radius-md) 8px<br>
+        · No icon component — plain text ⚠ or emoji<br>
+        · Title: 13px / weight 600 / color accent<br>
+        · Body: 12px / weight 400 / color text2<br><br>
+        <span class="dont">DON'T:</span> Use MUI Alert with severity="warning" — it renders
+        with a yellow that reads as an error in healthcare contexts. The amber-tint
+        custom style is calmer and more informational in tone.
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     07. MUI THEME CONFIGURATION
+     ============================================================ -->
+<div class="doc-section">
+  <div class="doc-label">07</div>
+  <div class="doc-heading">MUI <span>Theme Configuration</span></div>
+  <div class="doc-desc">
+    Drop-in replacement for the current <code style="font-family:var(--font-mono);font-size:13px;">web/src/app/theme.ts</code>.
+    All tokens map to the design system above. MUI v9 supports full palette
+    customization — the existing Inter font and 12px border radius are preserved.
+  </div>
+
+  <div class="doc-sub">theme.ts — Full Config</div>
+  <div class="code-block">
+<span class="cmt">// web/src/app/theme.ts</span>
+<span class="kw">import</span> { createTheme } <span class="kw">from</span> <span class="str">'@mui/material/styles'</span>;
+
+<span class="kw">const</span> theme = createTheme({
+  palette: {
+    mode: <span class="str">'light'</span>,
+    primary: {
+      main:  <span class="str">'#1A4F8A'</span>, <span class="cmt">// warm navy — Medicare allowed amount color</span>
+      light: <span class="str">'#2E72C8'</span>,
+      dark:  <span class="str">'#0F3563'</span>,
+      contrastText: <span class="str">'#FFFFFF'</span>,
+    },
+    secondary: {
+      main:  <span class="str">'#15755D'</span>, <span class="cmt">// warm teal — patient OOP cost color</span>
+      light: <span class="str">'#1CA082'</span>,
+      dark:  <span class="str">'#0E5241'</span>,
+      contrastText: <span class="str">'#FFFFFF'</span>,
+    },
+    background: {
+      default: <span class="str">'#FAFAF8'</span>, <span class="cmt">// warm off-white page background</span>
+      paper:   <span class="str">'#FFFFFF'</span>,
+    },
+    text: {
+      primary:   <span class="str">'#1C1917'</span>, <span class="cmt">// warm near-black</span>
+      secondary: <span class="str">'#57534E'</span>, <span class="cmt">// warm slate</span>
+      disabled:  <span class="str">'#A8A29E'</span>,
+    },
+    divider: <span class="str">'rgba(0, 0, 0, 0.08)'</span>,
+    error:   { main: <span class="str">'#DC2626'</span> },
+    warning: { main: <span class="str">'#D97706'</span> },
+    success: { main: <span class="str">'#10B981'</span> },
+  },
+
+  typography: {
+    fontFamily: <span class="str">"'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"</span>,
+    h3: { fontWeight: <span class="num">800</span>, letterSpacing: <span class="str">'-0.02em'</span> },
+    h4: { fontWeight: <span class="num">700</span>, letterSpacing: <span class="str">'-0.01em'</span> },
+    h5: { fontWeight: <span class="num">700</span> },
+    h6: { fontWeight: <span class="num">600</span> },
+    button: {
+      fontWeight: <span class="num">600</span>,
+      textTransform: <span class="str">'none'</span>,
+      fontFamily: <span class="str">"'Inter', sans-serif"</span>,
+    },
+    overline: {
+      fontFamily: <span class="str">"'IBM Plex Mono', monospace"</span>,
+      fontSize: <span class="str">'0.68rem'</span>,
+      fontWeight: <span class="num">700</span>,
+      letterSpacing: <span class="str">'0.12em'</span>,
+    },
+  },
+
+  shape: {
+    borderRadius: <span class="num">8</span>, <span class="cmt">// radius-md as base (12px for cards via sx override)</span>
+  },
+
+  components: {
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          borderRadius: <span class="num">12</span>, <span class="cmt">// radius-lg for all cards</span>
+          boxShadow: <span class="str">'0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)'</span>,
+          border: <span class="str">'1px solid rgba(0,0,0,0.08)'</span>,
+        },
+      },
+    },
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          borderRadius: <span class="num">8</span>,
+          fontWeight: <span class="num">600</span>,
+          textTransform: <span class="str">'none'</span>,
+          boxShadow: <span class="str">'none'</span>,
+          <span class="str">'&:hover'</span>: { boxShadow: <span class="str">'none'</span> },
+        },
+        sizeLarge: {
+          padding: <span class="str">'13px 24px'</span>,
+          fontSize: <span class="str">'0.95rem'</span>,
+        },
+      },
+    },
+    MuiOutlinedInput: {
+      styleOverrides: {
+        root: {
+          borderRadius: <span class="num">8</span>,
+          backgroundColor: <span class="str">'#FFFFFF'</span>,
+          <span class="str">'&:hover .MuiOutlinedInput-notchedOutline'</span>: {
+            borderColor: <span class="str">'rgba(0,0,0,0.30)'</span>,
+          },
+        },
+        notchedOutline: {
+          borderColor: <span class="str">'rgba(0,0,0,0.15)'</span>,
+        },
+      },
+    },
+    MuiAppBar: {
+      styleOverrides: {
+        root: {
+          backgroundColor: <span class="str">'#FFFFFF'</span>,
+          color: <span class="str">'#1C1917'</span>,
+          boxShadow: <span class="str">'0 1px 0 rgba(0,0,0,0.08)'</span>, <span class="cmt">// border-bottom effect</span>
+        },
+      },
+    },
+    MuiTab: {
+      styleOverrides: {
+        root: {
+          fontWeight: <span class="num">500</span>,
+          textTransform: <span class="str">'none'</span>,
+          fontSize: <span class="str">'0.9rem'</span>,
+          <span class="str">'&.Mui-selected'</span>: { fontWeight: <span class="num">600</span> },
+        },
+      },
+    },
+    MuiChip: {
+      styleOverrides: {
+        root: { borderRadius: <span class="num">999</span> }, <span class="cmt">// pill shape</span>
+      },
+    },
+    MuiTableRow: {
+      styleOverrides: {
+        root: {
+          <span class="str">'&:last-child td'</span>: { borderBottom: <span class="num">0</span> },
+        },
+      },
+    },
+  },
+});
+
+<span class="kw">export default</span> theme;
+  </div>
+
+  <div class="doc-note">
+    <span class="note">MUI FLEXIBILITY NOTE:</span> MUI v9 supports all of these overrides.
+    The palette, typography, shape, and component-level styleOverrides are all standard MUI v5+ APIs
+    that remain stable in v9. Custom semantic colors beyond primary/secondary (e.g. --accent) require
+    TypeScript module augmentation — use sx={{ bgcolor: '#FDF4EA' }} inline for the amber tint rather
+    than adding a third palette key, to avoid type complexity.<br><br>
+    The AppBar background change (white instead of navy) is the most significant visual shift from
+    the current theme. It eliminates the dark header and keeps the entire UI light-mode consistent.
+  </div>
+</div>
+
+
+<!-- ============================================================
+     08. INTERACTION & MOTION
+     ============================================================ -->
+<div class="doc-section">
+  <div class="doc-label">08</div>
+  <div class="doc-heading">Interaction & <span>Motion</span></div>
+  <div class="doc-desc">
+    Minimal animation. Healthcare users are often stressed — unprompted motion increases
+    cognitive load. Transitions exist only to communicate state changes. No decorative
+    animations, no loading skeletons that "shimmer," no parallax.
+  </div>
+
+  <div class="doc-sub">Transition Rules</div>
+  <div class="doc-row">
+    <div class="doc-col">
+      <table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <thead>
+          <tr style="border-bottom:1px solid var(--border2);">
+            <th style="text-align:left;padding:6px 8px;color:var(--text3);font-family:var(--font-mono);font-size:10px;font-weight:700;">Interaction</th>
+            <th style="text-align:left;padding:6px 8px;color:var(--text3);font-family:var(--font-mono);font-size:10px;font-weight:700;">Duration</th>
+            <th style="text-align:left;padding:6px 8px;color:var(--text3);font-family:var(--font-mono);font-size:10px;font-weight:700;">Easing</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:7px 8px;color:var(--text2);">Button hover (bg color)</td>
+            <td style="padding:7px 8px;color:var(--text);font-family:var(--font-mono);">150ms</td>
+            <td style="padding:7px 8px;color:var(--text2);font-family:var(--font-mono);">ease-out</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:7px 8px;color:var(--text2);">Input focus ring</td>
+            <td style="padding:7px 8px;color:var(--text);font-family:var(--font-mono);">150ms</td>
+            <td style="padding:7px 8px;color:var(--text2);font-family:var(--font-mono);">ease-out</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:7px 8px;color:var(--text2);">Result card entrance</td>
+            <td style="padding:7px 8px;color:var(--text);font-family:var(--font-mono);">300ms</td>
+            <td style="padding:7px 8px;color:var(--text2);font-family:var(--font-mono);">ease-out</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:7px 8px;color:var(--text2);">Tab panel transition</td>
+            <td style="padding:7px 8px;color:var(--text);font-family:var(--font-mono);">200ms</td>
+            <td style="padding:7px 8px;color:var(--text2);font-family:var(--font-mono);">ease-in-out</td>
+          </tr>
+          <tr>
+            <td style="padding:7px 8px;color:var(--text2);">Loading spinner</td>
+            <td style="padding:7px 8px;color:var(--text);font-family:var(--font-mono);">continuous</td>
+            <td style="padding:7px 8px;color:var(--text2);font-family:var(--font-mono);">linear</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="doc-col">
+      <div class="doc-note">
+        <strong>Result card entrance:</strong> When Stage 1 results arrive, the result card
+        fades in with <code style="font-family:var(--font-mono);">opacity: 0 → 1</code> and
+        <code style="font-family:var(--font-mono);">translateY: 8px → 0</code> over 300ms.
+        Stage 2 results entrance after a short delay (150ms after Stage 1). No spring physics.<br><br>
+
+        <strong>Loading state:</strong> Replace the "Estimate Costs" button label with a MUI
+        CircularProgress (size=20, color="inherit") while both stages load in parallel.
+        Do not disable the entire form — only the submit button. Show partial results if
+        Stage 1 resolves before Stage 2.<br><br>
+
+        <strong>Specialty chart:</strong> Chart data transitions with Recharts' built-in
+        animation (isAnimationActive=true, animationDuration=500). No custom animation needed.<br><br>
+
+        <span class="dont">AVOID:</span> Skeleton loaders that shimmer. Entrance animations on page
+        load (page components mount without animation). Hover-triggered tooltip delays longer than 200ms.
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     09. ACCESSIBILITY
+     ============================================================ -->
+<div class="doc-section">
+  <div class="doc-label">09</div>
+  <div class="doc-heading">Accessibility <span>Standards</span></div>
+  <div class="doc-desc">
+    WCAG 2.1 AA minimum. Medicare users include older adults and people with vision
+    impairments. High-contrast text, keyboard navigation, and screen-reader labels are
+    non-negotiable.
+  </div>
+
+  <div class="doc-sub">Contrast Ratios</div>
+  <div class="doc-row">
+    <div class="doc-col">
+      <table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <thead>
+          <tr style="border-bottom:1px solid var(--border2);">
+            <th style="text-align:left;padding:6px 8px;color:var(--text3);font-family:var(--font-mono);font-size:10px;font-weight:700;">Pair</th>
+            <th style="text-align:left;padding:6px 8px;color:var(--text3);font-family:var(--font-mono);font-size:10px;font-weight:700;">Ratio</th>
+            <th style="text-align:left;padding:6px 8px;color:var(--text3);font-family:var(--font-mono);font-size:10px;font-weight:700;">Grade</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:7px 8px;color:var(--text2);">#1C1917 on #FAFAF8 (body text)</td>
+            <td style="padding:7px 8px;font-family:var(--font-mono);color:var(--success);font-weight:600;">16.8:1</td>
+            <td style="padding:7px 8px;color:var(--success);font-weight:700;">AAA</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:7px 8px;color:var(--text2);">#1A4F8A on #FAFAF8 (primary headings)</td>
+            <td style="padding:7px 8px;font-family:var(--font-mono);color:var(--success);font-weight:600;">7.2:1</td>
+            <td style="padding:7px 8px;color:var(--success);font-weight:700;">AAA</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:7px 8px;color:var(--text2);">#15755D on #FAFAF8 (secondary headings)</td>
+            <td style="padding:7px 8px;font-family:var(--font-mono);color:var(--success);font-weight:600;">5.9:1</td>
+            <td style="padding:7px 8px;color:var(--success);font-weight:700;">AA</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:7px 8px;color:var(--text2);">#FFFFFF on #1A4F8A (button text)</td>
+            <td style="padding:7px 8px;font-family:var(--font-mono);color:var(--success);font-weight:600;">7.2:1</td>
+            <td style="padding:7px 8px;color:var(--success);font-weight:700;">AAA</td>
+          </tr>
+          <tr>
+            <td style="padding:7px 8px;color:var(--text2);">#57534E on #FFFFFF (secondary text)</td>
+            <td style="padding:7px 8px;font-family:var(--font-mono);color:var(--success);font-weight:600;">6.1:1</td>
+            <td style="padding:7px 8px;color:var(--success);font-weight:700;">AA</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="doc-col">
+      <div class="doc-note">
+        <span class="do">REQUIRED:</span><br>
+        · All Autocomplete fields: aria-label describing the selection purpose<br>
+        · Result cards: role="region" with aria-label="Stage 1 Medicare estimate"<br>
+        · Forecast chart: aria-label on the chart container, accessible table fallback<br>
+        · Loading state: aria-busy="true" on the results panel<br>
+        · Error states: role="alert" on error messages<br>
+        · Toggle buttons: aria-pressed on each ToggleButton<br>
+        · Tab panels: aria-labelledby linking to the tab that controls them<br><br>
+        <span class="note">FONT SIZE FLOOR:</span> No text below 11px in the live UI.
+        (Data labels on charts: 11px minimum.) The current app uses 9px swatch labels —
+        acceptable only in this design doc, not in production.<br><br>
+        <span class="note">TOUCH TARGETS:</span> All interactive elements ≥ 44×44px.
+        The ToggleButton group must have min-height 44px on mobile.
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     10. MIGRATION NOTES
+     ============================================================ -->
+<div class="doc-section">
+  <div class="doc-label">10</div>
+  <div class="doc-heading">Migration <span>Notes</span></div>
+  <div class="doc-desc">
+    Delta between current implementation and this design system. Ordered by impact.
+    The theme.ts replacement is the highest-leverage change — it recolors the entire app
+    and warms the background.
+  </div>
+
+  <div class="doc-sub">Changes Required</div>
+  <div class="doc-row">
+    <div class="doc-col">
+      <table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <thead>
+          <tr style="border-bottom:1px solid var(--border2);">
+            <th style="text-align:left;padding:6px 8px;color:var(--text3);font-family:var(--font-mono);font-size:10px;font-weight:700;">Change</th>
+            <th style="text-align:left;padding:6px 8px;color:var(--text3);font-family:var(--font-mono);font-size:10px;font-weight:700;">File</th>
+            <th style="text-align:left;padding:6px 8px;color:var(--text3);font-family:var(--font-mono);font-size:10px;font-weight:700;">Impact</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:7px 8px;color:var(--text2);">Replace theme palette + typography</td>
+            <td style="padding:7px 8px;font-family:var(--font-mono);color:var(--primary);font-size:11px;">theme.ts</td>
+            <td style="padding:7px 8px;"><span style="background:#FEF2F2;color:#DC2626;padding:2px 7px;border-radius:var(--radius-full);font-size:9px;font-weight:700;font-family:var(--font-mono);">HIGH</span></td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:7px 8px;color:var(--text2);">Homepage → Estimator (route /)</td>
+            <td style="padding:7px 8px;font-family:var(--font-mono);color:var(--primary);font-size:11px;">app/page.tsx</td>
+            <td style="padding:7px 8px;"><span style="background:#FEF2F2;color:#DC2626;padding:2px 7px;border-radius:var(--radius-full);font-size:9px;font-weight:700;font-family:var(--font-mono);">HIGH</span></td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:7px 8px;color:var(--text2);">Add IBM Plex Mono to layout.tsx font import</td>
+            <td style="padding:7px 8px;font-family:var(--font-mono);color:var(--primary);font-size:11px;">app/layout.tsx</td>
+            <td style="padding:7px 8px;"><span style="background:#FEF9EC;color:#B8763A;padding:2px 7px;border-radius:var(--radius-full);font-size:9px;font-weight:700;font-family:var(--font-mono);">MED</span></td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:7px 8px;color:var(--text2);">Merge /explorer + /models → /about tabs</td>
+            <td style="padding:7px 8px;font-family:var(--font-mono);color:var(--primary);font-size:11px;">app/about/page.tsx</td>
+            <td style="padding:7px 8px;"><span style="background:#FEF9EC;color:#B8763A;padding:2px 7px;border-radius:var(--radius-full);font-size:9px;font-weight:700;font-family:var(--font-mono);">MED</span></td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:7px 8px;color:var(--text2);">AppBar → white background (remove navy)</td>
+            <td style="padding:7px 8px;font-family:var(--font-mono);color:var(--primary);font-size:11px;">Navbar.tsx + theme.ts</td>
+            <td style="padding:7px 8px;"><span style="background:#FEF9EC;color:#B8763A;padding:2px 7px;border-radius:var(--radius-full);font-size:9px;font-weight:700;font-family:var(--font-mono);">MED</span></td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:7px 8px;color:var(--text2);">Result card: dollar amounts to mono font</td>
+            <td style="padding:7px 8px;font-family:var(--font-mono);color:var(--primary);font-size:11px;">estimator/page.tsx</td>
+            <td style="padding:7px 8px;"><span style="background:#ECFDF5;color:#15755D;padding:2px 7px;border-radius:var(--radius-full);font-size:9px;font-weight:700;font-family:var(--font-mono);">LOW</span></td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:7px 8px;color:var(--text2);">Update nav links (remove /explorer, /models)</td>
+            <td style="padding:7px 8px;font-family:var(--font-mono);color:var(--primary);font-size:11px;">lib/constants.ts</td>
+            <td style="padding:7px 8px;"><span style="background:#ECFDF5;color:#15755D;padding:2px 7px;border-radius:var(--radius-full);font-size:9px;font-weight:700;font-family:var(--font-mono);">LOW</span></td>
+          </tr>
+          <tr>
+            <td style="padding:7px 8px;color:var(--text2);">MUI Alert → custom amber disclaimer div</td>
+            <td style="padding:7px 8px;font-family:var(--font-mono);color:var(--primary);font-size:11px;">estimator/page.tsx</td>
+            <td style="padding:7px 8px;"><span style="background:#ECFDF5;color:#15755D;padding:2px 7px;border-radius:var(--radius-full);font-size:9px;font-weight:700;font-family:var(--font-mono);">LOW</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="doc-col">
+      <div class="doc-note" style="margin-bottom:12px;">
+        <strong>Recommended implementation order:</strong><br><br>
+        <strong>1.</strong> Drop in the new theme.ts (Section 07). Run the app —
+        this recolors everything in one shot. Review and fix any contrast issues
+        that emerge from the palette shift.<br><br>
+        <strong>2.</strong> Make the homepage the estimator (/estimator → /,
+        old / → deleted or redirected). Update nav links in constants.ts.<br><br>
+        <strong>3.</strong> Rebuild /about with MUI Tabs to absorb /explorer and
+        /models content. Remove those route directories after confirming parity.<br><br>
+        <strong>4.</strong> Apply mono font to result hero numbers and P10/P50/P90
+        tiles. This is a small sx={{ fontFamily: 'IBM Plex Mono, monospace' }} addition.<br><br>
+        <strong>5.</strong> Add IBM Plex Mono to the Google Fonts link in layout.tsx.
+      </div>
+      <div class="doc-note">
+        <span class="note">WHAT STAYS THE SAME:</span><br>
+        · Recharts charts (component logic unchanged)<br>
+        · Supabase query functions (lib/queries.ts)<br>
+        · TypeScript types (lib/types.ts)<br>
+        · Two-stage estimation logic (Stage 1 + Stage 2 Supabase calls)<br>
+        · Forecast interactive specialty selector<br>
+        · Overall responsive Grid layout structure<br>
+        · Next.js App Router structure
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- Footer -->
+<div style="margin-top:96px;padding-top:32px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+  <div style="font-family:var(--font-mono);font-size:10px;color:var(--text3);">
+    AllowanceMap Design System · v1.0 · April 2026<br>
+    Medicare Provider Utilization &amp; Cost Analysis Project
+  </div>
+  <div style="font-family:var(--font-mono);font-size:10px;color:var(--text3);text-align:right;">
+    Stack: Next.js 16 · MUI v9 · Recharts · Supabase · TypeScript 5<br>
+    Light-only · WCAG 2.1 AA · Healthcare-first
+  </div>
+</div>
+
+</div><!-- /doc-page -->
+</body>
+</html>

@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AllowanceMap - About &amp; Methodology (Mockup)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-page: #FAFAF8;
+  --bg-surface: #FFFFFF;
+  --bg-inset: #F2F0ED;
+  --border-default: rgba(0,0,0,0.08);
+  --border-strong: rgba(0,0,0,0.15);
+  --text-primary: #1C1917;
+  --text-secondary: #57534E;
+  --text-tertiary: #A8A29E;
+  --text-muted: #D6D3D1;
+  --primary: #0F6E8C;
+  --primary-light: #1389AC;
+  --primary-dark: #0A4F66;
+  --primary-tint: #D0EEF5;
+  --primary-subtle: #EBF7FB;
+  --secondary: #15755D;
+  --secondary-light: #1CA082;
+  --secondary-dark: #0E5241;
+  --secondary-tint: #E8F7F3;
+  --secondary-subtle: #F0FAF7;
+  --accent: #B8763A;
+  --accent-bg: #FDF4EA;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-full: 999px;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'SF Mono', monospace;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-font-smoothing: antialiased; }
+body {
+  font-family: var(--font-body);
+  background: var(--bg-page);
+  color: var(--text-primary);
+  line-height: 1.6;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Navbar */
+.navbar {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-default);
+  padding: 0 24px; height: 64px;
+  display: flex; align-items: center;
+}
+.navbar-brand {
+  display: flex; align-items: center; gap: 8px;
+  text-decoration: none; color: var(--primary);
+  font-weight: 700; font-size: 18px; margin-right: auto;
+}
+.navbar-brand svg { width: 24px; height: 24px; fill: var(--primary); }
+.navbar-links { display: flex; gap: 4px; }
+.navbar-links a {
+  text-decoration: none; color: var(--text-secondary);
+  font-weight: 500; font-size: 14px;
+  padding: 8px 16px;
+  border-bottom: 2px solid transparent;
+  transition: all 150ms var(--ease-out);
+}
+.navbar-links a:hover { color: var(--primary); }
+.navbar-links a.active { color: var(--primary); font-weight: 600; border-bottom-color: var(--primary); }
+
+.main { flex: 1; max-width: 1200px; width: 100%; margin: 0 auto; padding: 32px 24px 64px; }
+
+.page-header { padding-bottom: 24px; margin-bottom: 0; border-bottom: 1px solid var(--border-default); }
+.page-header h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 8px; }
+.page-header p { font-size: 15px; color: var(--text-secondary); max-width: 640px; }
+
+/* Tabs */
+.tabs {
+  display: flex; gap: 0;
+  border-bottom: 1px solid var(--border-default);
+  margin-bottom: 32px;
+}
+.tab-btn {
+  padding: 12px 20px;
+  font-family: var(--font-body); font-size: 14px; font-weight: 500;
+  color: var(--text-secondary);
+  background: none; border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: all 150ms var(--ease-out);
+}
+.tab-btn:hover { color: var(--primary); }
+.tab-btn.active { color: var(--primary); font-weight: 600; border-bottom-color: var(--primary); }
+
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* Card */
+.card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 24px;
+  margin-bottom: 24px;
+}
+.card h3 { font-size: 16px; font-weight: 700; margin-bottom: 12px; }
+.card p { font-size: 14px; color: var(--text-secondary); margin-bottom: 12px; }
+.card p:last-child { margin-bottom: 0; }
+
+/* Grids */
+.grid-8-4 { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
+.grid-6-6 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+@media (max-width: 768px) { .grid-8-4, .grid-6-6 { grid-template-columns: 1fr; } }
+
+/* Two-stage blocks */
+.stage-block { padding: 16px 0; }
+.stage-block + .stage-block { border-top: 1px solid var(--border-default); }
+.stage-block h4 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+.stage-block h4.s1 { color: var(--primary); }
+.stage-block h4.s2 { color: var(--secondary); }
+.stage-block p { font-size: 13px; color: var(--text-secondary); margin: 0; }
+
+/* Disclaimer */
+.disclaimer {
+  background: var(--accent-bg);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 16px 20px;
+}
+.disclaimer h4 { font-size: 14px; font-weight: 600; color: var(--accent); margin-bottom: 8px; }
+.disclaimer p { font-size: 13px; color: var(--text-secondary); margin: 0; line-height: 1.7; }
+
+/* Sidebar */
+.sidebar-card { margin-bottom: 16px; }
+.sidebar-card h3 { font-size: 15px; }
+.sidebar-card .meta { font-size: 13px; color: var(--text-secondary); line-height: 1.7; }
+.sidebar-card a { color: var(--primary); text-decoration: none; font-size: 13px; font-weight: 500; }
+.sidebar-card a:hover { text-decoration: underline; }
+.stack-list { font-size: 13px; color: var(--text-secondary); line-height: 1.9; }
+
+.divider { border: none; border-top: 1px solid var(--border-default); margin: 16px 0; }
+
+/* Rendered chart container */
+.rendered-chart {
+  width: 100%;
+  background: var(--bg-page);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.rendered-chart svg { width: 100%; display: block; }
+
+/* Table */
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th {
+  text-align: left; font-weight: 600; font-size: 12px;
+  color: var(--text-secondary); letter-spacing: 0.02em;
+  padding: 10px 16px;
+  border-bottom: 2px solid var(--border-default);
+  background: var(--bg-inset);
+  cursor: pointer; user-select: none;
+}
+th.right, td.right { text-align: right; }
+td { padding: 10px 16px; border-bottom: 1px solid var(--border-default); }
+td.mono { font-family: var(--font-mono); }
+tr:hover td { background: var(--primary-subtle); }
+th .sort-arrow { font-size: 10px; margin-left: 4px; color: var(--text-tertiary); }
+th.sorted .sort-arrow { color: var(--primary); }
+
+/* Model table */
+.model-table { margin-bottom: 32px; }
+.badge-best {
+  display: inline-block;
+  background: var(--primary-tint);
+  color: var(--primary-dark);
+  font-size: 10px; font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  margin-left: 8px;
+  letter-spacing: 0.03em;
+}
+tr.best td { background: var(--primary-subtle); }
+
+/* Feature importance bars */
+.fi-chart { margin-bottom: 32px; }
+.fi-chart h3 { font-size: 16px; font-weight: 700; margin-bottom: 20px; }
+.fi-bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.fi-bar-label { width: 140px; flex-shrink: 0; font-size: 12px; color: var(--text-secondary); text-align: right; }
+.fi-bar-track { flex: 1; height: 24px; background: var(--bg-inset); border-radius: var(--radius-sm); overflow: hidden; }
+.fi-bar-fill { height: 100%; background: var(--primary); border-radius: var(--radius-sm); transition: width 400ms var(--ease-out); }
+.fi-bar-value { width: 48px; flex-shrink: 0; font-family: var(--font-mono); font-size: 12px; color: var(--text-secondary); }
+
+/* Accordion */
+.accordion { margin-bottom: 8px; }
+.accordion-header {
+  width: 100%; display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 20px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  font-family: var(--font-body); font-size: 14px; font-weight: 600;
+  color: var(--text-primary); cursor: pointer;
+  transition: background 150ms;
+}
+.accordion-header:hover { background: var(--primary-subtle); }
+.accordion-header .chevron { transition: transform 250ms var(--ease-out); color: var(--text-tertiary); }
+.accordion.open .accordion-header { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+.accordion.open .accordion-header .chevron { transform: rotate(180deg); }
+.accordion-body {
+  display: none;
+  padding: 16px 20px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-top: none;
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  font-size: 13px; color: var(--text-secondary); line-height: 1.7;
+}
+.accordion.open .accordion-body { display: block; }
+
+/* Pipeline code block */
+.code-block {
+  font-family: var(--font-mono); font-size: 12px;
+  background: var(--bg-inset);
+  border-radius: var(--radius-md);
+  padding: 20px 24px;
+  color: var(--text-secondary);
+  line-height: 1.9;
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+
+/* Feature grid */
+.feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+@media (max-width: 640px) { .feature-grid { grid-template-columns: 1fr; } }
+.feature-pill { padding: 10px 14px; background: var(--bg-inset); border-radius: var(--radius-md); }
+.feature-pill .fname { font-family: var(--font-mono); font-size: 11px; color: var(--primary); font-weight: 500; }
+.feature-pill .fdesc { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+/* Region boxes */
+.region-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.region-box { padding: 12px 14px; border: 1px solid var(--border-default); border-radius: var(--radius-md); }
+.region-box .rname { font-size: 13px; font-weight: 600; color: var(--primary); }
+.region-box .rstates { font-family: var(--font-mono); font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+
+/* Filter */
+.filter-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.filter-input {
+  height: 36px; padding: 0 12px;
+  font-family: var(--font-body); font-size: 13px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  outline: none; width: 200px;
+  transition: border-color 150ms, box-shadow 150ms;
+}
+.filter-input:focus {
+  border-color: var(--primary-light);
+  box-shadow: 0 0 0 3px rgba(15,110,140,0.12);
+}
+
+.footer {
+  background: var(--bg-inset);
+  text-align: center; padding: 24px;
+  font-size: 13px; color: var(--text-secondary);
+  line-height: 1.8; margin-top: auto;
+}
+.footer a { color: var(--primary); text-decoration: none; }
+.mockup-badge {
+  position: fixed; bottom: 16px; right: 16px;
+  background: var(--primary-dark); color: white;
+  font-size: 11px; font-weight: 600;
+  padding: 6px 14px; border-radius: var(--radius-full);
+  z-index: 999; letter-spacing: 0.05em; opacity: 0.9;
+}
+</style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="#" class="navbar-brand">
+    <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-1 11h-4v4h-4v-4H6v-4h4V6h4v4h4v4z"/></svg>
+    AllowanceMap
+  </a>
+  <div class="navbar-links">
+    <a href="01-estimator.html">Estimator</a>
+    <a href="02-forecast.html">Forecast</a>
+    <a href="03-about.html" class="active">About</a>
+  </div>
+</nav>
+
+<main class="main">
+
+  <div class="page-header">
+    <h1>About &amp; Methodology</h1>
+    <p>Data sources, model performance, pipeline architecture, and project attribution.</p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab(0)">Overview</button>
+    <button class="tab-btn" onclick="switchTab(1)">Data</button>
+    <button class="tab-btn" onclick="switchTab(2)">Models</button>
+    <button class="tab-btn" onclick="switchTab(3)">Pipeline</button>
+  </div>
+
+  <!-- ══ TAB 0: Overview ══ -->
+  <div class="tab-panel active" id="tab-0">
+    <div class="grid-8-4">
+      <div>
+        <div class="card">
+          <h3>Overview</h3>
+          <p>An end-to-end data science pipeline predicting Medicare provider costs and patient out-of-pocket expenses. Processes over 103 million provider-service records from the CMS Medicare Physician &amp; Other Practitioners dataset spanning 2013 to 2023.</p>
+          <p>The project implements a two-stage prediction architecture: Stage 1 predicts what Medicare allows for a service; Stage 2 estimates what the patient pays out of pocket based on demographic and insurance profile.</p>
+        </div>
+
+        <div class="card">
+          <h3>Data Sources</h3>
+          <p><strong>CMS Medicare Physician &amp; Other Practitioners (2013 to 2023)</strong>: Provider-level utilization and payment data for Part B services. Over 10 million records per year across all 50 states and territories.</p>
+          <p><strong>CMS Medicare Current Beneficiary Survey (MCBS)</strong>: Public Use Files for beneficiary demographics, insurance coverage, and cost data. Used for Stage 2 patient cost modeling.</p>
+          <p><strong>CMS Provider Summary (by Provider)</strong>: NPI-level HCC risk scores for beneficiary health burden adjustment.</p>
+        </div>
+
+        <div class="card">
+          <div class="stage-block">
+            <h4 class="s1">Stage 1: Medicare Allowed Amount</h4>
+            <p>LightGBM no-charge (R&sup2;=0.943), CatBoost monotonic, XGBoost, Random Forest, LSTM</p>
+          </div>
+          <div class="stage-block">
+            <h4 class="s2">Stage 2: Patient Out-of-Pocket</h4>
+            <p>CatBoost monotonic quantile regression (P10/P50/P90) trained on synthetic MCBS-derived beneficiary data segmented by region, age, income, and insurance status.</p>
+          </div>
+        </div>
+
+        <div class="card" style="box-shadow: none; border: none; padding: 0;">
+          <div class="disclaimer">
+            <h4>Disclaimer</h4>
+            <p>This is an academic research project. Estimates are based on aggregate historical data and should not be used for medical billing decisions. Stage 2 out-of-pocket estimates use synthetic beneficiary data modeled after MCBS distributions. Actual patient costs depend on specific plan details, deductibles, and coverage terms not captured in this model.</p>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card sidebar-card">
+          <h3>Author</h3>
+          <p style="font-size:15px; font-weight:600; margin-bottom:4px;">Raj Vedire</p>
+          <div class="meta">Indiana University<br>rvedire@iu.edu</div>
+        </div>
+
+        <div class="card sidebar-card">
+          <h3>Links</h3>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <a href="#">GitHub Repository</a>
+            <a href="#">CMS Data Source</a>
+          </div>
+        </div>
+
+        <div class="card sidebar-card">
+          <h3>Tech Stack</h3>
+          <div class="stack-list">
+            Python &middot; pandas &middot; PyArrow &middot; scikit-learn<br>
+            XGBoost &middot; CatBoost &middot; LightGBM &middot; PyTorch<br>
+            MLflow &middot; Databricks
+          </div>
+          <hr class="divider">
+          <div class="stack-list">
+            Next.js &middot; Material UI &middot; Recharts<br>
+            Supabase (PostgreSQL) &middot; Railway &middot; Vercel
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ TAB 1: Data ══ -->
+  <div class="tab-panel" id="tab-1">
+    <!-- Rendered EDA charts -->
+    <div class="grid-6-6" style="margin-bottom:24px;">
+      <div class="card">
+        <h3>Feature Distributions</h3>
+        <div class="rendered-chart">
+          <svg viewBox="0 0 480 360" preserveAspectRatio="xMidYMid meet">
+            <rect x="0" y="0" width="480" height="360" fill="#FAFAF8" rx="4"/>
+            <!-- Mini histogram grid: 2x3 of key features -->
+            <!-- log_srvcs -->
+            <text x="30" y="28" font-size="9" fill="#0F6E8C" font-family="Inter" font-weight="600">log_srvcs</text>
+            <rect x="30" y="34" width="12" height="20" fill="#0F6E8C" opacity="0.15" rx="1"/>
+            <rect x="44" y="24" width="12" height="30" fill="#0F6E8C" opacity="0.25" rx="1"/>
+            <rect x="58" y="14" width="12" height="40" fill="#0F6E8C" opacity="0.5" rx="1"/>
+            <rect x="72" y="20" width="12" height="34" fill="#0F6E8C" opacity="0.7" rx="1"/>
+            <rect x="86" y="30" width="12" height="24" fill="#0F6E8C" opacity="0.4" rx="1"/>
+            <rect x="100" y="38" width="12" height="16" fill="#0F6E8C" opacity="0.2" rx="1"/>
+            <rect x="114" y="44" width="12" height="10" fill="#0F6E8C" opacity="0.1" rx="1"/>
+            <line x1="30" y1="54" x2="126" y2="54" stroke="rgba(0,0,0,0.08)"/>
+
+            <!-- log_benes -->
+            <text x="170" y="28" font-size="9" fill="#0F6E8C" font-family="Inter" font-weight="600">log_benes</text>
+            <rect x="170" y="36" width="12" height="18" fill="#0F6E8C" opacity="0.2" rx="1"/>
+            <rect x="184" y="20" width="12" height="34" fill="#0F6E8C" opacity="0.45" rx="1"/>
+            <rect x="198" y="12" width="12" height="42" fill="#0F6E8C" opacity="0.65" rx="1"/>
+            <rect x="212" y="22" width="12" height="32" fill="#0F6E8C" opacity="0.5" rx="1"/>
+            <rect x="226" y="34" width="12" height="20" fill="#0F6E8C" opacity="0.3" rx="1"/>
+            <rect x="240" y="42" width="12" height="12" fill="#0F6E8C" opacity="0.15" rx="1"/>
+            <line x1="170" y1="54" x2="252" y2="54" stroke="rgba(0,0,0,0.08)"/>
+
+            <!-- Avg_Sbmtd_Chrg -->
+            <text x="300" y="28" font-size="9" fill="#0F6E8C" font-family="Inter" font-weight="600">Avg_Sbmtd_Chrg</text>
+            <rect x="300" y="10" width="12" height="44" fill="#0F6E8C" opacity="0.8" rx="1"/>
+            <rect x="314" y="26" width="12" height="28" fill="#0F6E8C" opacity="0.4" rx="1"/>
+            <rect x="328" y="36" width="12" height="18" fill="#0F6E8C" opacity="0.25" rx="1"/>
+            <rect x="342" y="40" width="12" height="14" fill="#0F6E8C" opacity="0.15" rx="1"/>
+            <rect x="356" y="44" width="12" height="10" fill="#0F6E8C" opacity="0.1" rx="1"/>
+            <rect x="370" y="48" width="12" height="6" fill="#0F6E8C" opacity="0.05" rx="1"/>
+            <line x1="300" y1="54" x2="382" y2="54" stroke="rgba(0,0,0,0.08)"/>
+
+            <!-- srvcs_per_bene -->
+            <text x="30" y="98" font-size="9" fill="#0F6E8C" font-family="Inter" font-weight="600">srvcs_per_bene</text>
+            <rect x="30" y="104" width="12" height="38" fill="#1389AC" opacity="0.7" rx="1"/>
+            <rect x="44" y="112" width="12" height="30" fill="#1389AC" opacity="0.5" rx="1"/>
+            <rect x="58" y="122" width="12" height="20" fill="#1389AC" opacity="0.35" rx="1"/>
+            <rect x="72" y="128" width="12" height="14" fill="#1389AC" opacity="0.2" rx="1"/>
+            <rect x="86" y="132" width="12" height="10" fill="#1389AC" opacity="0.12" rx="1"/>
+            <rect x="100" y="136" width="12" height="6" fill="#1389AC" opacity="0.08" rx="1"/>
+            <line x1="30" y1="142" x2="126" y2="142" stroke="rgba(0,0,0,0.08)"/>
+
+            <!-- Bene_Avg_Risk_Scre -->
+            <text x="170" y="98" font-size="9" fill="#0F6E8C" font-family="Inter" font-weight="600">Bene_Avg_Risk_Scre</text>
+            <rect x="170" y="120" width="12" height="22" fill="#1389AC" opacity="0.3" rx="1"/>
+            <rect x="184" y="104" width="12" height="38" fill="#1389AC" opacity="0.65" rx="1"/>
+            <rect x="198" y="108" width="12" height="34" fill="#1389AC" opacity="0.55" rx="1"/>
+            <rect x="212" y="118" width="12" height="24" fill="#1389AC" opacity="0.35" rx="1"/>
+            <rect x="226" y="128" width="12" height="14" fill="#1389AC" opacity="0.18" rx="1"/>
+            <rect x="240" y="134" width="12" height="8" fill="#1389AC" opacity="0.1" rx="1"/>
+            <line x1="170" y1="142" x2="252" y2="142" stroke="rgba(0,0,0,0.08)"/>
+
+            <!-- Avg_Mdcr_Alowd_Amt (target) -->
+            <text x="300" y="98" font-size="9" fill="#15755D" font-family="Inter" font-weight="600">Avg_Mdcr_Alowd_Amt</text>
+            <rect x="300" y="102" width="12" height="40" fill="#15755D" opacity="0.7" rx="1"/>
+            <rect x="314" y="116" width="12" height="26" fill="#15755D" opacity="0.45" rx="1"/>
+            <rect x="328" y="124" width="12" height="18" fill="#15755D" opacity="0.3" rx="1"/>
+            <rect x="342" y="130" width="12" height="12" fill="#15755D" opacity="0.2" rx="1"/>
+            <rect x="356" y="134" width="12" height="8" fill="#15755D" opacity="0.12" rx="1"/>
+            <rect x="370" y="138" width="12" height="4" fill="#15755D" opacity="0.06" rx="1"/>
+            <line x1="300" y1="142" x2="382" y2="142" stroke="rgba(0,0,0,0.08)"/>
+
+            <!-- Note -->
+            <text x="240" y="172" text-anchor="middle" font-size="10" fill="#A8A29E" font-family="Inter">Rendered via Recharts in production</text>
+          </svg>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Correlation Heatmap</h3>
+        <div class="rendered-chart">
+          <svg viewBox="0 0 480 360" preserveAspectRatio="xMidYMid meet">
+            <rect x="0" y="0" width="480" height="360" fill="#FAFAF8" rx="4"/>
+            <!-- Heatmap grid: 6x6 for key features -->
+            <!-- Column headers -->
+            <text x="165" y="25" text-anchor="middle" font-size="8" fill="#57534E" font-family="Inter" transform="rotate(-35,165,25)">log_srvcs</text>
+            <text x="215" y="25" text-anchor="middle" font-size="8" fill="#57534E" font-family="Inter" transform="rotate(-35,215,25)">log_benes</text>
+            <text x="265" y="25" text-anchor="middle" font-size="8" fill="#57534E" font-family="Inter" transform="rotate(-35,265,25)">Sbmtd_Chrg</text>
+            <text x="315" y="25" text-anchor="middle" font-size="8" fill="#57534E" font-family="Inter" transform="rotate(-35,315,25)">srv/bene</text>
+            <text x="365" y="25" text-anchor="middle" font-size="8" fill="#57534E" font-family="Inter" transform="rotate(-35,365,25)">risk_scr</text>
+            <text x="415" y="25" text-anchor="middle" font-size="8" fill="#57534E" font-family="Inter" transform="rotate(-35,415,25)">alowd_amt</text>
+            <!-- Row headers -->
+            <text x="135" y="75" text-anchor="end" font-size="9" fill="#57534E" font-family="Inter">log_srvcs</text>
+            <text x="135" y="125" text-anchor="end" font-size="9" fill="#57534E" font-family="Inter">log_benes</text>
+            <text x="135" y="175" text-anchor="end" font-size="9" fill="#57534E" font-family="Inter">Sbmtd_Chrg</text>
+            <text x="135" y="225" text-anchor="end" font-size="9" fill="#57534E" font-family="Inter">srv/bene</text>
+            <text x="135" y="275" text-anchor="end" font-size="9" fill="#57534E" font-family="Inter">risk_scr</text>
+            <text x="135" y="325" text-anchor="end" font-size="9" fill="#57534E" font-family="Inter">alowd_amt</text>
+            <!-- Heatmap cells (color intensity = correlation strength) -->
+            <!-- Row 1: log_srvcs -->
+            <rect x="142" y="55" width="44" height="40" fill="#0F6E8C" opacity="1.0" rx="3"/><text x="164" y="79" text-anchor="middle" font-size="9" fill="white" font-family="IBM Plex Mono">1.00</text>
+            <rect x="192" y="55" width="44" height="40" fill="#0F6E8C" opacity="0.7" rx="3"/><text x="214" y="79" text-anchor="middle" font-size="9" fill="white" font-family="IBM Plex Mono">.72</text>
+            <rect x="242" y="55" width="44" height="40" fill="#0F6E8C" opacity="0.15" rx="3"/><text x="264" y="79" text-anchor="middle" font-size="9" fill="#57534E" font-family="IBM Plex Mono">.11</text>
+            <rect x="292" y="55" width="44" height="40" fill="#0F6E8C" opacity="0.3" rx="3"/><text x="314" y="79" text-anchor="middle" font-size="9" fill="white" font-family="IBM Plex Mono">.28</text>
+            <rect x="342" y="55" width="44" height="40" fill="#0F6E8C" opacity="0.08" rx="3"/><text x="364" y="79" text-anchor="middle" font-size="9" fill="#57534E" font-family="IBM Plex Mono">.05</text>
+            <rect x="392" y="55" width="44" height="40" fill="#0F6E8C" opacity="0.2" rx="3"/><text x="414" y="79" text-anchor="middle" font-size="9" fill="#57534E" font-family="IBM Plex Mono">.18</text>
+            <!-- Row 2: log_benes -->
+            <rect x="142" y="105" width="44" height="40" fill="#0F6E8C" opacity="0.7" rx="3"/><text x="164" y="129" text-anchor="middle" font-size="9" fill="white" font-family="IBM Plex Mono">.72</text>
+            <rect x="192" y="105" width="44" height="40" fill="#0F6E8C" opacity="1.0" rx="3"/><text x="214" y="129" text-anchor="middle" font-size="9" fill="white" font-family="IBM Plex Mono">1.00</text>
+            <rect x="242" y="105" width="44" height="40" fill="#0F6E8C" opacity="0.12" rx="3"/><text x="264" y="129" text-anchor="middle" font-size="9" fill="#57534E" font-family="IBM Plex Mono">.08</text>
+            <rect x="292" y="105" width="44" height="40" fill="#DC2626" opacity="0.35" rx="3"/><text x="314" y="129" text-anchor="middle" font-size="9" fill="white" font-family="IBM Plex Mono">-.31</text>
+            <rect x="342" y="105" width="44" height="40" fill="#0F6E8C" opacity="0.06" rx="3"/><text x="364" y="129" text-anchor="middle" font-size="9" fill="#57534E" font-family="IBM Plex Mono">.03</text>
+            <rect x="392" y="105" width="44" height="40" fill="#0F6E8C" opacity="0.15" rx="3"/><text x="414" y="129" text-anchor="middle" font-size="9" fill="#57534E" font-family="IBM Plex Mono">.12</text>
+            <!-- Row 3: Sbmtd_Chrg -->
+            <rect x="142" y="155" width="44" height="40" fill="#0F6E8C" opacity="0.15" rx="3"/><text x="164" y="179" text-anchor="middle" font-size="9" fill="#57534E" font-family="IBM Plex Mono">.11</text>
+            <rect x="192" y="155" width="44" height="40" fill="#0F6E8C" opacity="0.12" rx="3"/><text x="214" y="179" text-anchor="middle" font-size="9" fill="#57534E" font-family="IBM Plex Mono">.08</text>
+            <rect x="242" y="155" width="44" height="40" fill="#0F6E8C" opacity="1.0" rx="3"/><text x="264" y="179" text-anchor="middle" font-size="9" fill="white" font-family="IBM Plex Mono">1.00</text>
+            <rect x="292" y="155" width="44" height="40" fill="#0F6E8C" opacity="0.08" rx="3"/><text x="314" y="179" text-anchor="middle" font-size="9" fill="#57534E" font-family="IBM Plex Mono">.04</text>
+            <rect x="342" y="155" width="44" height="40" fill="#0F6E8C" opacity="0.1" rx="3"/><text x="364" y="179" text-anchor="middle" font-size="9" fill="#57534E" font-family="IBM Plex Mono">.06</text>
+            <rect x="392" y="155" width="44" height="40" fill="#0F6E8C" opacity="0.75" rx="3"/><text x="414" y="179" text-anchor="middle" font-size="9" fill="white" font-family="IBM Plex Mono">.74</text>
+            <!-- Row 4: srv/bene -->
+            <rect x="142" y="205" width="44" height="40" fill="#0F6E8C" opacity="0.3" rx="3"/><text x="164" y="229" text-anchor="middle" font-size="9" fill="white" font-family="IBM Plex Mono">.28</text>
+            <rect x="192" y="205" width="44" height="40" fill="#DC2626" opacity="0.35" rx="3"/><text x="214" y="229" text-anchor="middle" font-size="9" fill="white" font-family="IBM Plex Mono">-.31</text>
+            <rect x="242" y="205" width="44" height="40" fill="#0F6E8C" opacity="0.08" rx="3"/><text x="264" y="229" text-anchor="middle" font-size="9" fill="#57534E" font-family="IBM Plex Mono">.04</text>
+            <rect x="292" y="205" width="44" height="40" fill="#0F6E8C" opacity="1.0" rx="3"/><text x="314" y="229" text-anchor="middle" font-size="9" fill="white" font-family="IBM Plex Mono">1.00</text>
+            <rect x="342" y="205" width="44" height="40" fill="#0F6E8C" opacity="0.06" rx="3"/><text x="364" y="229" text-anchor="middle" font-size="9" fill="#57534E" font-family="IBM Plex Mono">.02</text>
+            <rect x="392" y="205" width="44" height="40" fill="#0F6E8C" opacity="0.22" rx="3"/><text x="414" y="229" text-anchor="middle" font-size="9" fill="#57534E" font-family="IBM Plex Mono">.19</text>
+            <!-- Row 5: risk_scr -->
+            <rect x="142" y="255" width="44" height="40" fill="#0F6E8C" opacity="0.08" rx="3"/><text x="164" y="279" text-anchor="middle" font-size="9" fill="#57534E" font-family="IBM Plex Mono">.05</text>
+            <rect x="192" y="255" width="44" height="40" fill="#0F6E8C" opacity="0.06" rx="3"/><text x="214" y="279" text-anchor="middle" font-size="9" fill="#57534E" font-family="IBM Plex Mono">.03</text>
+            <rect x="242" y="255" width="44" height="40" fill="#0F6E8C" opacity="0.1" rx="3"/><text x="264" y="279" text-anchor="middle" font-size="9" fill="#57534E" font-family="IBM Plex Mono">.06</text>
+            <rect x="292" y="255" width="44" height="40" fill="#0F6E8C" opacity="0.06" rx="3"/><text x="314" y="279" text-anchor="middle" font-size="9" fill="#57534E" font-family="IBM Plex Mono">.02</text>
+            <rect x="342" y="255" width="44" height="40" fill="#0F6E8C" opacity="1.0" rx="3"/><text x="364" y="279" text-anchor="middle" font-size="9" fill="white" font-family="IBM Plex Mono">1.00</text>
+            <rect x="392" y="255" width="44" height="40" fill="#0F6E8C" opacity="0.1" rx="3"/><text x="414" y="279" text-anchor="middle" font-size="9" fill="#57534E" font-family="IBM Plex Mono">.07</text>
+            <!-- Row 6: alowd_amt -->
+            <rect x="142" y="305" width="44" height="40" fill="#0F6E8C" opacity="0.2" rx="3"/><text x="164" y="329" text-anchor="middle" font-size="9" fill="#57534E" font-family="IBM Plex Mono">.18</text>
+            <rect x="192" y="305" width="44" height="40" fill="#0F6E8C" opacity="0.15" rx="3"/><text x="214" y="329" text-anchor="middle" font-size="9" fill="#57534E" font-family="IBM Plex Mono">.12</text>
+            <rect x="242" y="305" width="44" height="40" fill="#0F6E8C" opacity="0.75" rx="3"/><text x="264" y="329" text-anchor="middle" font-size="9" fill="white" font-family="IBM Plex Mono">.74</text>
+            <rect x="292" y="305" width="44" height="40" fill="#0F6E8C" opacity="0.22" rx="3"/><text x="314" y="329" text-anchor="middle" font-size="9" fill="#57534E" font-family="IBM Plex Mono">.19</text>
+            <rect x="342" y="305" width="44" height="40" fill="#0F6E8C" opacity="0.1" rx="3"/><text x="364" y="329" text-anchor="middle" font-size="9" fill="#57534E" font-family="IBM Plex Mono">.07</text>
+            <rect x="392" y="305" width="44" height="40" fill="#0F6E8C" opacity="1.0" rx="3"/><text x="414" y="329" text-anchor="middle" font-size="9" fill="white" font-family="IBM Plex Mono">1.00</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top Provider Types: rendered horizontal bar chart -->
+    <div class="card" style="margin-bottom:24px;">
+      <h3>Top Provider Types by Record Count</h3>
+      <div class="rendered-chart">
+        <svg viewBox="0 0 800 320" preserveAspectRatio="xMidYMid meet">
+          <rect x="0" y="0" width="800" height="320" fill="#FAFAF8" rx="4"/>
+          <text x="155" y="38" text-anchor="end" font-size="11" fill="#57534E" font-family="Inter">Internal Medicine</text>
+          <rect x="160" y="24" width="420" height="22" fill="#0F6E8C" rx="3" opacity="0.85"/>
+          <text x="586" y="39" font-size="10" fill="#0A4F66" font-family="IBM Plex Mono" font-weight="600">14.2M</text>
+
+          <text x="155" y="70" text-anchor="end" font-size="11" fill="#57534E" font-family="Inter">Family Practice</text>
+          <rect x="160" y="56" width="380" height="22" fill="#0F6E8C" rx="3" opacity="0.78"/>
+          <text x="546" y="71" font-size="10" fill="#0A4F66" font-family="IBM Plex Mono" font-weight="600">12.8M</text>
+
+          <text x="155" y="102" text-anchor="end" font-size="11" fill="#57534E" font-family="Inter">Cardiology</text>
+          <rect x="160" y="88" width="280" height="22" fill="#0F6E8C" rx="3" opacity="0.68"/>
+          <text x="446" y="103" font-size="10" fill="#0A4F66" font-family="IBM Plex Mono" font-weight="600">9.5M</text>
+
+          <text x="155" y="134" text-anchor="end" font-size="11" fill="#57534E" font-family="Inter">Orthopedic Surgery</text>
+          <rect x="160" y="120" width="220" height="22" fill="#1389AC" rx="3" opacity="0.65"/>
+          <text x="386" y="135" font-size="10" fill="#0A4F66" font-family="IBM Plex Mono" font-weight="600">7.4M</text>
+
+          <text x="155" y="166" text-anchor="end" font-size="11" fill="#57534E" font-family="Inter">Ophthalmology</text>
+          <rect x="160" y="152" width="200" height="22" fill="#1389AC" rx="3" opacity="0.58"/>
+          <text x="366" y="167" font-size="10" fill="#0A4F66" font-family="IBM Plex Mono" font-weight="600">6.7M</text>
+
+          <text x="155" y="198" text-anchor="end" font-size="11" fill="#57534E" font-family="Inter">Dermatology</text>
+          <rect x="160" y="184" width="180" height="22" fill="#1389AC" rx="3" opacity="0.52"/>
+          <text x="346" y="199" font-size="10" fill="#0A4F66" font-family="IBM Plex Mono" font-weight="600">6.1M</text>
+
+          <text x="155" y="230" text-anchor="end" font-size="11" fill="#57534E" font-family="Inter">Diagnostic Radiol</text>
+          <rect x="160" y="216" width="160" height="22" fill="#1389AC" rx="3" opacity="0.46"/>
+          <text x="326" y="231" font-size="10" fill="#0A4F66" font-family="IBM Plex Mono" font-weight="600">5.4M</text>
+
+          <text x="155" y="262" text-anchor="end" font-size="11" fill="#57534E" font-family="Inter">Gastroenterology</text>
+          <rect x="160" y="248" width="140" height="22" fill="#1389AC" rx="3" opacity="0.4"/>
+          <text x="306" y="263" font-size="10" fill="#0A4F66" font-family="IBM Plex Mono" font-weight="600">4.7M</text>
+
+          <text x="155" y="294" text-anchor="end" font-size="11" fill="#57534E" font-family="Inter">Neurology</text>
+          <rect x="160" y="280" width="120" height="22" fill="#1389AC" rx="3" opacity="0.35"/>
+          <text x="286" y="295" font-size="10" fill="#0A4F66" font-family="IBM Plex Mono" font-weight="600">4.0M</text>
+        </svg>
+      </div>
+    </div>
+
+    <!-- State-level summary table -->
+    <div class="card">
+      <div class="filter-row">
+        <h3 style="margin:0;">State-Level Summary</h3>
+        <input type="text" class="filter-input" placeholder="Filter states...">
+      </div>
+      <div style="max-height:440px; overflow-y:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th class="sorted">State <span class="sort-arrow">&#9660;</span></th>
+              <th class="right">Mean Allowed <span class="sort-arrow">&#9660;</span></th>
+              <th class="right">Median Allowed <span class="sort-arrow">&#9660;</span></th>
+              <th class="right">Records <span class="sort-arrow">&#9660;</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>CA</strong></td><td class="right mono">$98.42</td><td class="right mono">$62.18</td><td class="right mono">11,234,567</td></tr>
+            <tr><td><strong>TX</strong></td><td class="right mono">$91.76</td><td class="right mono">$58.31</td><td class="right mono">8,901,234</td></tr>
+            <tr><td><strong>FL</strong></td><td class="right mono">$89.53</td><td class="right mono">$56.89</td><td class="right mono">8,234,567</td></tr>
+            <tr><td><strong>NY</strong></td><td class="right mono">$102.14</td><td class="right mono">$67.42</td><td class="right mono">7,890,123</td></tr>
+            <tr><td><strong>PA</strong></td><td class="right mono">$85.21</td><td class="right mono">$54.76</td><td class="right mono">5,432,109</td></tr>
+            <tr><td><strong>IL</strong></td><td class="right mono">$87.39</td><td class="right mono">$55.92</td><td class="right mono">4,876,543</td></tr>
+            <tr><td><strong>OH</strong></td><td class="right mono">$82.15</td><td class="right mono">$52.34</td><td class="right mono">4,567,890</td></tr>
+            <tr><td><strong>IN</strong></td><td class="right mono">$79.88</td><td class="right mono">$50.41</td><td class="right mono">2,345,678</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ TAB 2: Models ══ -->
+  <div class="tab-panel" id="tab-2">
+    <div class="card model-table">
+      <h3>Stage 1: Medicare Allowed Amount</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Model</th>
+            <th class="right">Test MAE</th>
+            <th class="right">Test RMSE</th>
+            <th class="right">Test R&sup2;</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="best">
+            <td><strong>LightGBM (no-charge)</strong><span class="badge-best">PRODUCTION</span></td>
+            <td class="right mono" style="font-weight:600;">$8.92</td>
+            <td class="right mono" style="font-weight:600;">$28.14</td>
+            <td class="right mono" style="font-weight:700; color:var(--primary);">0.9430</td>
+          </tr>
+          <tr>
+            <td>CatBoost (monotonic)</td>
+            <td class="right mono">$9.84</td>
+            <td class="right mono">$31.27</td>
+            <td class="right mono">0.9290</td>
+          </tr>
+          <tr>
+            <td>XGBoost</td>
+            <td class="right mono">$16.54</td>
+            <td class="right mono">$42.18</td>
+            <td class="right mono">0.8330</td>
+          </tr>
+          <tr>
+            <td>Random Forest</td>
+            <td class="right mono">$14.23</td>
+            <td class="right mono">$38.91</td>
+            <td class="right mono">0.8840</td>
+          </tr>
+          <tr>
+            <td>LSTM</td>
+            <td class="right mono">$12.87</td>
+            <td class="right mono">$36.42</td>
+            <td class="right mono">0.8860</td>
+          </tr>
+          <tr>
+            <td>GLM (SGD)</td>
+            <td class="right mono">N/A</td>
+            <td class="right mono">N/A</td>
+            <td class="right mono" style="color:var(--text-tertiary);">diverged</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card fi-chart">
+      <h3>Feature Importance: LightGBM (no-charge)</h3>
+      <div class="fi-bar-row">
+        <div class="fi-bar-label">Submitted Charge</div>
+        <div class="fi-bar-track"><div class="fi-bar-fill" style="width:100%;"></div></div>
+        <div class="fi-bar-value">34.2%</div>
+      </div>
+      <div class="fi-bar-row">
+        <div class="fi-bar-label">HCPCS Code</div>
+        <div class="fi-bar-track"><div class="fi-bar-fill" style="width:70%;"></div></div>
+        <div class="fi-bar-value">23.9%</div>
+      </div>
+      <div class="fi-bar-row">
+        <div class="fi-bar-label">Services / Bene</div>
+        <div class="fi-bar-track"><div class="fi-bar-fill" style="width:38%;"></div></div>
+        <div class="fi-bar-value">13.1%</div>
+      </div>
+      <div class="fi-bar-row">
+        <div class="fi-bar-label">Log Services</div>
+        <div class="fi-bar-track"><div class="fi-bar-fill" style="width:26%;"></div></div>
+        <div class="fi-bar-value">8.9%</div>
+      </div>
+      <div class="fi-bar-row">
+        <div class="fi-bar-label">Log Beneficiaries</div>
+        <div class="fi-bar-track"><div class="fi-bar-fill" style="width:20%;"></div></div>
+        <div class="fi-bar-value">6.8%</div>
+      </div>
+      <div class="fi-bar-row">
+        <div class="fi-bar-label">Service Bucket</div>
+        <div class="fi-bar-track"><div class="fi-bar-fill" style="width:14%;"></div></div>
+        <div class="fi-bar-value">4.7%</div>
+      </div>
+      <div class="fi-bar-row">
+        <div class="fi-bar-label">Provider Type</div>
+        <div class="fi-bar-track"><div class="fi-bar-fill" style="width:11%;"></div></div>
+        <div class="fi-bar-value">3.8%</div>
+      </div>
+      <div class="fi-bar-row">
+        <div class="fi-bar-label">Risk Score</div>
+        <div class="fi-bar-track"><div class="fi-bar-fill" style="width:7%;"></div></div>
+        <div class="fi-bar-value">2.4%</div>
+      </div>
+      <div class="fi-bar-row">
+        <div class="fi-bar-label">Place of Service</div>
+        <div class="fi-bar-track"><div class="fi-bar-fill" style="width:4%;"></div></div>
+        <div class="fi-bar-value">1.3%</div>
+      </div>
+      <div class="fi-bar-row">
+        <div class="fi-bar-label">State</div>
+        <div class="fi-bar-track"><div class="fi-bar-fill" style="width:3%;"></div></div>
+        <div class="fi-bar-value">0.9%</div>
+      </div>
+    </div>
+
+    <h3 style="font-size:20px; font-weight:700; margin-bottom:16px; margin-top:32px;">Methodology</h3>
+
+    <div class="accordion open">
+      <button class="accordion-header" onclick="toggleAccordion(this)">
+        LightGBM (no-charge)
+        <span class="chevron">&#9660;</span>
+      </button>
+      <div class="accordion-body">
+        GOSS (Gradient-based One-Side Sampling) with leaf-wise growth. Filters out zero-charge records before training, eliminating noise from pro-bono and administrative rows. Production Stage 1 model (R&sup2;=0.943). Incremental training by Census region, 125 rounds/region in batch mode, or single dataset with early stopping in full mode.
+      </div>
+    </div>
+
+    <div class="accordion">
+      <button class="accordion-header" onclick="toggleAccordion(this)">
+        CatBoost (monotonic)
+        <span class="chevron">&#9660;</span>
+      </button>
+      <div class="accordion-body">
+        Ordered target statistics for native categorical feature handling (no label encoding needed). Monotonic constraints enforce economic priors: submitted charge increases allowed amount. Used for both Stage 1 allowed amount and Stage 2 OOP quantile regression (P10/P50/P90).
+      </div>
+    </div>
+
+    <div class="accordion">
+      <button class="accordion-header" onclick="toggleAccordion(this)">
+        Random Forest
+        <span class="chevron">&#9660;</span>
+      </button>
+      <div class="accordion-body">
+        625 trees trained with warm_start batch mode across Census regions. RandomizedSearchCV for hyperparameter optimization in full mode.
+      </div>
+    </div>
+
+    <div class="accordion">
+      <button class="accordion-header" onclick="toggleAccordion(this)">
+        XGBoost
+        <span class="chevron">&#9660;</span>
+      </button>
+      <div class="accordion-body">
+        Gradient-boosted trees with CUDA acceleration. Incremental training by Census region (125 rounds/region). Early stopping with validation set in full mode.
+      </div>
+    </div>
+
+    <div class="accordion">
+      <button class="accordion-header" onclick="toggleAccordion(this)">
+        LSTM
+        <span class="chevron">&#9660;</span>
+      </button>
+      <div class="accordion-body">
+        PyTorch 2-layer LSTM with static embeddings for specialty/state/bucket. Temporal train/val split (train: 2013 to 2021, val: 2022 to 2023). MC Dropout for confidence-bounded 2024 to 2026 forecasts.
+      </div>
+    </div>
+
+    <div class="accordion">
+      <button class="accordion-header" onclick="toggleAccordion(this)">
+        GLM (SGD)
+        <span class="chevron">&#9660;</span>
+      </button>
+      <div class="accordion-body">
+        Stochastic Gradient Descent with Huber loss and partial_fit streaming. Diverged on national data; needs hyperparameter tuning.
+      </div>
+    </div>
+
+    <div class="accordion">
+      <button class="accordion-header" onclick="toggleAccordion(this)">
+        CatBoost Quantile (OOP)
+        <span class="chevron">&#9660;</span>
+      </button>
+      <div class="accordion-body">
+        Stage 2 model: CatBoost with monotonic constraints and quantile loss (P10/P50/P90). Predicts patient out-of-pocket from allowed amount + demographics. Trained on synthetic MCBS-derived beneficiary data segmented by region, age, income, and insurance status.
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ TAB 3: Pipeline ══ -->
+  <div class="tab-panel" id="tab-3">
+    <div class="grid-8-4">
+      <div>
+        <div class="card">
+          <h3>Medallion Architecture</h3>
+          <p>Bronze, Silver, Gold pipeline with two execution modes: PySpark + Delta Lake on Databricks for production, pandas + pyarrow locally for development. All models log to Databricks MLflow.</p>
+          <div class="code-block">CMS API (by Provider &amp; Service)
+  &rarr; pull_medicare_data.py
+  &rarr; partition_medicare_data.py  (injects year)
+  &rarr; csv_to_parquet.py
+
+Bronze  &rarr;  Silver  &rarr;  Gold  &rarr;  EDA + Modeling
+         (typed,    (features +      &darr;
+          cleaned)   encoding)   LSTM sequences
+
+CMS MCBS PUF
+  &rarr; 06_mcbs_bronze &rarr; 07_mcbs_silver
+  &rarr; 08_mcbs_crosswalk
+         &darr;
+  generate_synthetic_mcbs.py
+  &rarr; Stage 2 OOP training data</div>
+        </div>
+
+        <div class="card">
+          <h3>Feature Set (10 Features)</h3>
+          <div class="feature-grid">
+            <div class="feature-pill">
+              <div class="fname">Rndrng_Prvdr_Type_idx</div>
+              <div class="fdesc">Provider specialty (encoded)</div>
+            </div>
+            <div class="feature-pill">
+              <div class="fname">Rndrng_Prvdr_State_Abrvtn_idx</div>
+              <div class="fdesc">State (encoded)</div>
+            </div>
+            <div class="feature-pill">
+              <div class="fname">HCPCS_Cd_idx</div>
+              <div class="fdesc">HCPCS procedure code (~6K unique)</div>
+            </div>
+            <div class="feature-pill">
+              <div class="fname">hcpcs_bucket</div>
+              <div class="fdesc">Clinical category (Anesthesia to HCPCS II)</div>
+            </div>
+            <div class="feature-pill">
+              <div class="fname">place_of_srvc_flag</div>
+              <div class="fdesc">Binary: facility (1) or office (0)</div>
+            </div>
+            <div class="feature-pill">
+              <div class="fname">Bene_Avg_Risk_Scre</div>
+              <div class="fdesc">NPI-level HCC risk score</div>
+            </div>
+            <div class="feature-pill">
+              <div class="fname">log_srvcs</div>
+              <div class="fdesc">log1p(Total services)</div>
+            </div>
+            <div class="feature-pill">
+              <div class="fname">log_benes</div>
+              <div class="fdesc">log1p(Total beneficiaries)</div>
+            </div>
+            <div class="feature-pill">
+              <div class="fname">Avg_Sbmtd_Chrg</div>
+              <div class="fdesc">Submitted charge amount</div>
+            </div>
+            <div class="feature-pill">
+              <div class="fname">srvcs_per_bene</div>
+              <div class="fdesc">Services per beneficiary ratio</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Census Regions (Batch Training)</h3>
+          <div class="region-grid">
+            <div class="region-box">
+              <div class="rname">Northeast</div>
+              <div class="rstates">CT ME MA NH RI VT NJ NY PA</div>
+            </div>
+            <div class="region-box">
+              <div class="rname">South</div>
+              <div class="rstates">DE FL GA MD NC SC VA DC WV AL KY MS TN AR LA OK TX</div>
+            </div>
+            <div class="region-box">
+              <div class="rname">Midwest</div>
+              <div class="rstates">IL IN MI OH WI IA KS MN MO NE ND SD</div>
+            </div>
+            <div class="region-box">
+              <div class="rname">West</div>
+              <div class="rstates">AZ CO ID MT NV NM UT WY AK CA HI OR WA</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card sidebar-card">
+          <h3>LSTM Forecasting</h3>
+          <p style="font-size:13px;">2-layer PyTorch LSTM with static embeddings for specialty, state, and service bucket.</p>
+          <p style="font-size:13px;"><strong>Train:</strong> 2013 to 2021 &middot; <strong>Val:</strong> 2022 to 2023</p>
+          <p style="font-size:13px;">MC Dropout produces confidence-bounded (P10/P90) forecasts for 2024 to 2026 by specialty.</p>
+        </div>
+
+        <div class="card sidebar-card">
+          <h3>Training Modes</h3>
+          <p style="font-size:13px;"><span style="color:var(--primary); font-weight:600;">batch</span> (default): Incremental by Census region. Memory-efficient. XGBoost: 125 rounds/region. RF: warm_start adds 125 trees/region.</p>
+          <p style="font-size:13px;"><span style="color:var(--primary); font-weight:600;">full</span>: Single pass with RandomizedSearchCV (RF) or early stopping (XGBoost). Use <code style="font-family:var(--font-mono); font-size:12px; background:var(--bg-inset); padding:1px 6px; border-radius:3px;">--sample 0.5</code> to limit RAM.</p>
+        </div>
+
+        <div class="card sidebar-card">
+          <h3>Target Variable</h3>
+          <div style="font-family:var(--font-mono); font-size:12px; color:var(--primary); font-weight:500; margin-bottom:8px;">Avg_Mdcr_Alowd_Amt</div>
+          <p style="font-size:13px;">Medicare allowed amount per service, what Medicare pays the provider (Stage 1).</p>
+          <p style="font-size:12px; color:var(--text-tertiary);">Leakage removed: Avg_Mdcr_Pymt_Amt and Avg_Mdcr_Stdzd_Amt are derived from the target and excluded from all models.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer class="footer">
+  Data source: CMS Medicare Physician &amp; Other Practitioners (2013&ndash;2023)<br>
+  Built by Raj Vedire &middot; Indiana University &middot;
+  <a href="#">GitHub</a>
+</footer>
+
+<div class="mockup-badge">MOCKUP &middot; About</div>
+
+<script>
+function switchTab(idx) {
+  document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === idx));
+  document.querySelectorAll('.tab-panel').forEach((p, i) => p.classList.toggle('active', i === idx));
+}
+function toggleAccordion(btn) {
+  btn.closest('.accordion').classList.toggle('open');
+}
+</script>
+
+</body>
+</html>

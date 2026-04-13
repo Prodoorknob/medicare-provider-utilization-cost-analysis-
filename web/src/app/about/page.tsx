@@ -10,6 +10,7 @@ import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Link from '@mui/material/Link';
 import Divider from '@mui/material/Divider';
+import Chip from '@mui/material/Chip';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -18,42 +19,118 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import TableSortLabel from '@mui/material/TableSortLabel';
 import TextField from '@mui/material/TextField';
-import Image from 'next/image';
 import Accordion from '@mui/material/Accordion';
 import AccordionSummary from '@mui/material/AccordionSummary';
 import AccordionDetails from '@mui/material/AccordionDetails';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
-import { getStateSummary, getModelMetrics, getFeatureImportances } from '@/lib/queries';
+import {
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid,
+} from 'recharts';
+import { getStateSummary } from '@/lib/queries';
 import { formatDollars, formatNumber } from '@/lib/formatters';
-import { FEATURE_DISPLAY_NAMES } from '@/lib/constants';
-import type { StateSummary, ModelMetric, FeatureImportance } from '@/lib/types';
+import type { StateSummary } from '@/lib/types';
+import {
+  V2_STAGE1_MODELS,
+  V2_FEATURE_IMPORTANCES,
+  V2_METHODOLOGIES,
+  CORRELATION_FEATURES,
+  CORRELATION_DISPLAY_NAMES,
+  CORRELATION_MATRIX,
+  FEATURE_HISTOGRAMS,
+  TOP_PROVIDER_TYPES,
+} from '@/lib/v2-model-data';
 
 type SortKey = 'state_abbrev' | 'mean_allowed' | 'median_allowed' | 'n_records';
 
-const METHODOLOGIES = [
-  { name: 'Random Forest', desc: '625 trees trained with warm_start batch mode across Census regions. RandomizedSearchCV for hyperparameter optimization. Best overall Stage 1 performer.' },
-  { name: 'XGBoost', desc: 'Gradient-boosted trees with CUDA acceleration. Incremental training by Census region (125 rounds/region). Early stopping with validation set.' },
-  { name: 'LSTM', desc: 'PyTorch 2-layer LSTM with static embeddings for specialty/state/bucket. Temporal train/val split (train: 2013–2021, val: 2022–2023). MC Dropout for confidence-bounded 2024–2026 forecasts.' },
-  { name: 'GLM (SGD)', desc: 'Stochastic Gradient Descent with Huber loss and partial_fit streaming. Diverged on national data — needs hyperparameter tuning.' },
-  { name: 'Quantile XGBoost (OOP)', desc: 'Stage 2 model: 3 separate XGBoost boosters with reg:quantileerror objective (P10/P50/P90). Predicts patient out-of-pocket from allowed amount + demographics.' },
-];
+// ── Correlation Heatmap (custom SVG) ──
+
+function CorrelationHeatmap() {
+  const n = CORRELATION_FEATURES.length;
+  const cellSize = 56;
+  const labelWidth = 90;
+  const topPad = 85;
+  const w = labelWidth + n * cellSize;
+  const h = topPad + n * cellSize;
+
+  const getColor = (val: number) => {
+    const abs = Math.abs(val);
+    if (val < 0) return `rgba(220, 38, 38, ${abs * 0.9})`;
+    return `rgba(15, 110, 140, ${abs * 0.9})`;
+  };
+  const textColor = (val: number) => Math.abs(val) > 0.4 ? '#fff' : '#57534E';
+
+  return (
+    <Box sx={{ width: '100%', overflowX: 'auto' }}>
+      <svg viewBox={`0 0 ${w} ${h}`} style={{ width: '100%', maxWidth: w }}>
+        {/* Column headers (rotated) */}
+        {CORRELATION_FEATURES.map((feat, i) => (
+          <text
+            key={`col-${feat}`}
+            x={labelWidth + i * cellSize + cellSize / 2}
+            y={topPad - 12}
+            textAnchor="middle"
+            fontSize="9"
+            fill="#57534E"
+            fontFamily="Inter, sans-serif"
+            transform={`rotate(-40, ${labelWidth + i * cellSize + cellSize / 2}, ${topPad - 12})`}
+          >
+            {CORRELATION_DISPLAY_NAMES[feat]}
+          </text>
+        ))}
+        {/* Rows */}
+        {CORRELATION_FEATURES.map((rowFeat, r) => (
+          <g key={`row-${rowFeat}`}>
+            <text
+              x={labelWidth - 8}
+              y={topPad + r * cellSize + cellSize / 2 + 4}
+              textAnchor="end"
+              fontSize="10"
+              fill="#57534E"
+              fontFamily="Inter, sans-serif"
+            >
+              {CORRELATION_DISPLAY_NAMES[rowFeat]}
+            </text>
+            {CORRELATION_FEATURES.map((colFeat, c) => {
+              const val = CORRELATION_MATRIX[r][c];
+              return (
+                <g key={`cell-${r}-${c}`}>
+                  <rect
+                    x={labelWidth + c * cellSize + 2}
+                    y={topPad + r * cellSize + 2}
+                    width={cellSize - 4}
+                    height={cellSize - 4}
+                    rx={3}
+                    fill={getColor(val)}
+                  />
+                  <text
+                    x={labelWidth + c * cellSize + cellSize / 2}
+                    y={topPad + r * cellSize + cellSize / 2 + 4}
+                    textAnchor="middle"
+                    fontSize="10"
+                    fill={textColor(val)}
+                    fontFamily="IBM Plex Mono, monospace"
+                  >
+                    {val === 1 ? '1.00' : val.toFixed(2)}
+                  </text>
+                </g>
+              );
+            })}
+          </g>
+        ))}
+      </svg>
+    </Box>
+  );
+}
 
 export default function AboutPage() {
   const [tab, setTab] = useState(0);
-
-  // Data state
   const [states, setStates] = useState<StateSummary[]>([]);
-  const [metrics, setMetrics] = useState<ModelMetric[]>([]);
-  const [importances, setImportances] = useState<FeatureImportance[]>([]);
   const [sortKey, setSortKey] = useState<SortKey>('mean_allowed');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [filter, setFilter] = useState('');
 
   useEffect(() => {
-    Promise.all([getStateSummary(), getModelMetrics(), getFeatureImportances()]).then(
-      ([s, m, fi]) => { setStates(s); setMetrics(m); setImportances(fi); }
-    );
+    getStateSummary().then(setStates);
   }, []);
 
   const handleSort = (key: SortKey) => {
@@ -69,26 +146,17 @@ export default function AboutPage() {
       return m * ((a[sortKey] as number) - (b[sortKey] as number));
     });
 
-  const stage1Models = ['Random Forest', 'XGBoost', 'LSTM', 'GLM (SGD)'].map((name) => {
-    const m = metrics.filter((x) => x.model_name === name && x.stage === 1);
-    return {
-      name,
-      mae: m.find((x) => x.metric_name === 'test_mae')?.metric_value ?? null,
-      rmse: m.find((x) => x.metric_name === 'test_rmse')?.metric_value ?? null,
-      r2: m.find((x) => x.metric_name === 'test_r2')?.metric_value ?? null,
-    };
-  });
-
-  const fiChart = importances
-    .filter((x) => x.model_name === 'Random Forest')
-    .sort((a, b) => b.importance - a.importance)
-    .map((x) => ({ name: FEATURE_DISPLAY_NAMES[x.feature_name] || x.feature_name, importance: x.importance }));
+  // Feature importance chart data
+  const fiChart = V2_FEATURE_IMPORTANCES.map((x) => ({
+    name: x.name,
+    importance: x.importance,
+  }));
 
   return (
     <Box>
       <Box sx={{ pb: 3, mb: 0, borderBottom: '1px solid', borderColor: 'divider' }}>
         <Typography variant="h4" sx={{ fontWeight: 800, letterSpacing: '-0.02em' }} gutterBottom>
-          About & Methodology
+          About &amp; Methodology
         </Typography>
         <Typography variant="body1" color="text.secondary">
           Data sources, model performance, pipeline architecture, and project attribution.
@@ -108,7 +176,7 @@ export default function AboutPage() {
         <Tab label="Pipeline" />
       </Tabs>
 
-      {/* ── TAB 0: Overview ── */}
+      {/* ════ TAB 0: Overview ════ */}
       {tab === 0 && (
         <Grid container spacing={4}>
           <Grid size={{ xs: 12, md: 8 }}>
@@ -116,7 +184,7 @@ export default function AboutPage() {
               <CardContent>
                 <Typography variant="h6" gutterBottom>Overview</Typography>
                 <Typography variant="body1" sx={{ mb: 1.5 }}>
-                  An end-to-end data science pipeline predicting Medicare provider costs and patient out-of-pocket expenses. Processes over 103 million provider-service records from the CMS Medicare Physician &amp; Other Practitioners dataset spanning 2013–2023.
+                  An end-to-end data science pipeline predicting Medicare provider costs and patient out-of-pocket expenses. Processes over 103 million provider-service records from the CMS Medicare Physician &amp; Other Practitioners dataset spanning 2013 to 2023.
                 </Typography>
                 <Typography variant="body1">
                   The project implements a two-stage prediction architecture: Stage 1 predicts what Medicare allows for a service; Stage 2 estimates what the patient pays out of pocket based on demographic and insurance profile.
@@ -128,41 +196,37 @@ export default function AboutPage() {
               <CardContent>
                 <Typography variant="h6" gutterBottom>Data Sources</Typography>
                 <Typography variant="body1" sx={{ mb: 1.5 }}>
-                  <strong>CMS Medicare Physician &amp; Other Practitioners (2013–2023)</strong> — Provider-level utilization and payment data for Part B services. Over 10 million records per year across all 50 states and territories.
+                  <strong>CMS Medicare Physician &amp; Other Practitioners (2013 to 2023)</strong>: Provider-level utilization and payment data for Part B services. Over 10 million records per year across all 50 states and territories.
                 </Typography>
                 <Typography variant="body1" sx={{ mb: 1.5 }}>
-                  <strong>CMS Medicare Current Beneficiary Survey (MCBS)</strong> — Public Use Files for beneficiary demographics, insurance coverage, and cost data. Used for Stage 2 patient cost modeling.
+                  <strong>CMS Medicare Current Beneficiary Survey (MCBS)</strong>: Public Use Files for beneficiary demographics, insurance coverage, and cost data. Used for Stage 2 patient cost modeling.
                 </Typography>
                 <Typography variant="body1">
-                  <strong>CMS Provider Summary (by Provider)</strong> — NPI-level HCC risk scores (Bene_Avg_Risk_Scre) for beneficiary health burden adjustment.
+                  <strong>CMS Provider Summary (by Provider)</strong>: NPI-level HCC risk scores for beneficiary health burden adjustment.
                 </Typography>
               </CardContent>
             </Card>
 
             <Card sx={{ mb: 3 }}>
               <CardContent>
-                <Typography variant="h6" gutterBottom color="primary">Stage 1 — Medicare Allowed Amount</Typography>
+                <Typography variant="h6" gutterBottom color="primary">Stage 1: Medicare Allowed Amount</Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-                  Random Forest (R²=0.884), XGBoost (R²=0.833), LSTM (R²=0.886, best), GLM/SGD
+                  LightGBM no-charge (R²=0.943), CatBoost monotonic, XGBoost, Random Forest, LSTM
                 </Typography>
                 <Divider sx={{ my: 1.5 }} />
-                <Typography variant="h6" gutterBottom color="secondary" sx={{ mt: 1.5 }}>Stage 2 — Patient Out-of-Pocket</Typography>
+                <Typography variant="h6" gutterBottom color="secondary" sx={{ mt: 1.5 }}>Stage 2: Patient Out-of-Pocket</Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Quantile XGBoost (P10/P50/P90) trained on synthetic MCBS-derived beneficiary data segmented by region, age, income, and insurance status.
+                  CatBoost monotonic quantile regression (P10/P50/P90) trained on synthetic MCBS-derived beneficiary data segmented by region, age, income, and insurance status.
                 </Typography>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom color="warning.main">Disclaimer</Typography>
-                <Box sx={{ bgcolor: '#FDF4EA', borderLeft: '3px solid #B8763A', borderRadius: 1, p: 2 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    This is an academic research project. Estimates are based on aggregate historical data and should not be used for medical billing decisions. Stage 2 out-of-pocket estimates use synthetic beneficiary data modeled after MCBS distributions. Actual patient costs depend on specific plan details, deductibles, and coverage terms not captured in this model.
-                  </Typography>
-                </Box>
-              </CardContent>
-            </Card>
+            <Box sx={{ bgcolor: '#FDF4EA', borderLeft: '3px solid #B8763A', borderRadius: 1, p: 2 }}>
+              <Typography variant="body2" color="#B8763A" sx={{ fontWeight: 600, mb: 1 }}>Disclaimer</Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7 }}>
+                This is an academic research project. Estimates are based on aggregate historical data and should not be used for medical billing decisions. Stage 2 out-of-pocket estimates use synthetic beneficiary data modeled after MCBS distributions. Actual patient costs depend on specific plan details, deductibles, and coverage terms not captured in this model.
+              </Typography>
+            </Box>
           </Grid>
 
           <Grid size={{ xs: 12, md: 4 }}>
@@ -194,48 +258,71 @@ export default function AboutPage() {
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>Tech Stack</Typography>
-                <Typography variant="body2">Python · pandas · PyArrow · scikit-learn</Typography>
-                <Typography variant="body2">XGBoost (CUDA) · PyTorch (LSTM)</Typography>
-                <Typography variant="body2">MLflow · Databricks</Typography>
+                <Typography variant="body2">Python &middot; pandas &middot; PyArrow &middot; scikit-learn</Typography>
+                <Typography variant="body2">XGBoost &middot; CatBoost &middot; LightGBM &middot; PyTorch</Typography>
+                <Typography variant="body2">MLflow &middot; Databricks</Typography>
                 <Divider sx={{ my: 1.5 }} />
-                <Typography variant="body2">Next.js · Material UI · Recharts</Typography>
-                <Typography variant="body2">Supabase (PostgreSQL) · Vercel</Typography>
+                <Typography variant="body2">Next.js &middot; Material UI &middot; Recharts</Typography>
+                <Typography variant="body2">Supabase (PostgreSQL) &middot; Railway &middot; Vercel</Typography>
               </CardContent>
             </Card>
           </Grid>
         </Grid>
       )}
 
-      {/* ── TAB 1: Data ── */}
+      {/* ════ TAB 1: Data ════ */}
       {tab === 1 && (
         <Box>
-          <Grid container spacing={3} sx={{ mb: 4 }}>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <Card>
-                <CardContent>
+          {/* Feature distributions + Correlation heatmap */}
+          <Grid container spacing={3} sx={{ mb: 4, alignItems: 'stretch' }}>
+            <Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex' }}>
+              <Card sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                   <Typography variant="h6" gutterBottom>Feature Distributions</Typography>
-                  <Image src="/plots/01_distributions.png" alt="Feature distributions" width={600} height={400} style={{ width: '100%', height: 'auto' }} />
+                  <Grid container spacing={1} sx={{ flex: 1, alignContent: 'center' }}>
+                    {FEATURE_HISTOGRAMS.map((feat) => (
+                      <Grid key={feat.name} size={{ xs: 4 }}>
+                        <Typography variant="body2" sx={{ fontSize: 10, fontWeight: 600, color: feat.color, mb: 0.5 }}>
+                          {feat.displayName}
+                        </Typography>
+                        <ResponsiveContainer width="100%" height={70}>
+                          <BarChart data={feat.bins} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+                            <Bar dataKey="height" fill={feat.color} fillOpacity={0.6} radius={[2, 2, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </Grid>
+                    ))}
+                  </Grid>
                 </CardContent>
               </Card>
             </Grid>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <Card>
+            <Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex' }}>
+              <Card sx={{ flex: 1 }}>
                 <CardContent>
                   <Typography variant="h6" gutterBottom>Correlation Heatmap</Typography>
-                  <Image src="/plots/02_correlation_heatmap.png" alt="Correlation heatmap" width={600} height={500} style={{ width: '100%', height: 'auto' }} />
-                </CardContent>
-              </Card>
-            </Grid>
-            <Grid size={{ xs: 12 }}>
-              <Card>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>Top Provider Types</Typography>
-                  <Image src="/plots/03_top_provider_types.png" alt="Top provider types" width={800} height={500} style={{ width: '100%', height: 'auto' }} />
+                  <CorrelationHeatmap />
                 </CardContent>
               </Card>
             </Grid>
           </Grid>
 
+          {/* Top provider types */}
+          <Card sx={{ mb: 4 }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>Top Provider Types by Record Count</Typography>
+              <ResponsiveContainer width="100%" height={360}>
+                <BarChart data={TOP_PROVIDER_TYPES} layout="vertical" margin={{ left: 140, right: 60 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
+                  <XAxis type="number" tickFormatter={(v) => `${(Number(v) / 1_000_000).toFixed(0)}M`} />
+                  <YAxis type="category" dataKey="name" width={130} tick={{ fontSize: 12 }} />
+                  <Tooltip formatter={(v) => `${(Number(v) / 1_000_000).toFixed(1)}M records`} />
+                  <Bar dataKey="records" fill="#0F6E8C" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          {/* State-level summary table */}
           <Card>
             <CardContent>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -270,9 +357,9 @@ export default function AboutPage() {
                     {filteredStates.map((s) => (
                       <TableRow key={s.state_abbrev} hover>
                         <TableCell><strong>{s.state_abbrev}</strong></TableCell>
-                        <TableCell align="right">{formatDollars(s.mean_allowed)}</TableCell>
-                        <TableCell align="right">{formatDollars(s.median_allowed)}</TableCell>
-                        <TableCell align="right">{formatNumber(s.n_records)}</TableCell>
+                        <TableCell align="right" sx={{ fontFamily: '"IBM Plex Mono", monospace' }}>{formatDollars(s.mean_allowed)}</TableCell>
+                        <TableCell align="right" sx={{ fontFamily: '"IBM Plex Mono", monospace' }}>{formatDollars(s.median_allowed)}</TableCell>
+                        <TableCell align="right" sx={{ fontFamily: '"IBM Plex Mono", monospace' }}>{formatNumber(s.n_records)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -283,12 +370,13 @@ export default function AboutPage() {
         </Box>
       )}
 
-      {/* ── TAB 2: Models ── */}
+      {/* ════ TAB 2: Models ════ */}
       {tab === 2 && (
         <Box>
+          {/* Model performance table */}
           <Card sx={{ mb: 4 }}>
             <CardContent>
-              <Typography variant="h6" gutterBottom>Stage 1 — Medicare Allowed Amount</Typography>
+              <Typography variant="h6" gutterBottom>Stage 1: Medicare Allowed Amount</Typography>
               <TableContainer>
                 <Table size="small">
                   <TableHead>
@@ -300,16 +388,24 @@ export default function AboutPage() {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {stage1Models.map((m) => {
-                      const bestR2 = Math.max(...stage1Models.filter(x => x.r2 !== null && x.r2 > 0).map(x => x.r2!));
-                      const isBest = m.r2 === bestR2;
+                    {V2_STAGE1_MODELS.map((m) => {
+                      const isBest = m.badge === 'PRODUCTION';
                       return (
                         <TableRow key={m.name} sx={isBest ? { bgcolor: 'primary.50' } : {}}>
-                          <TableCell sx={isBest ? { fontWeight: 700 } : {}}>{m.name}</TableCell>
-                          <TableCell align="right">{m.mae != null ? formatDollars(m.mae) : 'N/A'}</TableCell>
-                          <TableCell align="right">{m.rmse != null ? formatDollars(m.rmse) : 'N/A'}</TableCell>
-                          <TableCell align="right" sx={isBest ? { fontWeight: 700, color: 'primary.main' } : {}}>
-                            {m.r2 != null ? m.r2.toFixed(4) : 'N/A'}
+                          <TableCell sx={isBest ? { fontWeight: 700 } : {}}>
+                            {m.name}
+                            {m.badge && (
+                              <Chip label={m.badge} size="small" color="primary" variant="outlined" sx={{ ml: 1, height: 20, fontSize: 10, fontWeight: 600 }} />
+                            )}
+                          </TableCell>
+                          <TableCell align="right" sx={{ fontFamily: '"IBM Plex Mono", monospace' }}>
+                            {m.mae != null ? formatDollars(m.mae) : 'N/A'}
+                          </TableCell>
+                          <TableCell align="right" sx={{ fontFamily: '"IBM Plex Mono", monospace' }}>
+                            {m.rmse != null ? formatDollars(m.rmse) : 'N/A'}
+                          </TableCell>
+                          <TableCell align="right" sx={{ fontFamily: '"IBM Plex Mono", monospace', ...(isBest ? { fontWeight: 700, color: 'primary.main' } : {}) }}>
+                            {m.r2 != null ? m.r2.toFixed(4) : 'diverged'}
                           </TableCell>
                         </TableRow>
                       );
@@ -320,38 +416,38 @@ export default function AboutPage() {
             </CardContent>
           </Card>
 
-          {fiChart.length > 0 && (
-            <Card sx={{ mb: 4 }}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>Feature Importance — Random Forest</Typography>
-                <ResponsiveContainer width="100%" height={350}>
-                  <BarChart data={fiChart} layout="vertical" margin={{ left: 140, right: 30 }}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis type="number" />
-                    <YAxis type="category" dataKey="name" width={130} tick={{ fontSize: 12 }} />
-                    <Tooltip formatter={(v) => (Number(v) * 100).toFixed(1) + '%'} />
-                    <Bar dataKey="importance" fill="#0F6E8C" radius={[0, 4, 4, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          )}
+          {/* Feature importance */}
+          <Card sx={{ mb: 4 }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>Feature Importance: LightGBM (no-charge)</Typography>
+              <ResponsiveContainer width="100%" height={350}>
+                <BarChart data={fiChart} layout="vertical" margin={{ left: 140, right: 30 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
+                  <XAxis type="number" tickFormatter={(v) => `${(Number(v) * 100).toFixed(0)}%`} />
+                  <YAxis type="category" dataKey="name" width={130} tick={{ fontSize: 12 }} />
+                  <Tooltip formatter={(v) => (Number(v) * 100).toFixed(1) + '%'} />
+                  <Bar dataKey="importance" fill="#0F6E8C" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
 
+          {/* Methodology */}
           <Typography variant="h5" gutterBottom sx={{ mt: 4 }}>Methodology</Typography>
-          {METHODOLOGIES.map((m) => (
+          {V2_METHODOLOGIES.map((m) => (
             <Accordion key={m.name} sx={{ mb: 1 }}>
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <Typography fontWeight={600}>{m.name}</Typography>
+                <Typography sx={{ fontWeight: 600 }}>{m.name}</Typography>
               </AccordionSummary>
               <AccordionDetails>
-                <Typography variant="body2" color="text.secondary">{m.desc}</Typography>
+                <Typography variant="body2" color="text.secondary">{m.description}</Typography>
               </AccordionDetails>
             </Accordion>
           ))}
         </Box>
       )}
 
-      {/* ── TAB 3: Pipeline ── */}
+      {/* ════ TAB 3: Pipeline ════ */}
       {tab === 3 && (
         <Grid container spacing={3}>
           <Grid size={{ xs: 12, md: 8 }}>
@@ -359,7 +455,7 @@ export default function AboutPage() {
               <CardContent>
                 <Typography variant="h6" gutterBottom>Medallion Architecture</Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-                  Bronze → Silver → Gold pipeline with two execution modes: PySpark + Delta Lake on Databricks for production, pandas + pyarrow locally for development. All models log to Databricks MLflow.
+                  Bronze, Silver, Gold pipeline with two execution modes: PySpark + Delta Lake on Databricks for production, pandas + pyarrow locally for development. All models log to Databricks MLflow.
                 </Typography>
                 <Box component="pre" sx={{
                   fontFamily: '"IBM Plex Mono", monospace', fontSize: 12,
@@ -367,20 +463,20 @@ export default function AboutPage() {
                   color: 'text.secondary', lineHeight: 1.8, whiteSpace: 'pre-wrap',
                 }}>
 {`CMS API (by Provider & Service)
-  → pull_medicare_data.py
-  → partition_medicare_data.py  (injects year)
-  → csv_to_parquet.py
+  > pull_medicare_data.py
+  > partition_medicare_data.py  (injects year)
+  > csv_to_parquet.py
 
-Bronze  →  Silver  →  Gold  →  EDA + Modeling
-         (typed,    (features +      ↓
+Bronze  >  Silver  >  Gold  >  EDA + Modeling
+         (typed,    (features +      |
           cleaned)   encoding)   LSTM sequences
 
 CMS MCBS PUF
-  → 06_mcbs_bronze → 07_mcbs_silver
-  → 08_mcbs_crosswalk
-         ↓
+  > 06_mcbs_bronze > 07_mcbs_silver
+  > 08_mcbs_crosswalk
+         |
   generate_synthetic_mcbs.py
-  → Stage 2 OOP training data`}
+  > Stage 2 OOP training data`}
                 </Box>
               </CardContent>
             </Card>
@@ -393,7 +489,7 @@ CMS MCBS PUF
                     ['Rndrng_Prvdr_Type_idx', 'Provider specialty (encoded)'],
                     ['Rndrng_Prvdr_State_Abrvtn_idx', 'State (encoded)'],
                     ['HCPCS_Cd_idx', 'HCPCS procedure code (~6K unique)'],
-                    ['hcpcs_bucket', 'Clinical category (Anesthesia → HCPCS II)'],
+                    ['hcpcs_bucket', 'Clinical category (Anesthesia to HCPCS II)'],
                     ['place_of_srvc_flag', 'Binary: facility (1) or office (0)'],
                     ['Bene_Avg_Risk_Scre', 'NPI-level HCC risk score'],
                     ['log_srvcs', 'log1p(Total services)'],
@@ -404,7 +500,7 @@ CMS MCBS PUF
                     <Grid key={name} size={{ xs: 12, sm: 6 }}>
                       <Box sx={{ p: 1.5, bgcolor: 'grey.50', borderRadius: 1 }}>
                         <Typography variant="body2" sx={{ fontFamily: '"IBM Plex Mono", monospace', color: 'primary.main', fontSize: 11 }}>{name}</Typography>
-                        <Typography variant="body2" color="text.secondary" fontSize={12}>{desc}</Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: 12 }}>{desc}</Typography>
                       </Box>
                     </Grid>
                   ))}
@@ -421,11 +517,11 @@ CMS MCBS PUF
                     ['South', 'DE FL GA MD NC SC VA DC WV AL KY MS TN AR LA OK TX'],
                     ['Midwest', 'IL IN MI OH WI IA KS MN MO NE ND SD'],
                     ['West', 'AZ CO ID MT NV NM UT WY AK CA HI OR WA'],
-                  ].map(([region, states]) => (
+                  ].map(([region, regionStates]) => (
                     <Grid key={region} size={{ xs: 12, sm: 6 }}>
                       <Box sx={{ p: 1.5, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
-                        <Typography variant="body2" fontWeight={600} color="primary.main">{region}</Typography>
-                        <Typography variant="body2" color="text.secondary" fontSize={11} sx={{ fontFamily: '"IBM Plex Mono", monospace' }}>{states}</Typography>
+                        <Typography variant="body2" color="primary.main" sx={{ fontWeight: 600 }}>{region}</Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11, fontFamily: '"IBM Plex Mono", monospace' }}>{regionStates}</Typography>
                       </Box>
                     </Grid>
                   ))}
@@ -442,10 +538,10 @@ CMS MCBS PUF
                   2-layer PyTorch LSTM with static embeddings for specialty, state, and service bucket.
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-                  <strong>Train:</strong> 2013–2021 · <strong>Val:</strong> 2022–2023
+                  <strong>Train:</strong> 2013 to 2021 &middot; <strong>Val:</strong> 2022 to 2023
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  MC Dropout produces confidence-bounded (P10/P90) forecasts for 2024–2026 by specialty.
+                  MC Dropout produces confidence-bounded (P10/P90) forecasts for 2024 to 2026 by specialty.
                 </Typography>
               </CardContent>
             </Card>
@@ -453,11 +549,11 @@ CMS MCBS PUF
             <Card sx={{ mb: 3 }}>
               <CardContent>
                 <Typography variant="h6" gutterBottom>Training Modes</Typography>
-                <Typography variant="body2" fontWeight={600} color="primary.main">batch (default)</Typography>
+                <Typography variant="body2" color="primary.main" sx={{ fontWeight: 600 }}>batch (default)</Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
                   Incremental by Census region. Memory-efficient. XGBoost: 125 rounds/region. RF: warm_start adds 125 trees/region.
                 </Typography>
-                <Typography variant="body2" fontWeight={600} color="primary.main">full</Typography>
+                <Typography variant="body2" color="primary.main" sx={{ fontWeight: 600 }}>full</Typography>
                 <Typography variant="body2" color="text.secondary">
                   Single pass with RandomizedSearchCV (RF) or early stopping (XGBoost). Use <code>--sample 0.5</code> to limit RAM.
                 </Typography>
@@ -471,9 +567,9 @@ CMS MCBS PUF
                   Avg_Mdcr_Alowd_Amt
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-                  Medicare allowed amount per service — what Medicare pays the provider (Stage 1).
+                  Medicare allowed amount per service, what Medicare pays the provider (Stage 1).
                 </Typography>
-                <Typography variant="body2" color="text.secondary" fontSize={12}>
+                <Typography variant="body2" color="text.secondary" sx={{ fontSize: 12 }}>
                   Leakage removed: Avg_Mdcr_Pymt_Amt and Avg_Mdcr_Stdzd_Amt are derived from the target and excluded from all models.
                 </Typography>
               </CardContent>

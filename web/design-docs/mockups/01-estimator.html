@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AllowanceMap - Estimator (Mockup)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* ── Design Tokens ── */
+:root {
+  --bg-page: #FAFAF8;
+  --bg-surface: #FFFFFF;
+  --bg-inset: #F2F0ED;
+  --border-default: rgba(0,0,0,0.08);
+  --border-strong: rgba(0,0,0,0.15);
+  --text-primary: #1C1917;
+  --text-secondary: #57534E;
+  --text-tertiary: #A8A29E;
+  --text-muted: #D6D3D1;
+
+  --primary: #0F6E8C;
+  --primary-light: #1389AC;
+  --primary-dark: #0A4F66;
+  --primary-tint: #D0EEF5;
+  --primary-subtle: #EBF7FB;
+
+  --secondary: #15755D;
+  --secondary-light: #1CA082;
+  --secondary-dark: #0E5241;
+  --secondary-tint: #E8F7F3;
+  --secondary-subtle: #F0FAF7;
+
+  --accent: #B8763A;
+  --accent-bg: #FDF4EA;
+  --success: #10b981;
+  --warning: #D97706;
+  --error: #DC2626;
+
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.10);
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 999px;
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'SF Mono', monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+body {
+  font-family: var(--font-body);
+  background: var(--bg-page);
+  color: var(--text-primary);
+  line-height: 1.6;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Navbar ── */
+.navbar {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-default);
+  padding: 0 24px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+}
+.navbar-brand {
+  display: flex; align-items: center; gap: 8px;
+  text-decoration: none; color: var(--primary);
+  font-weight: 700; font-size: 18px;
+  margin-right: auto;
+}
+.navbar-brand svg { width: 24px; height: 24px; fill: var(--primary); }
+.navbar-links { display: flex; gap: 4px; }
+.navbar-links a {
+  text-decoration: none;
+  color: var(--text-secondary);
+  font-weight: 500; font-size: 14px;
+  padding: 8px 16px;
+  border-bottom: 2px solid transparent;
+  transition: all 150ms var(--ease-out);
+}
+.navbar-links a:hover { color: var(--primary); }
+.navbar-links a.active {
+  color: var(--primary);
+  font-weight: 600;
+  border-bottom-color: var(--primary);
+}
+
+/* ── Main layout ── */
+.main { flex: 1; max-width: 1200px; width: 100%; margin: 0 auto; padding: 32px 24px 64px; }
+
+/* ── Page header ── */
+.page-header { padding-bottom: 24px; margin-bottom: 32px; border-bottom: 1px solid var(--border-default); }
+.page-header h1 {
+  font-size: 28px; font-weight: 800;
+  letter-spacing: -0.02em; line-height: 1.2;
+  margin-bottom: 8px;
+}
+.page-header p { font-size: 15px; color: var(--text-secondary); max-width: 640px; }
+
+/* ── Grid ── */
+.grid { display: grid; gap: 32px; }
+.grid-5-7 { grid-template-columns: 5fr 7fr; }
+@media (max-width: 768px) { .grid-5-7 { grid-template-columns: 1fr; } }
+
+/* ── Card ── */
+.card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 24px;
+  transition: box-shadow 250ms var(--ease-out);
+}
+.card + .card { margin-top: 16px; }
+
+/* ── Stage labels ── */
+.stage-label {
+  font-size: 11px; font-weight: 600;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  margin-bottom: 16px; display: block;
+}
+.stage-label.s1 { color: var(--primary); }
+.stage-label.s2 { color: var(--secondary); }
+
+/* ── Form elements ── */
+.form-group { margin-bottom: 16px; }
+.form-group label {
+  display: block;
+  font-size: 13px; font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+.form-input, .form-select {
+  width: 100%; height: 40px;
+  padding: 0 12px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 150ms, box-shadow 150ms;
+}
+.form-input:focus, .form-select:focus {
+  border-color: var(--primary-light);
+  box-shadow: 0 0 0 3px rgba(15,110,140,0.12);
+}
+
+/* ── Toggle group ── */
+.toggle-group {
+  display: flex; border-radius: var(--radius-md);
+  border: 1px solid var(--border-strong);
+  overflow: hidden;
+}
+.toggle-btn {
+  flex: 1; padding: 8px 16px;
+  font-family: var(--font-body);
+  font-size: 13px; font-weight: 500;
+  border: none; background: var(--bg-surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 150ms var(--ease-out);
+}
+.toggle-btn + .toggle-btn { border-left: 1px solid var(--border-strong); }
+.toggle-btn.active {
+  background: var(--primary);
+  color: white; font-weight: 600;
+}
+
+/* ── Switch ── */
+.switch-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 0;
+}
+.switch {
+  width: 36px; height: 20px;
+  background: var(--text-muted);
+  border-radius: var(--radius-full);
+  position: relative;
+  cursor: pointer;
+  transition: background 150ms;
+}
+.switch.on { background: var(--secondary); }
+.switch::after {
+  content: '';
+  position: absolute; top: 2px; left: 2px;
+  width: 16px; height: 16px;
+  background: white; border-radius: 50%;
+  transition: transform 150ms;
+}
+.switch.on::after { transform: translateX(16px); }
+.switch-label { font-size: 14px; color: var(--text-secondary); }
+
+/* ── Chip ── */
+.chip {
+  display: inline-flex; align-items: center;
+  padding: 4px 12px;
+  font-size: 12px; font-weight: 500;
+  border-radius: var(--radius-full);
+  border: 1px solid;
+  margin-bottom: 12px;
+}
+.chip.secondary {
+  color: var(--secondary);
+  border-color: var(--secondary-tint);
+  background: var(--secondary-subtle);
+}
+
+/* ── CTA Button ── */
+.btn-primary {
+  width: 100%; height: 48px;
+  font-family: var(--font-body);
+  font-size: 15px; font-weight: 600;
+  background: var(--primary);
+  color: white; border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background 150ms var(--ease-out), transform 100ms;
+}
+.btn-primary:hover { background: var(--primary-dark); }
+.btn-primary:active { transform: scale(0.99); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Result cards ── */
+.result-s1 { border-left: 4px solid var(--primary); }
+.result-s2 { border-left: 4px solid var(--secondary); }
+
+.result-amount {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  line-height: 1.1;
+  margin: 4px 0 8px;
+}
+.result-amount.s1 { color: var(--primary); font-size: 36px; }
+
+.result-meta { font-size: 13px; color: var(--text-secondary); }
+
+/* ── Detail pills row ── */
+.detail-pills {
+  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;
+  margin-top: 16px;
+}
+.detail-pill {
+  background: var(--primary-subtle);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  text-align: center;
+}
+.detail-pill .pill-label {
+  font-size: 11px; color: var(--text-secondary);
+  text-transform: uppercase; letter-spacing: 0.03em;
+}
+.detail-pill .pill-value {
+  font-size: 13px; font-weight: 600;
+  color: var(--primary);
+  margin-top: 2px;
+}
+
+/* ── Percentile bar ── */
+.percentile-bar {
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin: 12px 0 16px;
+}
+.percentile-cell {
+  padding: 16px 12px;
+  text-align: center;
+}
+.percentile-cell + .percentile-cell { border-left: 1px solid var(--border-default); }
+.percentile-cell.highlight { background: var(--secondary-subtle); }
+.percentile-label {
+  font-size: 10px; font-weight: 600;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.percentile-value {
+  font-family: var(--font-mono);
+  margin-top: 6px; line-height: 1;
+}
+.percentile-value.sm { font-size: 20px; color: var(--secondary-light); }
+.percentile-value.lg { font-size: 26px; font-weight: 700; color: var(--secondary); }
+.percentile-value.dk { font-size: 20px; color: var(--secondary-dark); }
+
+/* ── Disclaimer callout ── */
+.disclaimer {
+  background: var(--accent-bg);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  font-size: 12px; color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* ── Empty state ── */
+.empty-state {
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-lg);
+  padding: 80px 32px;
+  text-align: center;
+  background: transparent;
+}
+.empty-state-icon {
+  width: 48px; height: 48px;
+  margin: 0 auto 16px;
+  border-radius: var(--radius-full);
+  background: var(--primary-tint);
+  display: flex; align-items: center; justify-content: center;
+}
+.empty-state-icon svg { width: 24px; height: 24px; fill: var(--primary); }
+.empty-state p { font-size: 14px; color: var(--text-tertiary); }
+
+/* ── Divider ── */
+.divider { border: none; border-top: 1px solid var(--border-default); margin: 16px 0; }
+
+/* ── Footer ── */
+.footer {
+  background: var(--bg-inset);
+  text-align: center;
+  padding: 24px;
+  font-size: 13px; color: var(--text-secondary);
+  line-height: 1.8;
+  margin-top: auto;
+}
+.footer a { color: var(--primary); text-decoration: none; }
+.footer a:hover { text-decoration: underline; }
+
+/* ── Annotation overlay (mockup-only) ── */
+.mockup-badge {
+  position: fixed; bottom: 16px; right: 16px;
+  background: var(--primary-dark); color: white;
+  font-size: 11px; font-weight: 600;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  z-index: 999;
+  letter-spacing: 0.05em;
+  opacity: 0.9;
+}
+
+/* ── Section divider for results ── */
+.region-label {
+  font-size: 13px; color: var(--text-secondary);
+  text-align: center; margin-bottom: 12px;
+}
+</style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar">
+  <a href="#" class="navbar-brand">
+    <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-1 11h-4v4h-4v-4H6v-4h4V6h4v4h4v4z"/></svg>
+    AllowanceMap
+  </a>
+  <div class="navbar-links">
+    <a href="01-estimator.html" class="active">Estimator</a>
+    <a href="02-forecast.html">Forecast</a>
+    <a href="03-about.html">About</a>
+  </div>
+</nav>
+
+<!-- Main -->
+<main class="main">
+
+  <!-- Page header -->
+  <div class="page-header">
+    <h1>Medicare Cost Estimator</h1>
+    <p>Predict what Medicare allows for a service and estimate patient out-of-pocket costs, powered by real-time ML inference on 103M+ CMS records.</p>
+  </div>
+
+  <div class="grid grid-5-7">
+
+    <!-- ─── LEFT: Form Panel ─── -->
+    <div>
+      <!-- Stage 1 Card -->
+      <div class="card">
+        <span class="stage-label s1">Stage 1 &middot; Provider Details</span>
+
+        <div class="form-group">
+          <label>Provider Specialty</label>
+          <select class="form-select">
+            <option value="" disabled>Choose specialty...</option>
+            <option selected>Internal Medicine</option>
+            <option>Cardiology</option>
+            <option>Orthopedic Surgery</option>
+            <option>Dermatology</option>
+            <option>Family Practice</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>State</label>
+          <select class="form-select">
+            <option value="" disabled>Choose state...</option>
+            <option>California</option>
+            <option>New York</option>
+            <option selected>Texas</option>
+            <option>Florida</option>
+            <option>Indiana</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Service Category</label>
+          <select class="form-select">
+            <option>Anesthesia</option>
+            <option>Surgery</option>
+            <option>Radiology</option>
+            <option>Lab / Pathology</option>
+            <option selected>Medicine / E&amp;M</option>
+            <option>HCPCS Level II</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Place of Service</label>
+          <div class="toggle-group">
+            <button class="toggle-btn active">Office</button>
+            <button class="toggle-btn">Facility</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stage 2 Card -->
+      <div class="card">
+        <span class="stage-label s2">Stage 2 &middot; Patient Details</span>
+
+        <div class="chip secondary">Region: South</div>
+
+        <div class="form-group">
+          <label>Age Group</label>
+          <select class="form-select">
+            <option>Under 65</option>
+            <option selected>65 &ndash; 74</option>
+            <option>75+</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Income Bracket</label>
+          <select class="form-select">
+            <option>Below Median</option>
+            <option selected>Above Median</option>
+          </select>
+        </div>
+
+        <div class="switch-row">
+          <div class="switch"></div>
+          <span class="switch-label">Dual Eligible (Medicare + Medicaid)</span>
+        </div>
+        <div class="switch-row">
+          <div class="switch on"></div>
+          <span class="switch-label">Has Supplemental Insurance</span>
+        </div>
+      </div>
+
+      <!-- CTA -->
+      <div style="margin-top: 16px;">
+        <button class="btn-primary">Estimate Costs</button>
+      </div>
+    </div>
+
+    <!-- ─── RIGHT: Results Panel ─── -->
+    <div>
+
+      <!-- Stage 1 Result -->
+      <div class="card result-s1">
+        <span class="stage-label s1">Stage 1 &middot; Medicare Allowed Amount</span>
+        <div class="result-amount s1">$87.24</div>
+        <p class="result-meta">Predicted amount Medicare allows for this service (LightGBM, R&sup2; = 0.943)</p>
+
+        <hr class="divider">
+
+        <div class="detail-pills">
+          <div class="detail-pill">
+            <div class="pill-label">Specialty</div>
+            <div class="pill-value">Internal Medicine</div>
+          </div>
+          <div class="detail-pill">
+            <div class="pill-label">Category</div>
+            <div class="pill-value">Medicine / E&amp;M</div>
+          </div>
+          <div class="detail-pill">
+            <div class="pill-label">Setting</div>
+            <div class="pill-value">Office</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stage 2 Result -->
+      <div class="card result-s2">
+        <span class="stage-label s2">Stage 2 &middot; Patient Out-of-Pocket</span>
+
+        <div class="percentile-bar">
+          <div class="percentile-cell">
+            <div class="percentile-label">Best Case &middot; P10</div>
+            <div class="percentile-value sm">$4.18</div>
+          </div>
+          <div class="percentile-cell highlight">
+            <div class="percentile-label">Typical &middot; P50</div>
+            <div class="percentile-value lg">$17.41</div>
+          </div>
+          <div class="percentile-cell">
+            <div class="percentile-label">High End &middot; P90</div>
+            <div class="percentile-value dk">$34.89</div>
+          </div>
+        </div>
+
+        <div class="region-label">Region: South</div>
+
+        <div class="disclaimer">
+          OOP estimates use synthetic beneficiary data modeled after MCBS distributions. Actual costs depend on specific plan details, deductibles, and coverage terms.
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── EMPTY STATE (shown before prediction) ── -->
+  <div style="margin-top: 64px; padding-top: 32px; border-top: 1px dashed var(--border-strong);">
+    <p style="font-size: 12px; font-weight: 600; color: var(--text-tertiary); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 16px;">
+      Empty State (before user clicks Estimate)
+    </p>
+    <div class="empty-state">
+      <div class="empty-state-icon">
+        <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-1 11h-4v4h-4v-4H6v-4h4V6h4v4h4v4z"/></svg>
+      </div>
+      <p>Select provider and patient details, then click <strong>Estimate Costs</strong></p>
+    </div>
+  </div>
+
+</main>
+
+<!-- Footer -->
+<footer class="footer">
+  Data source: CMS Medicare Physician &amp; Other Practitioners (2013&ndash;2023)<br>
+  Built by Raj Vedire &middot; Indiana University &middot;
+  <a href="#">GitHub</a>
+</footer>
+
+<div class="mockup-badge">MOCKUP &middot; Estimator</div>
+
+</body>
+</html>
