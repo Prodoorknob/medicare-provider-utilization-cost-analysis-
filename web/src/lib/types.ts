@@ -5,6 +5,32 @@ export interface LookupLabel {
   label: string;
 }
 
+// -- Prediction API response types (from backend) --
+
+export interface Stage1Prediction {
+  predicted_allowed_amount: number;
+  provider_type: string;
+  state: string;
+  hcpcs_bucket: number;
+  hcpcs_bucket_name: string;
+  place_of_service: number;
+}
+
+export interface Stage2Prediction {
+  oop_p10: number;
+  oop_p50: number;
+  oop_p90: number;
+  census_region: number;
+  census_region_name: string;
+}
+
+export interface FullPredictionResponse {
+  stage1: Stage1Prediction;
+  stage2: Stage2Prediction;
+}
+
+// -- Legacy types (still used by pre-computed Supabase data) --
+
 export interface Stage1Estimate {
   specialty_idx: number;
   hcpcs_bucket: number;

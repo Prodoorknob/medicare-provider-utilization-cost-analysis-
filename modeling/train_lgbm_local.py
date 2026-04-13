@@ -309,6 +309,14 @@ def train_batch(gold_dir: str, sample: float, active_features: list[str], split:
             print(f"  {feat}: {score:.2f}")
 
         mlflow.lightgbm.log_model(booster, artifact_path="lgbm_model")
+
+        # Save local artifact for API deployment
+        api_artifacts = os.path.join(os.path.dirname(os.path.dirname(__file__)), "api", "models", "artifacts")
+        if os.path.isdir(api_artifacts):
+            out_path = os.path.join(api_artifacts, "lgbm_model.txt")
+            booster.save_model(out_path)
+            print(f"  Saved model to {out_path}")
+
         print(f"LightGBM batch run complete -- {regions_trained} regions, "
               f"{total_rounds} total rounds. Model logged to MLflow.")
 
@@ -383,6 +391,14 @@ def train_full(gold_dir: str, sample: float, active_features: list[str], split: 
         importances = dict(zip(active_features, booster.feature_importance(importance_type="gain")))
         mlflow.log_dict(importances, "feature_importances.json")
         mlflow.lightgbm.log_model(booster, artifact_path="lgbm_model")
+
+        # Save local artifact for API deployment
+        api_artifacts = os.path.join(os.path.dirname(os.path.dirname(__file__)), "api", "models", "artifacts")
+        if os.path.isdir(api_artifacts):
+            out_path = os.path.join(api_artifacts, "lgbm_model.txt")
+            booster.save_model(out_path)
+            print(f"  Saved model to {out_path}")
+
         print("LightGBM full run complete. Model logged to MLflow.")
 
 

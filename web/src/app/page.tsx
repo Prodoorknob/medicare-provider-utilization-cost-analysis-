@@ -21,10 +21,10 @@ import Alert from '@mui/material/Alert';
 import Divider from '@mui/material/Divider';
 import CircularProgress from '@mui/material/CircularProgress';
 import Chip from '@mui/material/Chip';
-import { getLabels, getStage1Estimate, getStage2Estimate } from '@/lib/queries';
+import { getLabels, getFullPrediction } from '@/lib/queries';
 import { STATE_TO_REGION, CENSUS_REGION_NAMES, HCPCS_BUCKET_NAMES, AGE_GROUP_LABELS, INCOME_LABELS } from '@/lib/constants';
-import { formatDollars, formatNumber } from '@/lib/formatters';
-import type { LookupLabel, Stage1Estimate, Stage2Estimate } from '@/lib/types';
+import { formatDollars } from '@/lib/formatters';
+import type { LookupLabel, FullPredictionResponse } from '@/lib/types';
 
 export default function HomePage() {
   const [specialties, setSpecialties] = useState<LookupLabel[]>([]);
@@ -39,8 +39,7 @@ export default function HomePage() {
   const [dual, setDual] = useState(false);
   const [supplemental, setSupplemental] = useState(false);
 
-  const [s1Result, setS1Result] = useState<Stage1Estimate | null>(null);
-  const [s2Result, setS2Result] = useState<Stage2Estimate | null>(null);
+  const [result, setResult] = useState<FullPredictionResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,22 +58,24 @@ export default function HomePage() {
     if (!selectedSpecialty || !selectedState) return;
     setLoading(true);
     setError(null);
-    setS1Result(null);
-    setS2Result(null);
+    setResult(null);
 
     try {
-      const s1 = await getStage1Estimate(selectedSpecialty.idx, bucket, selectedState.idx, pos);
-      setS1Result(s1);
-
-      if (s1 && censusRegion) {
-        const s2 = await getStage2Estimate(
-          selectedSpecialty.idx, bucket, censusRegion,
-          dual ? 1 : 0, supplemental ? 1 : 0, ageGroup, income
-        );
-        setS2Result(s2);
-      }
+      const res = await getFullPrediction({
+        provider_type: selectedSpecialty.label,
+        state: selectedState.label,
+        hcpcs_bucket: bucket,
+        place_of_service: pos,
+        age: ageGroup === 1 ? 60 : ageGroup === 2 ? 70 : 80,
+        sex: 0,
+        income: income,
+        chronic_count: 2,
+        dual_eligible: dual ? 1 : 0,
+        has_supplemental: supplemental ? 1 : 0,
+      });
+      setResult(res);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to fetch estimates');
+      setError(e instanceof Error ? e.message : 'Failed to get prediction');
     } finally {
       setLoading(false);
     }
@@ -88,7 +89,7 @@ export default function HomePage() {
           Medicare Cost Estimator
         </Typography>
         <Typography variant="body1" color="text.secondary">
-          Predict what Medicare allows for a service and estimate patient out-of-pocket costs — built on 103M+ CMS records (2013–2023).
+          Predict what Medicare allows for a service and estimate patient out-of-pocket costs — powered by real-time ML inference on 103M+ CMS records.
         </Typography>
       </Box>
 
@@ -190,102 +191,88 @@ export default function HomePage() {
         <Grid size={{ xs: 12, md: 7 }}>
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
-          {s1Result && (
-            <Card sx={{ mb: 3, borderLeft: '4px solid', borderColor: 'primary.main' }}>
-              <CardContent>
-                <Typography variant="overline" color="primary" display="block" sx={{ mb: 1 }}>
-                  Stage 1 · Medicare Allowed Amount
-                </Typography>
-                <Typography variant="h3" color="primary.main" sx={{ fontFamily: '"IBM Plex Mono", monospace', mb: 0.5 }}>
-                  {formatDollars(s1Result.mean_allowed)}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  average amount Medicare allows for this service profile
-                </Typography>
-                <Divider sx={{ my: 2 }} />
-                <Grid container spacing={2}>
-                  <Grid size={3}>
-                    <Box sx={{ bgcolor: 'primary.50', borderRadius: 1, p: 1, textAlign: 'center' }}>
-                      <Typography variant="body2" color="text.secondary" fontSize={11}>Low (P10)</Typography>
-                      <Typography variant="h6" color="primary.main" sx={{ fontFamily: '"IBM Plex Mono", monospace' }}>
-                        {formatDollars(s1Result.p10_allowed)}
-                      </Typography>
-                    </Box>
-                  </Grid>
-                  <Grid size={3}>
-                    <Box sx={{ bgcolor: 'primary.50', borderRadius: 1, p: 1, textAlign: 'center' }}>
-                      <Typography variant="body2" color="text.secondary" fontSize={11}>Median</Typography>
-                      <Typography variant="h6" color="primary.main" sx={{ fontFamily: '"IBM Plex Mono", monospace' }}>
-                        {formatDollars(s1Result.median_allowed)}
-                      </Typography>
-                    </Box>
-                  </Grid>
-                  <Grid size={3}>
-                    <Box sx={{ bgcolor: 'primary.50', borderRadius: 1, p: 1, textAlign: 'center' }}>
-                      <Typography variant="body2" color="text.secondary" fontSize={11}>High (P90)</Typography>
-                      <Typography variant="h6" color="primary.main" sx={{ fontFamily: '"IBM Plex Mono", monospace' }}>
-                        {formatDollars(s1Result.p90_allowed)}
-                      </Typography>
-                    </Box>
-                  </Grid>
-                  <Grid size={3}>
-                    <Box sx={{ bgcolor: 'grey.50', borderRadius: 1, p: 1, textAlign: 'center' }}>
-                      <Typography variant="body2" color="text.secondary" fontSize={11}>Records</Typography>
-                      <Typography variant="h6" color="text.secondary" sx={{ fontFamily: '"IBM Plex Mono", monospace' }}>
-                        {formatNumber(s1Result.n_records)}
-                      </Typography>
-                    </Box>
-                  </Grid>
-                </Grid>
-                {s1Result.mean_charge != null && (
-                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
-                    Avg. submitted charge: {formatDollars(s1Result.mean_charge)} &middot;
-                    Avg. risk score: {s1Result.mean_risk_score?.toFixed(2) ?? 'N/A'}
+          {result && (
+            <>
+              <Card sx={{ mb: 3, borderLeft: '4px solid', borderColor: 'primary.main' }}>
+                <CardContent>
+                  <Typography variant="overline" color="primary" display="block" sx={{ mb: 1 }}>
+                    Stage 1 · Medicare Allowed Amount
                   </Typography>
-                )}
-              </CardContent>
-            </Card>
+                  <Typography variant="h3" color="primary.main" sx={{ fontFamily: '"IBM Plex Mono", monospace', mb: 0.5 }}>
+                    {formatDollars(result.stage1.predicted_allowed_amount)}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    predicted amount Medicare allows for this service (LightGBM, R&sup2; = 0.958)
+                  </Typography>
+                  <Divider sx={{ my: 2 }} />
+                  <Grid container spacing={2}>
+                    <Grid size={4}>
+                      <Box sx={{ bgcolor: 'primary.50', borderRadius: 1, p: 1, textAlign: 'center' }}>
+                        <Typography variant="body2" color="text.secondary" fontSize={11}>Specialty</Typography>
+                        <Typography variant="body1" color="primary.main" sx={{ fontWeight: 600 }}>
+                          {result.stage1.provider_type}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    <Grid size={4}>
+                      <Box sx={{ bgcolor: 'primary.50', borderRadius: 1, p: 1, textAlign: 'center' }}>
+                        <Typography variant="body2" color="text.secondary" fontSize={11}>Category</Typography>
+                        <Typography variant="body1" color="primary.main" sx={{ fontWeight: 600 }}>
+                          {result.stage1.hcpcs_bucket_name}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    <Grid size={4}>
+                      <Box sx={{ bgcolor: 'primary.50', borderRadius: 1, p: 1, textAlign: 'center' }}>
+                        <Typography variant="body2" color="text.secondary" fontSize={11}>Setting</Typography>
+                        <Typography variant="body1" color="primary.main" sx={{ fontWeight: 600 }}>
+                          {result.stage1.place_of_service === 1 ? 'Facility' : 'Office'}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                  </Grid>
+                </CardContent>
+              </Card>
+
+              <Card sx={{ borderLeft: '4px solid', borderColor: 'secondary.main' }}>
+                <CardContent>
+                  <Typography variant="overline" color="secondary" display="block" sx={{ mb: 1 }}>
+                    Stage 2 · Patient Out-of-Pocket
+                  </Typography>
+                  <Grid container spacing={0} sx={{ textAlign: 'center', mt: 1, mb: 2, borderRadius: 2, overflow: 'hidden', border: '1px solid', borderColor: 'divider' }}>
+                    <Grid size={4} sx={{ p: 2, borderRight: '1px solid', borderColor: 'divider' }}>
+                      <Typography variant="body2" color="text.disabled" fontSize={11}>BEST CASE · P10</Typography>
+                      <Typography variant="h5" color="secondary.light" sx={{ fontFamily: '"IBM Plex Mono", monospace', mt: 0.5 }}>
+                        {formatDollars(result.stage2.oop_p10)}
+                      </Typography>
+                    </Grid>
+                    <Grid size={4} sx={{ p: 2, borderRight: '1px solid', borderColor: 'divider', bgcolor: 'secondary.50' }}>
+                      <Typography variant="body2" color="text.disabled" fontSize={11}>TYPICAL · P50</Typography>
+                      <Typography variant="h4" color="secondary.main" sx={{ fontFamily: '"IBM Plex Mono", monospace', fontWeight: 700, mt: 0.5 }}>
+                        {formatDollars(result.stage2.oop_p50)}
+                      </Typography>
+                    </Grid>
+                    <Grid size={4} sx={{ p: 2 }}>
+                      <Typography variant="body2" color="text.disabled" fontSize={11}>HIGH END · P90</Typography>
+                      <Typography variant="h5" color="secondary.dark" sx={{ fontFamily: '"IBM Plex Mono", monospace', mt: 0.5 }}>
+                        {formatDollars(result.stage2.oop_p90)}
+                      </Typography>
+                    </Grid>
+                  </Grid>
+                  <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', mb: 2 }}>
+                    Region: {result.stage2.census_region_name}
+                  </Typography>
+                  <Box sx={{ bgcolor: '#FDF4EA', borderLeft: '3px solid #B8763A', borderRadius: 1, p: 1.5 }}>
+                    <Typography variant="body2" color="text.secondary" fontSize={12}>
+                      OOP estimates use synthetic beneficiary data modeled after MCBS distributions. Actual costs depend on specific plan details, deductibles, and coverage terms.
+                    </Typography>
+                  </Box>
+                </CardContent>
+              </Card>
+            </>
           )}
 
-          {s2Result && (
-            <Card sx={{ borderLeft: '4px solid', borderColor: 'secondary.main' }}>
-              <CardContent>
-                <Typography variant="overline" color="secondary" display="block" sx={{ mb: 1 }}>
-                  Stage 2 · Patient Out-of-Pocket
-                </Typography>
-                <Grid container spacing={0} sx={{ textAlign: 'center', mt: 1, mb: 2, borderRadius: 2, overflow: 'hidden', border: '1px solid', borderColor: 'divider' }}>
-                  <Grid size={4} sx={{ p: 2, borderRight: '1px solid', borderColor: 'divider' }}>
-                    <Typography variant="body2" color="text.disabled" fontSize={11}>BEST CASE · P10</Typography>
-                    <Typography variant="h5" color="secondary.light" sx={{ fontFamily: '"IBM Plex Mono", monospace', mt: 0.5 }}>
-                      {formatDollars(s2Result.oop_p10)}
-                    </Typography>
-                  </Grid>
-                  <Grid size={4} sx={{ p: 2, borderRight: '1px solid', borderColor: 'divider', bgcolor: 'secondary.50' }}>
-                    <Typography variant="body2" color="text.disabled" fontSize={11}>TYPICAL · P50</Typography>
-                    <Typography variant="h4" color="secondary.main" sx={{ fontFamily: '"IBM Plex Mono", monospace', fontWeight: 700, mt: 0.5 }}>
-                      {formatDollars(s2Result.oop_p50)}
-                    </Typography>
-                  </Grid>
-                  <Grid size={4} sx={{ p: 2 }}>
-                    <Typography variant="body2" color="text.disabled" fontSize={11}>HIGH END · P90</Typography>
-                    <Typography variant="h5" color="secondary.dark" sx={{ fontFamily: '"IBM Plex Mono", monospace', mt: 0.5 }}>
-                      {formatDollars(s2Result.oop_p90)}
-                    </Typography>
-                  </Grid>
-                </Grid>
-                <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', mb: 2 }}>
-                  Based on {formatNumber(s2Result.n_records)} records for this patient profile
-                </Typography>
-                <Box sx={{ bgcolor: '#FDF4EA', borderLeft: '3px solid #B8763A', borderRadius: 1, p: 1.5 }}>
-                  <Typography variant="body2" color="text.secondary" fontSize={12}>
-                    OOP estimates use synthetic beneficiary data modeled after MCBS distributions. Actual costs depend on specific plan details, deductibles, and coverage terms.
-                  </Typography>
-                </Box>
-              </CardContent>
-            </Card>
-          )}
-
-          {!s1Result && !loading && !error && (
+          {!result && !loading && !error && (
             <Card sx={{ py: 10, textAlign: 'center', border: '1px dashed', borderColor: 'divider', boxShadow: 'none', bgcolor: 'transparent' }}>
               <CardContent>
                 <Typography variant="body1" color="text.disabled">

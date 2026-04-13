@@ -50,7 +50,7 @@ TARGET = "per_service_oop"
 
 FEATURES = [
     # Provider-side (from gold)
-    "Avg_Mdcr_Alowd_Amt",      # Stage 1 target → Stage 2 feature
+    "Avg_Mdcr_Alowd_Amt",      # Stage 1 target -> Stage 2 feature
     "Bene_Avg_Risk_Scre",       # HCC risk score
     "Rndrng_Prvdr_Type_idx",    # Specialty
     "hcpcs_bucket",             # Service category
@@ -252,6 +252,16 @@ def train(data_path: str, sample: float, n_rounds: int, patience: int):
 
             # Log model
             mlflow.xgboost.log_model(booster, artifact_path=f"xgb_oop_{label}")
+
+            # Save local artifact for API deployment
+            api_artifacts = os.path.join(
+                os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                "api", "models", "artifacts",
+            )
+            if os.path.isdir(api_artifacts):
+                out_path = os.path.join(api_artifacts, f"xgb_oop_{label}.ubj")
+                booster.save_model(out_path)
+                print(f"    Saved model to {out_path}")
 
             boosters[label] = booster
 
