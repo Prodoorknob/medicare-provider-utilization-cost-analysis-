@@ -213,9 +213,8 @@ export default function HomePage() {
                     Stage 1 &middot; Medicare Allowed Amount
                   </Typography>
                   <Typography
-                    variant="h3"
                     color="primary.main"
-                    sx={{ fontFamily: '"IBM Plex Mono", monospace', fontWeight: 700, mb: 0.5 }}
+                    sx={{ fontFamily: '"IBM Plex Mono", monospace', fontWeight: 700, fontSize: 36, lineHeight: 1.1, mb: 0.5 }}
                   >
                     {formatDollars(result.stage1.predicted_allowed_amount)}
                   </Typography>
@@ -234,7 +233,7 @@ export default function HomePage() {
                           <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
                             {pill.label}
                           </Typography>
-                          <Typography variant="body1" color="primary.main" sx={{ fontWeight: 600, mt: 0.5 }}>
+                          <Typography color="primary.main" sx={{ fontSize: 13, fontWeight: 600, mt: 0.5 }}>
                             {pill.value}
                           </Typography>
                         </Box>
@@ -270,8 +269,7 @@ export default function HomePage() {
                         Best Case &middot; P10
                       </Typography>
                       <Typography
-                        variant="h5"
-                        sx={{ fontFamily: '"IBM Plex Mono", monospace', mt: 0.5, color: SECONDARY_LIGHT }}
+                        sx={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 20, mt: 0.5, color: SECONDARY_LIGHT, lineHeight: 1 }}
                       >
                         {formatDollars(result.stage2.oop_p10)}
                       </Typography>
@@ -281,9 +279,8 @@ export default function HomePage() {
                         Typical &middot; P50
                       </Typography>
                       <Typography
-                        variant="h4"
                         color="secondary.main"
-                        sx={{ fontFamily: '"IBM Plex Mono", monospace', fontWeight: 700, mt: 0.5 }}
+                        sx={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 26, fontWeight: 700, mt: 0.5, lineHeight: 1 }}
                       >
                         {formatDollars(result.stage2.oop_p50)}
                       </Typography>
@@ -293,9 +290,8 @@ export default function HomePage() {
                         High End &middot; P90
                       </Typography>
                       <Typography
-                        variant="h5"
                         color="secondary.dark"
-                        sx={{ fontFamily: '"IBM Plex Mono", monospace', mt: 0.5 }}
+                        sx={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 20, mt: 0.5, lineHeight: 1 }}
                       >
                         {formatDollars(result.stage2.oop_p90)}
                       </Typography>

@@ -47,10 +47,14 @@ const theme = createTheme({
   },
   typography: {
     fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-    h3: { fontWeight: 800, letterSpacing: '-0.02em' },
-    h4: { fontWeight: 700, letterSpacing: '-0.01em' },
-    h5: { fontWeight: 700 },
-    h6: { fontWeight: 600 },
+    // Design system sizes (tighter than MUI defaults)
+    h3: { fontSize: '2rem', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.2 },       // 32px - large dollar amounts
+    h4: { fontSize: '1.75rem', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.2 },     // 28px - page titles
+    h5: { fontSize: '1.25rem', fontWeight: 700, lineHeight: 1.3 },                                // 20px - section headings
+    h6: { fontSize: '1rem', fontWeight: 700, lineHeight: 1.4 },                                   // 16px - card headings
+    body1: { fontSize: '0.9375rem', lineHeight: 1.6 },                                            // 15px
+    body2: { fontSize: '0.8125rem', lineHeight: 1.6 },                                            // 13px
+    overline: { fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.08em', lineHeight: 2 }, // 11px
   },
   shape: {
     borderRadius: 8,
@@ -86,6 +90,7 @@ const theme = createTheme({
         root: {
           borderRadius: 8,
           backgroundColor: '#FFFFFF',
+          fontSize: '0.875rem', // 14px
           '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
             borderColor: PRIMARY_LIGHT,
             borderWidth: 1,
@@ -94,6 +99,14 @@ const theme = createTheme({
         },
         notchedOutline: {
           borderColor: 'rgba(0,0,0,0.15)',
+        },
+      },
+    },
+    MuiInputLabel: {
+      styleOverrides: {
+        root: {
+          fontSize: '0.8125rem', // 13px
+          fontWeight: 500,
         },
       },
     },
