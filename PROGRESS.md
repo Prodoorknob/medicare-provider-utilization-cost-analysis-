@@ -420,7 +420,166 @@ Avg_Sbmtd_Chrg | srvcs_per_bene | Avg_Mdcr_Alowd_Amt (TARGET)
 
 ---
 
+## Phase 8 — Foundation Models & Forecast Stacker Track ✅ COMPLETE
+
+**Goal:** Determine whether foundation time-series models (Chronos, TimesFM) and/or multivariate deep forecasters (TFT with covariates) can beat the LSTM V1 baseline (reported R² 0.886) on the 2022-2023 temporal holdout. If any approach approaches R² ≈ 0.90, deploy it as the new forecast model; otherwise close the forecast track.
+
+**Outcome:** Forecast track **CLOSED**. Production model is the **LightGBM Stacker V2_12** (R² 0.8852 under fair evaluation). Signal ceiling for annual-resolution Medicare forecasting empirically confirmed at ≈0.885.
+
+### Milestone 8.1 — V2_09 Foundation Model Exploration (April 11, 2026)
+- [x] Chronos-T5-Large zero-shot inference on 20,572 groups (3D key = ptype × bucket × state)
+- [x] Temporal split: train ≤ 2021, eval 2022-2023, forecast 2024-2026
+- [x] TimesFM 2.5 attempted but install failed; Chronos-T5 only
+- [x] Result: MAE $9.64, RMSE $20.33, R² 0.8485 — **lost to LSTM baseline by R² 0.0375**
+- [x] MLflow run `chronos_t5_large_v2_colab` logged to Databricks
+- [x] Forecast parquet saved: `chronos_forecast.parquet`
+
+### Milestone 8.2 — V2_10 Derived-Feature Foundation Models (April 12, 2026)
+- [x] Chronos-Bolt-Base (upgraded from T5-Large)
+- [x] Four series variants: raw, charge_ratio, risk_adjusted, vol_normalized
+- [x] Data source: aggregated 63 Gold parquets (102.8M rows → 180,318 group-year combos)
+- [x] Results (2022-2023 fair holdout):
+  - raw: MAE $9.54, RMSE $19.80, R² 0.8563 (**Bolt-Base beats T5-Large by R² +0.008**)
+  - risk_adjusted: identical to raw (risk ≈ 1.0 no-op)
+  - charge_ratio: R² 0.1937 — **collapsed** (back-transform through submitted charge amplifies error)
+  - vol_normalized: R² −540.24 — **catastrophic** (compounding volume forecast error)
+- [x] Conclusion: Derived features did not improve. Bolt-Base architecture swap is the only gain.
+
+### Milestone 8.3 — V2_11 CPI/CF Deflation Variants (April 13, 2026)
+- [x] Five deflation strategies applied to Chronos-Bolt input:
+  - raw: no deflation
+  - cpi_deflated: divide by CPI factor
+  - cf_deflated: divide by Conversion Factor
+  - cpi_cf_deflated: double deflation (**winner**)
+  - seq_cpi_deflated: sequestration adjustment + CPI
+- [x] Known future CPI/CF (2024-2026) used to reinflate forecasts — leak-free
+- [x] Results on 2022-2023 fair holdout:
+  - **cpi_cf_deflated: MAE $9.39, RMSE $19.71, R² 0.8576** (best FM variant)
+  - raw: R² 0.8563
+  - cf_deflated: R² 0.8541
+  - seq_cpi_deflated: R² 0.8528
+  - cpi_deflated: R² 0.8473 (**worse than raw** — CPI over-corrects)
+- [x] Conclusion: Deflation helped by only +0.0013 R². Foundation models still lag LSTM.
+
+### Milestone 8.4 — V2_12 LightGBM Stacker (April 14, 2026) 🏆 PRODUCTION
+- [x] Built LightGBM meta-learner over LSTM + Chronos base forecasts
+- [x] Self-contained Colab notebook: retrains LSTM in-notebook (3-5 min A100), re-runs Chronos cpi_cf_deflated, trains stacker
+- [x] **Discovery: teacher-forcing bug in `train_lstm_local.py` evaluate() at line 340.** The reported V1 LSTM baseline R² 0.886 / RMSE $36.42 was inflated — `evaluate()` uses 1-step-ahead teacher forcing instead of autoregressive rollout. Cell 6 of V2_12 fixed this with proper batched autoregressive rollout from context ≤ 2021.
+- [x] Fair autoregressive LSTM baseline: MAE $9.82, RMSE $18.91, R² 0.8689 (vs reported 0.886)
+- [x] Stacker features (13): lstm_pred, chronos_pred, forecast_year, ptype/state/bucket, n_history_years, last_history_value, history_mean, history_cv, history_trend, cpi_factor, cf_factor
+- [x] 5-fold GroupKFold CV → OOF metrics (no group-level leakage)
+- [x] **Stacker OOF results: MAE $8.74, RMSE $17.69, R² 0.8852** — wins on all three metrics
+- [x] Refit final stacker on full 2022-2023 data, applied to pre-computed 2024-2026 forecasts
+- [x] `stacker_forecast_2024_2026.parquet` saved to Drive, LSTM-compatible schema
+- [x] MLflow run `lgb_stacker_v2_12_colab` logged
+
+**Feature importance (gain, V2_12):**
+| Feature | Gain % |
+|---|---:|
+| lstm_pred | 70.48 |
+| last_history_value | 15.97 |
+| chronos_pred | 3.63 |
+| history_mean | 2.67 |
+| Rndrng_Prvdr_Type_idx | 1.91 |
+| history_cv | 1.62 |
+| history_trend | 1.18 |
+| Rndrng_Prvdr_State_Abrvtn_idx | 1.16 |
+| n_history_years | 0.77 |
+| hcpcs_bucket | 0.31 |
+| forecast_year | 0.27 |
+| cpi_factor | 0.02 |
+| cf_factor | 0.00 |
+
+Chronos contributes only 3.6% of stacker gain; the stacker is essentially LSTM (70.5%) + persistence anchor (16.0%) + history conditioning (10%).
+
+### Milestone 8.5 — V2_13 Multivariate TFT (April 14, 2026)
+- [x] TemporalFusionTransformer with 7 channels per group-year from Gold parquets (`gold_year/` directory with year column, not `gold/`)
+- [x] Feature structure:
+  - `static_categoricals`: provider_type, state, hcpcs_bucket
+  - `time_varying_known_reals` (decoder sees future): conversion_factor, cpi_medical, covid_indicator
+  - `time_varying_unknown_reals` (encoder only): Avg_Mdcr_Alowd_Amt, log_srvcs, log_benes, Avg_Sbmtd_Chrg, Bene_Avg_Risk_Scre, srvcs_per_bene
+- [x] max_encoder_length=11 (full 2013-2023), max_prediction_length=3
+- [x] hidden_size=64, attention_head_size=4, dropout=0.15
+- [x] QuantileLoss → native P10/P50/P90 bounds
+- [x] **Results: MAE $9.23, RMSE $18.79, R² 0.8691** — statistically tied with fair LSTM (+0.0002 R²)
+- [x] Underperformed stacker by R² 0.0161
+- [x] **Multivariate hypothesis REJECTED:** 5 observed covariates + 3 known-future decoder inputs bought essentially nothing over univariate target history at annual resolution
+- [x] Secondary finding: TFT multi-horizon forecasts are more coherent than stacker's autoregressive forecasts (2024/2025/2026 means $70/$68/$68 vs stacker's $72/$62/$62)
+- [x] MLflow run `tft_multivariate_v2_13_colab` logged
+
+### V2_09–V2_13 Final Leaderboard (2022-2023 fair temporal holdout, N=32,481)
+
+| Model | MAE | RMSE | R² | Status |
+|---|---:|---:|---:|---|
+| LSTM V1 (reported, teacher-forced) | $8.84 | $36.42 | 0.8860 | **Inflated by teacher-forcing bug** |
+| LSTM V1 (fair, autoregressive) | $9.82 | $18.91 | 0.8689 | Honest LSTM baseline |
+| Chronos-T5-Large (V2_09) | $9.64 | $20.33 | 0.8485 | Archived |
+| Chronos-Bolt raw (V2_10) | $9.54 | $19.80 | 0.8563 | Archived |
+| Chronos-Bolt cpi_cf_deflated (V2_11) | $9.39 | $19.71 | 0.8576 | Base model for stacker |
+| **LGB Stacker V2_12** | **$8.74** | **$17.69** | **0.8852** | 🏆 **PRODUCTION** |
+| Multivariate TFT V2_13 | $9.23 | $18.79 | 0.8691 | Confirmed signal ceiling |
+
+### Key Findings & Decisions
+
+1. **Signal ceiling ≈ R² 0.885 at annual resolution.** Three independent modeling approaches (fair LSTM, Chronos, multivariate TFT) cluster at 0.857-0.869. Only ensemble diversity via the stacker breaks above, buying +0.0163 R² over its best base model. No further modeling yields without finer temporal resolution.
+
+2. **Teacher-forcing bug in `train_lstm_local.py`** inflated the reported LSTM baseline by R² 0.017 and RMSE $17.51. This made earlier comparisons to Chronos misleading — the "LSTM has heavy right tail" hypothesis from V2_09-V2_11 writeups was an artifact of teacher-forcing, not a real property of the model.
+
+3. **Multivariate covariates at annual resolution carry no orthogonal signal.** V2_13 TFT with volume, charge, risk trajectories tied univariate LSTM. At annual aggregation these features move in near-lockstep with the target, so their past values don't help forecast its future.
+
+4. **The only remaining lever is quarterly data.** Going from 11 annual points to 44 quarterly points per group would unlock CNN/TCN/PatchTST architectures, enable proper fine-tuning of foundation models, and expose seasonal structure (open enrollment, holiday spikes, COVID disruption shape). Estimated 2-4 week data-engineering project. **Backlog, not current sprint.**
+
+5. **Chronos-Bolt dominates T5-Large** for this task. Architecture swap (+0.008 R²) was the only foundation-model gain; every feature-engineering and deflation variant on top of Bolt was marginal or negative.
+
+6. **V2_06 TFT (univariate) underperformed LSTM (0.846 vs 0.886) because it was univariate, not because TFT is weaker.** V2_13 multivariate TFT is tied with the fair LSTM — the architecture was always fine; what was missing was multivariate inputs, and those turn out not to help at this resolution either.
+
+### Production Deployment Decision
+
+**Deploy LightGBM Stacker V2_12** as the forecast model:
+- Best validation metrics on the only ground-truth holdout (2022-2023)
+- Forecast parquet: `{DRIVE}/v2_artifacts/predictions/stacker_forecast_2024_2026.parquet`
+- LSTM-compatible schema → drop-in replacement for existing API endpoint
+- Point-only predictions (p10=p50=p90); quantile bounds to be synthesized from historical error distribution OR replaced by quantile stacker in follow-up
+
+**Alternative (TFT V2_13) remains defensible** if product-quality concerns about forecast coherence outweigh the 0.0161 R² gap. TFT provides native P10/P50/P90 quantile bounds and more gentle multi-horizon trajectories.
+
+### Follow-up Tasks (Backlog)
+
+- [ ] Fix `train_lstm_local.py` evaluate() — add `--eval-mode {teacher_forced,autoregressive}` flag, report both to avoid future measurement confusion
+- [ ] Quantile stacker variant — 20-line change to V2_12 Cell 10 to train 3 LightGBM boosters at alpha={0.1, 0.5, 0.9}
+- [ ] Quarterly data ingestion (only path above R² 0.89 ceiling) — evaluate CMS quarterly MUP-PS availability
+- [ ] Fine-tune Chronos-Bolt on Medicare sequences (deferred; zero-shot ceiling reached)
+
+---
+
 ## Changelog
+
+### 2026-04-14 — Forecast Track Closeout (V2_09–V2_13 analysis + V2_12/V2_13 implementation)
+- **Phase 8 complete** — Foundation model track + forecast stacker + multivariate TFT. Forecast track formally CLOSED.
+- Analyzed V2_09–V2_11 (Chronos foundation model experiments) from prior session:
+  - V2_09 Chronos-T5-Large: R² 0.8485
+  - V2_10 Chronos-Bolt derived features: best R² 0.8563, charge_ratio/vol_norm variants collapsed
+  - V2_11 Chronos-Bolt cpi_cf_deflated: R² 0.8576 (best foundation-model variant)
+- **Built V2_12 LightGBM Stacker** — `colab/V2_12_stacker_forecast.ipynb` + `scripts/build_v2_12_notebook.py`
+  - 13-feature meta-learner blending LSTM + Chronos base forecasts with history conditioning
+  - 5-fold GroupKFold OOF evaluation to prevent group-level leakage
+  - Self-contained: retrains LSTM in-notebook (~5 min A100), reruns Chronos cpi_cf_deflated (~2 min)
+  - **Stacker OOF: MAE $8.74, RMSE $17.69, R² 0.8852** — production winner
+  - Feature importance: LSTM 70.5%, last_history_value 16.0%, Chronos 3.6%, rest 10%
+- **Discovered teacher-forcing bug in `train_lstm_local.py evaluate()`** — function at line 340 uses 1-step-ahead teacher-forcing instead of autoregressive rollout, inflating reported V1 LSTM R² by 0.017 and RMSE by $17.51. V2_12 Cell 6 implemented proper batched autoregressive rollout from context ≤ 2021 to produce the fair baseline: MAE $9.82, RMSE $18.91, R² 0.8689
+- **Corrected interpretation of V2_09–V2_11 analysis:** the "LSTM has heavy right tail, Chronos has half the RMSE" hypothesis was a teacher-forcing artifact. Under fair comparison all models have similar RMSE/MAE ratios (1.9-2.1) — near-Gaussian errors across the board
+- **Built V2_13 Multivariate TFT** — `colab/V2_13_multivariate_tft.ipynb` + `scripts/build_v2_13_notebook.py`
+  - TemporalFusionTransformer with 5 observed + 3 known-future covariates
+  - Data: aggregated `gold_year/` parquets (year column present) → 180K group-year panel
+  - Config: hidden_size=64, attention_heads=4, max_encoder=11, max_prediction=3, QuantileLoss
+  - **TFT V2_13: MAE $9.23, RMSE $18.79, R² 0.8691** — tied fair LSTM (+0.0002), lost to stacker by 0.0161
+  - **Multivariate hypothesis rejected:** at annual resolution, observed covariates provide no orthogonal signal over target history
+- Fixed V2_13 `gold/` → `gold_year/` path bug (original `gold/` parquets lack year column)
+- TFT secondary finding: multi-horizon joint prediction produces more coherent 2024-2026 forecasts than stacker's autoregressive drift ($70/$68/$68 vs $72/$62/$62)
+- **Signal ceiling confirmed at R² ≈ 0.885** — no further modeling yields without quarterly data ingestion
+- Created session memory files: `project_foundation_models.md` (reflects V2_09–V2_13 final state)
+- Drafted frontend deployment todos for next session (see `FRONTEND_TODOS.md`)
+- Created `MODELING.md` — comprehensive model zoo reference across all phases
 
 ### 2026-04-11 (evening)
 - **V2 complete** — all 8 Colab notebooks (V2_01 through V2_08) executed on Colab Pro T4
