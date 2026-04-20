@@ -49,6 +49,7 @@ function ForecastContent() {
 
   // Multi-specialty data for trend charts
   const [allForecasts, setAllForecasts] = useState<Record<number, LstmForecast[]>>({});
+  const [allHistory, setAllHistory] = useState<Record<number, SpecialtyYearlyAvg[]>>({});
   const [trendsLoading, setTrendsLoading] = useState(false);
 
   useEffect(() => {
@@ -70,19 +71,30 @@ function ForecastContent() {
     }
   }, [specialties, searchParams, selectedSpecialty]);
 
-  // Fetch top specialties for trend charts on mount
+  // Fetch top specialties for trend charts on mount (forecasts + full history)
   useEffect(() => {
     if (specialties.length === 0) return;
     setTrendsLoading(true);
-    Promise.all(
-      TOP_SPECIALTY_IDXS.map((idx) =>
-        getForecasts(idx).then((data) => [idx, data] as const)
-      )
-    )
-      .then((results) => {
-        const map: Record<number, LstmForecast[]> = {};
-        for (const [idx, data] of results) map[idx] = data;
-        setAllForecasts(map);
+    Promise.all([
+      Promise.all(
+        TOP_SPECIALTY_IDXS.map((idx) =>
+          getForecasts(idx).then((data) => [idx, data] as const)
+        )
+      ),
+      Promise.all(
+        TOP_SPECIALTY_IDXS.map((idx) =>
+          getSpecialtyHistory(idx).then((data) => [idx, data] as const).catch(() => [idx, []] as const)
+        )
+      ),
+    ])
+      .then(([forecastResults, historyResults]) => {
+        const fcMap: Record<number, LstmForecast[]> = {};
+        for (const [idx, data] of forecastResults) fcMap[idx] = data;
+        setAllForecasts(fcMap);
+
+        const histMap: Record<number, SpecialtyYearlyAvg[]> = {};
+        for (const [idx, data] of historyResults) histMap[idx] = data;
+        setAllHistory(histMap);
       })
       .catch(() => {})
       .finally(() => setTrendsLoading(false));
@@ -181,12 +193,21 @@ function ForecastContent() {
     for (const [idxStr, data] of Object.entries(allForecasts)) {
       const idx = Number(idxStr);
       const specLabel = specialties.find((s) => s.idx === idx)?.label ?? `Specialty ${idx}`;
+      const histRows = allHistory[idx] ?? [];
 
-      // Add historical anchor
+      // Add full historical series (preferred over single anchor)
+      for (const h of histRows) {
+        if (!yearMap[h.year]) yearMap[h.year] = {};
+        yearMap[h.year][specLabel] = h.mean_allowed;
+      }
+
+      // Bridge to forecast with the last_known anchor if that year isn't already in history
       const anchor = data.find((f) => f.last_known_year && f.last_known_value);
       if (anchor?.last_known_year && anchor?.last_known_value) {
         if (!yearMap[anchor.last_known_year]) yearMap[anchor.last_known_year] = {};
-        yearMap[anchor.last_known_year][specLabel] = anchor.last_known_value;
+        if (yearMap[anchor.last_known_year][specLabel] === undefined) {
+          yearMap[anchor.last_known_year][specLabel] = anchor.last_known_value;
+        }
       }
 
       // Add forecast years (average across states/buckets)
@@ -198,14 +219,17 @@ function ForecastContent() {
       for (const [yr, vals] of Object.entries(byYear)) {
         const y = Number(yr);
         if (!yearMap[y]) yearMap[y] = {};
-        yearMap[y][specLabel] = vals.reduce((a, b) => a + b, 0) / vals.length;
+        // Prefer historical if we already have a value for this year (overlap edge case)
+        if (yearMap[y][specLabel] === undefined) {
+          yearMap[y][specLabel] = vals.reduce((a, b) => a + b, 0) / vals.length;
+        }
       }
     }
 
     return Object.entries(yearMap)
       .map(([yr, vals]) => ({ year: Number(yr), ...vals }))
       .sort((a, b) => a.year - b.year);
-  }, [allForecasts, specialties]);
+  }, [allForecasts, allHistory, specialties]);
 
   // ── Distribution data (2026 by bucket) ──
   const distributionData = useMemo(() => {

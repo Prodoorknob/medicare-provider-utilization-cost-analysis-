@@ -257,8 +257,13 @@ export const TOP_PROVIDER_TYPES: ProviderTypeRow[] = [
 // ── Top specialty indices for multi-line trend chart ──
 // These are label-encoded indices in the lookup_labels table
 
+// Note: idx=16 "Cardiology" is used instead of idx=17 "Cardiovascular Disease (Cardiology)".
+// CMS renamed this specialty only in 2016, causing LabelEncoder to split it across
+// two indices — idx=16 has 2013–2015 + 2017–2023 history, idx=17 has only 2016. The
+// model-side encoding bug remains; this constant picks the idx with the richer series
+// for visualization. See also idx pairs 28/29 (Colorectal Surgery) and 87/88 (Oral Surgery).
 export const TOP_SPECIALTY_IDXS: number[] = [
-  17,  // Cardiovascular Disease (Cardiology)
+  16,  // Cardiology
   89,  // Orthopedic Surgery
   34,  // Dermatology
   58,  // Internal Medicine
@@ -273,7 +278,7 @@ export const TOP_SPECIALTY_IDXS: number[] = [
 ];
 
 export const SPECIALTY_COLORS: Record<number, string> = {
-  17: '#0F6E8C',  // Cardiovascular Disease (Cardiology)
+  16: '#0F6E8C',  // Cardiology
   89: '#1389AC',  // Orthopedic Surgery
   34: '#15755D',  // Dermatology
   58: '#1CA082',  // Internal Medicine
