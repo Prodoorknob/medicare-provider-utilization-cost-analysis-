@@ -31,6 +31,7 @@ import { formatDollars, formatNumber } from '@/lib/formatters';
 import type { StateSummary } from '@/lib/types';
 import {
   V2_STAGE1_MODELS,
+  V2_FORECAST_MODELS,
   V2_FEATURE_IMPORTANCES,
   V2_METHODOLOGIES,
   CORRELATION_FEATURES,
@@ -211,12 +212,20 @@ export default function AboutPage() {
               <CardContent>
                 <Typography variant="h6" gutterBottom color="primary">Stage 1: Medicare Allowed Amount</Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-                  LightGBM no-charge (R²=0.943), CatBoost monotonic, XGBoost, Random Forest, LSTM
+                  LightGBM no-charge (R²=0.943), CatBoost monotonic, XGBoost, Random Forest. Predicts the per-service allowed amount from provider, procedure, and utilization features.
                 </Typography>
                 <Divider sx={{ my: 1.5 }} />
                 <Typography variant="h6" gutterBottom color="secondary" sx={{ mt: 1.5 }}>Stage 2: Patient Out-of-Pocket</Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
                   CatBoost monotonic quantile regression (P10/P50/P90) trained on synthetic MCBS-derived beneficiary data segmented by region, age, income, and insurance status.
+                </Typography>
+                <Divider sx={{ my: 1.5 }} />
+                <Typography variant="h6" gutterBottom sx={{ mt: 1.5, color: '#15755D' }}>Forecast: 2024–2026 Projections</Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                  LightGBM Stacker V2_12 (R²=0.8852, MAE=$8.74) blends an LSTM base learner with Amazon&apos;s Chronos-Bolt foundation model and history-conditioning features. Phase 8 benchmarking against multivariate TFT confirmed a signal ceiling near 0.885 at annual resolution&mdash;further gains require quarterly data ingestion.
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ fontSize: 12, fontStyle: 'italic' }}>
+                  See <Link href="https://github.com/Prodoorknob/medicare-provider-utilization-cost-analysis-/blob/main/MODELING.md" target="_blank" rel="noopener">MODELING.md</Link> for the full experiment log, including the teacher-forcing bug that inflated the original LSTM baseline.
                 </Typography>
               </CardContent>
             </Card>
@@ -413,6 +422,77 @@ export default function AboutPage() {
                   </TableBody>
                 </Table>
               </TableContainer>
+            </CardContent>
+          </Card>
+
+          {/* Forecast Track (Phase 8) */}
+          <Card sx={{ mb: 4 }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>Forecast Track (2024&ndash;2026 Projections)</Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Phase 8 closed the forecasting effort by benchmarking foundation models and stacking against the LSTM baseline. Metrics below are on the 2022&ndash;2023 holdout evaluated at the (specialty &times; bucket &times; state &times; year) group level.
+              </Typography>
+              <TableContainer>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell><strong>Model</strong></TableCell>
+                      <TableCell align="right"><strong>MAE</strong></TableCell>
+                      <TableCell align="right"><strong>RMSE</strong></TableCell>
+                      <TableCell align="right"><strong>R²</strong></TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {V2_FORECAST_MODELS.map((m) => {
+                      const isBest = m.badge === 'PRODUCTION';
+                      return (
+                        <TableRow key={m.name} sx={isBest ? { bgcolor: 'primary.50' } : {}}>
+                          <TableCell sx={isBest ? { fontWeight: 700 } : {}}>
+                            {m.name}
+                            {m.badge && (
+                              <Chip label={m.badge} size="small" color="primary" variant="outlined" sx={{ ml: 1, height: 20, fontSize: 10, fontWeight: 600 }} />
+                            )}
+                            {m.note && (
+                              <Typography variant="body2" color="text.secondary" sx={{ fontSize: 12, mt: 0.5 }}>{m.note}</Typography>
+                            )}
+                          </TableCell>
+                          <TableCell align="right" sx={{ fontFamily: '"IBM Plex Mono", monospace' }}>
+                            {m.mae != null ? formatDollars(m.mae) : 'N/A'}
+                          </TableCell>
+                          <TableCell align="right" sx={{ fontFamily: '"IBM Plex Mono", monospace' }}>
+                            {m.rmse != null ? formatDollars(m.rmse) : 'N/A'}
+                          </TableCell>
+                          <TableCell align="right" sx={{ fontFamily: '"IBM Plex Mono", monospace', ...(isBest ? { fontWeight: 700, color: 'primary.main' } : {}) }}>
+                            {m.r2 != null ? m.r2.toFixed(4) : 'N/A'}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+
+              <Divider sx={{ my: 2 }} />
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, md: 4 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5 }}>Why the stacker wins</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    LightGBM blends diverse base signals (LSTM autoregressive rollout, Chronos-Bolt zero-shot, last-known value, history stats) and learns to reweight them per group. Ensemble diversity + history conditioning yields a clean +0.016 R² lift over the best single model.
+                  </Typography>
+                </Grid>
+                <Grid size={{ xs: 12, md: 4 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5 }}>Why multivariate TFT didn&apos;t help</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    TFT V2_13 adds macro covariates (CPI, deflators) and native quantile outputs, but lands at R² 0.8691&mdash;statistically tied with the LSTM baseline. The 4&ndash;11 year sequence length is too short for attention to separate signal from noise; annual CMS data appears to have a ceiling near 0.885. The next lever is quarterly ingestion.
+                  </Typography>
+                </Grid>
+                <Grid size={{ xs: 12, md: 4 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5 }}>Honesty note on the LSTM baseline</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    The originally reported LSTM R² of 0.886 used teacher-forced one-step evaluation&mdash;an unfair multi-horizon comparison. The fair autoregressive rollout is R² 0.8689. All Phase 8 numbers use the honest metric.
+                  </Typography>
+                </Grid>
+              </Grid>
             </CardContent>
           </Card>
 

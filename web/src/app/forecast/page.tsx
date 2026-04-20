@@ -17,6 +17,8 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Divider from '@mui/material/Divider';
+import Chip from '@mui/material/Chip';
+import Stack from '@mui/material/Stack';
 import {
   ResponsiveContainer, ComposedChart, LineChart, Line, Area, Bar, BarChart,
   XAxis, YAxis, Tooltip, CartesianGrid, Legend, ReferenceLine, ErrorBar,
@@ -279,9 +281,14 @@ function ForecastContent() {
         <Typography variant="h4" sx={{ fontWeight: 800, letterSpacing: '-0.02em' }} gutterBottom>
           Forecast Explorer
         </Typography>
-        <Typography variant="body1" color="text.secondary">
-          LSTM-powered Medicare cost forecasts through 2026 with confidence bounds. Select a specialty to see projected trends.
+        <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
+          Medicare cost forecasts through 2026 from the LightGBM Stacker, which blends an LSTM base learner with Amazon&apos;s Chronos-Bolt foundation model and history-conditioning features. Uncertainty bands are derived from the historical error distribution on the 2022&ndash;2023 holdout.
         </Typography>
+        <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
+          <Chip label="Model: LGB Stacker V2_12" size="small" color="primary" variant="outlined" sx={{ fontWeight: 600 }} />
+          <Chip label="R² 0.8852 · MAE $8.74" size="small" variant="outlined" />
+          <Chip label="Last updated 2026-04-14" size="small" variant="outlined" />
+        </Stack>
       </Box>
 
       {/* Specialty selector */}
@@ -349,7 +356,7 @@ function ForecastContent() {
               {selectedSpecialty?.label}: Cost Forecast
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Historical ({history.length > 0 ? `${history[0].year} to ${lastKnownYear}` : lastKnownYear}) + projected 2024 to 2026 with P10/P90 confidence bounds
+              Historical ({history.length > 0 ? `${history[0].year} to ${lastKnownYear}` : lastKnownYear}) + LGB Stacker projection 2024 to 2026 with P10/P90 bounds from the holdout error distribution
             </Typography>
             <ResponsiveContainer width="100%" height={400}>
               <ComposedChart data={chartData} margin={{ top: 10, right: 30, left: 20, bottom: 0 }}>

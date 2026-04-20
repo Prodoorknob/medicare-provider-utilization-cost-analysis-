@@ -25,6 +25,24 @@ export const V2_STAGE1_MODELS: V2ModelRow[] = [
   { name: 'GLM (SGD)', mae: null, rmse: null, r2: null, badge: null },
 ];
 
+// ── Forecast Track (Phase 8, V2_09–V2_13) ──
+
+export interface V2ForecastModelRow {
+  name: string;
+  mae: number | null;
+  rmse: number | null;
+  r2: number | null;
+  badge: string | null;
+  note?: string;
+}
+
+export const V2_FORECAST_MODELS: V2ForecastModelRow[] = [
+  { name: 'LGB Stacker V2_12', mae: 8.74, rmse: 17.69, r2: 0.8852, badge: 'PRODUCTION', note: 'LSTM + Chronos-Bolt + history features blended by LightGBM' },
+  { name: 'Multivariate TFT V2_13', mae: 9.23, rmse: 18.79, r2: 0.8691, badge: null, note: 'Native quantile outputs; ceiling confirmed at annual resolution' },
+  { name: 'LSTM V1 (fair, autoregressive)', mae: 9.82, rmse: 18.91, r2: 0.8689, badge: null, note: 'Re-evaluated autoregressively; replaces teacher-forced 0.886 baseline' },
+  { name: 'Chronos-Bolt (cpi_cf_deflated)', mae: 9.39, rmse: 19.71, r2: 0.8576, badge: null, note: 'Amazon foundation model, zero-shot on deflated target' },
+];
+
 // ── Feature importance (LightGBM no-charge) ──
 
 export interface FeatureImportanceRow {
