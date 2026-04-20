@@ -1,6 +1,6 @@
 # AllowanceMap — Additional Data Sources & Datasets
 
-> Last updated: 2026-04-08
+> Last updated: 2026-04-19 (added Known Data Quality Issues section; catalog of candidate sources unchanged since 2026-04-08)
 > Purpose: Catalog of datasets that could improve AllowanceMap's predictions, coverage, and validity
 
 ---
@@ -13,6 +13,28 @@
 | CMS Medicare Provider Summary (by Provider) | 2013-2023 | ~10M NPIs | `Bene_Avg_Risk_Scre` (HCC risk score) joined on NPI + year |
 | MCBS Cost Supplement PUF | 2018-2023 | ~30K/year | Stage 2: OOP distributions (national aggregate, used for synthetic data generation) |
 | MCBS Survey File PUF | 2015-2023 | ~15K/year | Demographic distributions for synthetic data generation |
+
+---
+
+## Known Data Quality Issues
+
+### CMS specialty names are inconsistent across years
+
+The raw `Rndrng_Prvdr_Type` string for a single clinical specialty can change year-to-year in the CMS Physician & Other Practitioners dataset. This is CMS's own data-entry inconsistency, not a schema change — the specialty is the same, but the string differs. When `LabelEncoder` is fit across the 2013–2023 union of strings, each variant becomes a distinct encoded index with disjoint year coverage.
+
+**Known affected specialties (confirmed 2026-04-19):**
+
+- `"Cardiology"` (2013–2015, 2017–2023) vs `"Cardiovascular Disease (Cardiology)"` (2016 only) → idx 16 vs idx 17
+- `"Colorectal Surgery (Proctology)"` vs `"Colorectal Surgery (Formerly Proctology)"` → idx 28 vs idx 29
+- `"Oral Surgery (Dentist Only)"` vs `"Oral Surgery (Dentists Only)"` → idx 87 vs idx 88
+
+A full audit of the 131 encoded specialty strings for Levenshtein-close duplicates has not been run — more pairs may exist.
+
+**Impact:** Affected specialties have their rows split across two encoded indices, so the sequence builder produces short/partial time series for each index (e.g., idx=17 has a 1-year sequence covering only 2016). Forecast models (LSTM, Chronos, Stacker) trained on this data produce unreliable forecasts for these specialties. The proper fix is a name-canonicalization step in the silver cleaning layer before encoding. Tracked as backlog item #5 in `MODELING.md`.
+
+**Interim workarounds:**
+- Frontend `TOP_SPECIALTY_IDXS` points at the richer-history index (e.g., idx=16 for Cardiology).
+- Users should not trust forecasts for idx 17, 28 (or 29), 87 (or 88) until the silver-layer fix lands and models are retrained.
 
 ---
 

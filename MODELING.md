@@ -2,7 +2,7 @@
 
 > Comprehensive reference for every model trained across Phases 1-8 of the Medicare Provider Cost & Patient OOP Prediction project. This document is the authoritative source for "which model does what, which one is in production, and why."
 >
-> Last updated: 2026-04-14 (end of Phase 8 — forecast track closed)
+> Last updated: 2026-04-19 (encoding bug documented; Phase 8 forecast track closed 2026-04-14)
 > See also: `PROGRESS.md` (chronological log), `V2_MODEL_SPEC.md` (original V2 implementation spec)
 
 ---
@@ -299,6 +299,30 @@ The RMSE difference of $17.51 is large enough to have misled the entire V2_09–
 
 Stage 1 LightGBM (R² 0.9575) evaluates on **individual HCPCS-row predictions** (millions of rows). Forecast models (R² 0.8852) evaluate on **group-year means** (32K aggregated observations). Group-year means are smoother than individual rows, so R² thresholds are different. Do not compare these numbers head-to-head in presentations — they answer different questions. PROGRESS.md notes this explicitly in Phase 7.
 
+### 🐛 CMS specialty renames split into distinct encoded indices
+
+**Discovered:** 2026-04-19 while debugging the Forecast Explorer trend chart (frontend showed a single 2016 anchor for Cardiology instead of the expected 2013–2023 series).
+
+**Root cause:** The CMS Physician & Other Practitioners dataset uses inconsistent specialty names across years. For at least three specialties, the raw `Rndrng_Prvdr_Type` string changes between years (CMS's own data-entry inconsistency, not a schema change). When `LabelEncoder` is fit across the full 2013–2023 union of names, each string becomes a distinct encoded index, so a single clinical specialty is split across two indices with disjoint year coverage.
+
+**Known affected pairs:**
+
+| Idx A | Name A | Years A | Idx B | Name B | Years B |
+|---:|---|---|---:|---|---|
+| 16 | Cardiology | 2013–2015, 2017–2023 | 17 | Cardiovascular Disease (Cardiology) | 2016 only |
+| 28 | Colorectal Surgery (Formerly Proctology) | (subset) | 29 | Colorectal Surgery (Proctology) | (subset) |
+| 87 | Oral Surgery (Dentist Only) | (subset) | 88 | Oral Surgery (Dentists Only) | (subset) |
+
+There may be more — a full audit of the 131 specialty strings for Levenshtein-close duplicates has not been run.
+
+**Downstream impact:**
+- **Stage 1 training (all variants):** each split specialty's rows go to two encoded indices; the model cannot share signal across years for those specialties. Effect on reported R² is probably small (rows affected ≪ 1% of 126M) but biased for specifically those specialties.
+- **LSTM / Stacker forecast:** the sequence builder (`05_lstm_sequences_local.py`) groups by `Rndrng_Prvdr_Type_idx`, so idx=17 gets a 1-year sequence while idx=16 gets a 10-year sequence. Forecasts for idx=17 are near-useless (single data point) and idx=16 never sees the 2016 actual.
+- **Supabase `specialty_yearly_avg` table:** powers the Forecast Explorer history chart; idx=17 shows 1 row, idx=16 shows 10 rows.
+- **Frontend `TOP_SPECIALTY_IDXS`:** previously pointed at idx=17 for Cardiology; swapped to idx=16 in commit `729843b` as an interim display fix. The underlying training-data bug is not addressed.
+
+**Proper fix (backlog):** Add specialty-name canonicalization to the silver cleaning step. Strip parenthetical aliases (e.g., `" (Cardiology)"`, `" (Proctology)"`), normalize pluralization (`"Dentists Only"` → `"Dentist Only"`), then fit `LabelEncoder` on the canonical string. Regenerate gold → sequences → retrain LSTM/stacker → re-upload to Supabase. Est. 1 day of compute (much of it re-running V2_12).
+
 ### ⚠ `gold/` vs `gold_year/` on Drive
 
 The `gold/` directory on the project's Google Drive has parquets **without the `year` column** (year was stripped at some aggregation step). The `gold_year/` directory has year-aware parquets. V2_13 originally pointed at `gold/` and hit an Arrow schema error. Always use `gold_year/` for any notebook that needs temporal granularity.
@@ -410,12 +434,16 @@ Prioritized, with estimated effort and expected outcome:
 
 ### Medium-priority (minor follow-ups)
 4. **Quantile stacker variant** — 20-line edit to V2_12 Cell 10 to train 3 LightGBM boosters at `alpha={0.1, 0.5, 0.9}` for real P10/P50/P90 bounds. Adds genuine uncertainty UI to the frontend. ~2 hours.
-5. **Update web app model comparison page** with V2 full results + Phase 8 forecast track leaderboard. ~2 hours.
+5. **Canonicalize specialty names in silver** — collapse CMS's year-to-year renames (see Known Bugs: CMS specialty renames). Regenerate gold → sequences → retrain LSTM/stacker → re-upload Supabase. Est. 1 day. Fixes the training-data bug affecting Cardiology, Colorectal Surgery, Oral Surgery and possibly more. Audit all 131 specialty strings for Levenshtein-close duplicates before normalizing.
 
 ### Low-priority (research-level, may never ship)
 6. **Fine-tune Chronos-Bolt on Medicare sequences** — zero-shot hit ceiling at R² 0.8576. Even light fine-tuning (LoRA on T5 backbone) might close the gap to the stacker. ~1 day.
 7. **Quarterly data ingestion** — the only known lever that could push forecast R² above 0.89. Evaluate whether CMS publishes MUP-PS quarterly aggregates; if yes, rebuild `sequences.parquet` at quarterly resolution (44 timesteps per group instead of 11), which unlocks CNN/TCN/PatchTST architectures and meaningful Chronos fine-tuning. **2-4 weeks of data engineering.** Target: R² 0.91–0.93.
 8. **Real MCBS LDS data for Stage 2** — replace synthetic OOP with actual patient-level OOP from the LDS cohort. Would likely revive CatBoost Monotonic V2 because real data may obey the domain constraints synthetic data violates.
+
+### Recently completed
+- ✅ **Web app model comparison page** with V2 full results + Phase 8 forecast track leaderboard — shipped 2026-04-19 ([commit 8031f6d](https://github.com/Prodoorknob/medicare-provider-utilization-cost-analysis-/commit/8031f6d)). About page Models tab now shows the Phase 8 leaderboard; Overview tab has the stacker description.
+- ✅ **Forecast Explorer trend chart** — fetches full `/specialty-history` for each top specialty instead of relying on the single `last_known_year` anchor ([commit 729843b](https://github.com/Prodoorknob/medicare-provider-utilization-cost-analysis-/commit/729843b)). Cardiology index swapped from 17 → 16 as interim display fix for the specialty-rename encoding bug.
 
 ---
 
