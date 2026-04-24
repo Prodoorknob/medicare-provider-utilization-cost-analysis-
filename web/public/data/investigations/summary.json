@@ -1,0 +1,88 @@
+{
+  "targets": 10,
+  "generated": 10,
+  "live": true,
+  "model": "claude-sonnet-4-6",
+  "briefs": [
+    {
+      "npi": "1063515195",
+      "year": 2023,
+      "specialty": "Mass Immunizer Roster Biller",
+      "state": "TX",
+      "risk_classification": "CRITICAL",
+      "risk_score": 91.0
+    },
+    {
+      "npi": "1255325338",
+      "year": 2023,
+      "specialty": "Mass Immunizer Roster Biller",
+      "state": "TX",
+      "risk_classification": "CRITICAL",
+      "risk_score": 91.0
+    },
+    {
+      "npi": "1285665141",
+      "year": 2020,
+      "specialty": "Emergency Medicine",
+      "state": "NY",
+      "risk_classification": "CRITICAL",
+      "risk_score": 91.0
+    },
+    {
+      "npi": "1710906219",
+      "year": 2018,
+      "specialty": "Optometry",
+      "state": "OH",
+      "risk_classification": "CRITICAL",
+      "risk_score": 91.0
+    },
+    {
+      "npi": "1952581027",
+      "year": 2022,
+      "specialty": "Internal Medicine",
+      "state": "IN",
+      "risk_classification": "CRITICAL",
+      "risk_score": 91.0
+    },
+    {
+      "npi": "1295051951",
+      "year": 2023,
+      "specialty": "Emergency Medicine",
+      "state": "NY",
+      "risk_classification": "CRITICAL",
+      "risk_score": 88.0
+    },
+    {
+      "npi": "1194714907",
+      "year": 2020,
+      "specialty": "Gastroenterology",
+      "state": "OH",
+      "risk_classification": "HIGH",
+      "risk_score": 78.0
+    },
+    {
+      "npi": "1851471866",
+      "year": 2020,
+      "specialty": "Otolaryngology",
+      "state": "GA",
+      "risk_classification": "HIGH",
+      "risk_score": 78.0
+    },
+    {
+      "npi": "1033474374",
+      "year": 2018,
+      "specialty": "Cardiology",
+      "state": "NY",
+      "risk_classification": "HIGH",
+      "risk_score": 72.0
+    },
+    {
+      "npi": "1386678977",
+      "year": 2013,
+      "specialty": "Multispecialty Clinic/Group Practice",
+      "state": "MI",
+      "risk_classification": "LOW",
+      "risk_score": 18.0
+    }
+  ]
+}

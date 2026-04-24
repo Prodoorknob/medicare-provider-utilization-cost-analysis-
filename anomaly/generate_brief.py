@@ -68,6 +68,142 @@ OUTPUT FORMAT (strict Markdown, these exact headings in this order):
 (numbered list, 2-5 items, specific and proportionate to the risk classification)
 
 Keep the brief concise (target 400-700 words). Do not add sections beyond these seven.
+
+============================================================================
+REFERENCE MATERIAL (for interpretation; do NOT restate this in the brief)
+============================================================================
+
+## Dataset context
+
+The screening is driven by CMS Medicare Physician and Other Practitioners by
+Provider and Service (2013-2023). Grain is (NPI, HCPCS, place-of-service,
+year). Aggregate dollar fields (submitted charge, allowed amount) are annual
+averages across services for that NPI-HCPCS-POS row. The data is PUBLIC
+utilization data -- it is suppressed for beneficiary counts below 11 and does
+NOT contain claim-level detail, diagnosis codes, date of service, referral
+chains, or beneficiary-level linkage across providers. Any rule that would
+require those fields is structurally NOT EVALUABLE here.
+
+Beneficiary risk score (Bene_Avg_Risk_Scre) is the CMS Hierarchical Condition
+Category (HCC) score, a population-acuity proxy. National median is roughly
+1.0; oncology, nephrology, and advanced heart failure panels routinely run
+1.4-2.0; primary-care-heavy panels run 0.9-1.2; mass-immunizer and screening-
+only practices run near or below 1.0. When a provider's HCC score is far
+above specialty median, high volume intensity is often clinically defensible;
+when it is far below, intensity is harder to explain.
+
+## HCPCS bucket reference
+
+  - Bucket 0 (Anesthesia):        00100-01999
+  - Bucket 1 (Surgery):           10000-69999
+  - Bucket 2 (Radiology):         70000-79999
+  - Bucket 3 (Lab / Pathology):   80000-89999
+  - Bucket 4 (Medicine and E&M):  90000-99999 (includes E&M 99201-99499)
+  - Bucket 5 (HCPCS Level II):    alphabetic codes (A, B, C, E, G, H, J, K,
+                                  L, M, Q, R, S, T, V) -- supplies, drugs,
+                                  test kits, transport, DME, temporary codes
+
+A-codes are commonly medical/surgical supplies and transport. J-codes are
+drugs administered other than oral (billed per unit of drug; a single
+beneficiary encounter can generate dozens or hundreds of billed units). K-codes
+are temporary codes for DME and COVID-era products. G-codes are temporary
+procedure codes. These code families routinely produce extreme
+services-per-beneficiary ratios that do NOT imply upcoding or ghost billing;
+they imply unit-of-measure billing conventions. Always surface this
+alternative explanation before concluding intensity is fraudulent.
+
+## Specialty norm heuristics
+
+  - Primary care (Internal Medicine, Family Practice, Geriatric Medicine):
+    high beneficiary counts, diverse HCPCS mix (20-60 unique codes),
+    Herfindahl typically 0.05-0.20, E&M-heavy (bucket 4 > 70%), moderate
+    charge-to-allowed ratio (1.5-3).
+  - Surgical subspecialties (Orthopedics, General Surgery, Urology):
+    bucket 1 dominant, moderate beneficiary counts, facility_pct often > 50%,
+    Herfindahl 0.10-0.35 depending on practice scope.
+  - Radiology, Pathology, Anesthesiology: very high Herfindahl (0.30-0.90)
+    and high intensity are normal -- these are procedural specialties with
+    narrow code sets per subspecialty. Concentration alone is not a flag.
+  - Emergency Medicine: E&M-dominant (99281-99285), moderate diversity,
+    near-zero facility_pct only in free-standing EDs; a hospital-based ED
+    physician typically has facility_pct near 100%.
+  - Optometry and Audiology: narrow code sets (often 5-15 unique codes).
+    Some optometrists legitimately participate in cataract co-management and
+    post-op care; HCPCS 66984 (cataract extraction) is billed by a
+    non-trivial share of optometrists in CMS data for reasons that include
+    surgical first-assist, bundled co-management, and in-state scope-of-
+    practice expansions.
+  - Mass Immunizer Roster Biller: single-code dominance is the norm
+    (influenza, COVID vaccines, test kits). The signal to weight here is
+    VOLUME SCALE and CHARGE RATIO, not concentration.
+  - Durable Medical Equipment (DMEPOS) suppliers: A-code and E-code heavy,
+    high charge-to-allowed ratios are common because DME suppliers set list
+    prices well above the Medicare fee schedule.
+
+## Rule-by-rule guidance
+
+HIGH_INTENSITY (srvcs_per_bene at specialty P>=99). Strongest when the
+specialty's P95 is low and the provider sits orders of magnitude above it.
+Weaken when: (a) top HCPCS is a J-code, A-code, or test kit billed per unit;
+(b) beneficiary count is very small, since ratio is unstable with small n;
+(c) HCC score is high, implying clinically complex panel.
+
+VOLUME_SPIKE (YoY volume > +200% on >= 1,000 services). Distinguish benign
+spikes (new practice established, group affiliation change, program launch)
+from suspicious ones (sudden appearance in a high-value code with no prior
+history, spike isolated to a single HCPCS, spike concentrated in a payment
+window before a policy change).
+
+CHARGE_INFLATION (charge-to-allowed > specialty P95 x 1.5). By itself usually
+administrative rather than fraudulent -- many practices set charge master
+prices well above Medicare's fee schedule for secondary payer logic. Becomes
+a stronger signal when combined with volume or intensity flags, or when
+applied to drugs/supplies where per-unit allowed is tightly regulated.
+
+PROCEDURE_CONCENTRATION (Herfindahl at specialty P>=99). Must be evaluated
+against specialty-typical HHI. A Herfindahl of 1.0 (single-code billing) is
+normal for some subspecialists (e.g., radiation oncology targeting a specific
+code family) and extreme for generalists. Pair with n_unique_hcpcs: 1 is
+almost never explainable in primary care but routine in mass vaccination.
+
+OUT_OF_SPECIALTY (>20% of services on codes outside specialty scope). Scope
+is built empirically from what a specialty's population actually bills in
+CMS data, NOT from regulatory scope-of-practice rules. Codes billed by
+>=1% of the specialty's providers or within the cumulative top 99% of
+service volume are considered in-scope. A trigger indicates the provider is
+an outlier relative to their specialty peers; it does NOT necessarily imply
+regulatory violation. Narrate carefully: distinguish between (a) legitimate
+sub-specialization that the rule cannot see, (b) specialty label drift
+(provider self-declared specialty in the CMS taxonomy does not match actual
+practice), and (c) genuinely out-of-scope billing that warrants review.
+
+IMPOSSIBLE_DAY, UPCODING, UNBUNDLING, BENEFICIARY_SHARING: structurally NOT
+EVALUABLE in this dataset. Do not speculate. State the data gap explicitly.
+
+## Weighting and risk classification guidance
+
+Treat risk as qualitative, not additive. One extreme statistical flag with a
+benign explanation should rarely exceed MEDIUM. TWO flags without a common
+benign explanation typically land at HIGH. THREE or more flags, with a
+coherent fraud narrative (e.g., volume spike + charge inflation +
+out-of-specialty on a high-reimbursement code), justify CRITICAL.
+
+Be especially skeptical when the evidence pattern matches a known CMS Fraud
+Prevention System archetype: opportunistic exploitation of a temporary
+program (COVID testing, vaccine administration, PPE supply), sudden late-
+career billing shift from a low-activity NPI, or convergence on a single
+high-margin code family with implausible beneficiary counts.
+
+Always reconcile the narrative against beneficiary risk score (HCC). High
+intensity with a below-median HCC panel is harder to justify than the same
+intensity with a high-HCC oncology or transplant panel.
+
+## Output discipline
+
+Return ONLY the brief in the specified Markdown structure. Do not include
+preambles ("Here is the brief..."), closing remarks, JSON wrappers, or
+reasoning traces. The brief is read by analysts in a review UI that parses
+these section headings directly, so deviations break downstream tooling.
 """
 
 
@@ -299,21 +435,42 @@ def generate_brief(
         )
 
     import anthropic
+    import time as _time
     client = anthropic.Anthropic()
 
-    # Cache the long system prompt across all briefs in a batch
-    response = client.messages.create(
-        model=model,
-        max_tokens=max_tokens,
-        system=[
-            {
-                "type": "text",
-                "text": SYSTEM_PROMPT,
-                "cache_control": {"type": "ephemeral"},
-            }
-        ],
-        messages=[{"role": "user", "content": user_prompt}],
-    )
+    # Cache the long system prompt across all briefs in a batch.
+    # Retry on transient 429/529 errors with exponential backoff so a single
+    # overloaded response doesn't crash the full batch.
+    transient = (anthropic.RateLimitError, anthropic.APIStatusError,
+                 getattr(anthropic, "OverloadedError",
+                         anthropic.APIStatusError))
+    last_err = None
+    for attempt in range(5):
+        try:
+            response = client.messages.create(
+                model=model,
+                max_tokens=max_tokens,
+                system=[
+                    {
+                        "type": "text",
+                        "text": SYSTEM_PROMPT,
+                        "cache_control": {"type": "ephemeral"},
+                    }
+                ],
+                messages=[{"role": "user", "content": user_prompt}],
+            )
+            break
+        except transient as e:
+            status = getattr(e, "status_code", None)
+            # Only retry on 429 (rate limit) and 529 (overloaded)
+            if status not in (429, 529):
+                raise
+            last_err = e
+            wait = 2 ** attempt * 5  # 5s, 10s, 20s, 40s, 80s
+            print(f"  [retry {attempt+1}/5] API {status}: sleeping {wait}s before retry")
+            _time.sleep(wait)
+    else:
+        raise last_err
 
     text_blocks = [b.text for b in response.content if b.type == "text"]
     brief_md = "\n".join(text_blocks).strip()
