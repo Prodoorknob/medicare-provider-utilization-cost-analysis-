@@ -552,7 +552,90 @@ Chronos contributes only 3.6% of stacker gain; the stacker is essentially LSTM (
 
 ---
 
+## Phase 9 — Provider Anomaly Investigation Agent ✅ PHASES A–C COMPLETE
+
+**Goal:** Deliver an end-to-end fraud investigation agent on top of the existing AllowanceMap silver layer. Statistical outlier detection → contextual evidence retrieval → rule checks → Claude-generated investigation briefs. Spec: [`PROVIDER_ANOMALY_AGENT_SPEC.md`](PROVIDER_ANOMALY_AGENT_SPEC.md).
+
+### Milestone 9.1 — Phase A: Data Foundation (April 23, 2026)
+- [x] `anomaly/compute_npi_profiles.py` — 11.52M NPI-year profiles from silver (`local_pipeline/anomaly/npi_profiles.parquet`, 640 MB)
+  - 22 metrics per NPI-year incl. log/level volume, srvcs_per_bene, charge_to_allowed_ratio, Herfindahl, bucket distribution, YoY changes, risk score
+  - 100% risk-score coverage after fixing path inheritance bug from gold script (`../data` → `data/`)
+  - Reuses [`hcpcs_to_bucket()`](notebooks/03_gold_features_local.py:100) logic from gold layer
+- [x] `anomaly/compute_benchmarks.py` — 3 benchmark tables (specialty × year, specialty × state × year, national × year)
+  - 1,067 specialty-year groups, 50,078 state-specialty-year groups (26.8% thin <10 providers — confirmed §11.2 caveat)
+  - Each metric reported with mean + P5/P25/P50/P75/P95
+
+### Milestone 9.2 — Phase B: Detection Engine (April 23, 2026)
+- [x] `anomaly/detect_outliers.py` — three independent methods, output `local_pipeline/anomaly/flags.parquet`
+  - **Method A (z-score):** log1p-transform on heavy-tailed metrics, threshold |z|>3.0, falls back to specialty-year benchmark when state-specialty-year peer group <30
+  - **Method B (Isolation Forest):** per-specialty (≥200 providers), `contamination=0.01`, 16 features incl. bucket distribution
+  - **Method C (Temporal):** YoY rules with absolute volume gate (`total_services ≥ 1000`) + COVID recovery year (2021) excluded
+- [x] **Composite signal calibrated within spec target (1–3%):** 89,201 NPI-years fire on ≥2 methods (0.77%); 8,391 fire on all 3 (0.073%); raw union 6.83%
+- [x] Top-flagged specialties match historical OIG fraud priorities: Pain Management, Radiation Oncology, Diagnostic Radiology, Cardiology
+
+### Milestone 9.3 — Phase C: Investigation Agent (April 23, 2026)
+- [x] `anomaly/schemas.py` — `ProviderContext`, `RuleCheckResult`, `InvestigationBrief` dataclasses
+- [x] `anomaly/retrieve_context.py` — `ContextRetriever` caches profiles + benchmarks at init, lazy-loads silver per state for top-HCPCS lookup
+- [x] `anomaly/check_rules.py` — 9 rules from spec §6: 4 evaluable (HIGH_INTENSITY, VOLUME_SPIKE, CHARGE_INFLATION, PROCEDURE_CONCENTRATION) + 5 transparently marked NOT EVALUABLE with reason (no daily data, no per-encounter grouping, no claims linkage, no diagnosis codes, scope table not yet built)
+- [x] `anomaly/generate_brief.py` — system prompt + structured user prompt + Claude API call with markdown parsing
+  - Default model: `claude-sonnet-4-6` (per spec §9.3); ephemeral `cache_control` on system prompt (silently skipped — system <2048-token min for Sonnet 4.6 cache)
+  - Dry-run is the default; `--live` opts in to API spend
+  - Loads `ANTHROPIC_API_KEY` from cross-project `.env` (override=True to bypass empty shell var)
+- [x] `anomaly/agent.py` — orchestrator: rank flags by composite severity → context → rules → brief → markdown + JSON per NPI
+- [x] **10-brief live run** ([`local_pipeline/anomaly/briefs/`](local_pipeline/anomaly/briefs/)): 5 CRITICAL, 4 HIGH, 1 MEDIUM. Cost **$0.36** total (29K input / 18K output tokens, ~42s/brief).
+
+### Key Findings from Sample Briefs
+| NPI | Specialty | State | Year | Risk | Pattern |
+|---|---|---|---|---|---|
+| 1710906219 | Optometry | OH | 2018 | CRITICAL (91) | 1,784 cataract surgeries (CPT 66984) on 12 beneficiaries = 148/patient. Out-of-scope code; $1.38 avg allowed suggests Medicare denying claims. Claude hypothesized **NPI identity theft** and recommended OIG ZPIC referral. |
+| 1255325338 | Mass Immunizer | TX | 2023 | CRITICAL (91) | Trend=spike, all 3 methods triggered. |
+| 1033474374 | Cardiology | NY | 2018 | HIGH (78) | 1,240 services, srvcs/bene=112, HHI=1.0 — 1 HCPCS code repeated. |
+| 1386678977 | Multispecialty Clinic | MI | 2013 | MEDIUM (42) | Correctly downgraded — Claude identified "specialty-mismatch artifact" (rad onc billed under multispecialty group), legitimate HCC weighting. |
+
+### Key Decisions Made (Phase 9)
+| Decision | Rationale |
+|---|---|
+| Branched `agent/provider-anomaly` from `main`, not from phase8-stacker-surface | Anomaly work is independent of forecast/frontend track. |
+| Used composite (multi-method) overlap as the credible-signal rate | Raw OR-of-3-methods produced 6.83% (5× spec target). Multi-method intersection (0.77%) hits spec without arbitrary threshold tightening. |
+| log1p z-score on heavy-tailed metrics | Naive z-score over-fired on lognormal billing distributions; log1p brings ~1% tail. |
+| Absolute-volume gate on temporal rules | Filters out provider ramp-ups (e.g., 10→30 services = +200% but not suspicious). Excludes COVID recovery year (2021) where everyone YoY rebounded. |
+| Sonnet 4.6 over Opus 4.7 for briefs | Per spec §9.3; structured narrative task does not need Opus reasoning depth. Cost: $0.04/brief vs $0.20/brief. |
+| Dry-run as default in `agent.py --live` opt-in | API spend (10 briefs ≈ $0.36) requires explicit user opt-in per the harness's risky-action defaults. |
+| Skipped OUT_OF_SPECIALTY rule for V1 | Requires per-specialty HCPCS scope table; deferred to follow-up. Marked NOT EVALUABLE so briefs disclose the gap. |
+
+### Limitations & Follow-ups
+- 5 of 9 spec rules cannot be evaluated with public CMS data (no claim-level dates, no per-encounter grouping, no beneficiary linkage, no diagnosis codes). Briefs disclose this explicitly.
+- System prompt (1,200 tokens) below Sonnet 4.6's 2,048-token cache minimum — caching silently no-ops. Pad system prompt or batch via Messages API to capture cache savings on larger runs.
+- Specialty-HCPCS scope table not yet built; OUT_OF_SPECIALTY rule placeholder.
+- No analyst review interface yet (CLI / web dashboard from spec §8 deferred).
+- `_load_api_key` uses `override=True` because shell had `ANTHROPIC_API_KEY=""` blocking dotenv default behavior — worth documenting for any other repos that rely on cross-project `.env`.
+
+---
+
 ## Changelog
+
+### 2026-04-23 — Provider Anomaly Investigation Agent (Phases A–C)
+- **Phase 9 launch** — opened `agent/provider-anomaly` branch from `main`. Designed in `PROVIDER_ANOMALY_AGENT_SPEC.md` (2026-04-08) and now implemented end-to-end through Claude brief generation.
+- **Phase A (Data Foundation):**
+  - Built `anomaly/compute_npi_profiles.py` — 11.52M NPI-years × 22 metrics from silver layer in 184s
+  - Built `anomaly/compute_benchmarks.py` — 3 benchmark tables (specialty × year, +state, +national) in ~30s
+  - Fixed inherited `../data` path bug from gold script — provider risk scores now 100% covered
+- **Phase B (Detection Engine):**
+  - Built `anomaly/detect_outliers.py` with z-score, Isolation Forest, and temporal methods
+  - Initial naive run: 15.57% raw flag rate (5× spec target). Tuned with log1p transform + absolute-volume gates → composite (≥2 methods) **0.77%**, within spec §4.2 target
+  - Top-flagged specialties (Pain Management, Radiation Oncology, Diagnostic Radiology) match historical OIG priorities
+- **Phase C (Investigation Agent):**
+  - Built schemas, context retriever, rule checks, brief generator, orchestrator
+  - Installed `anthropic==0.97.0` + `python-dotenv`; loaded `ANTHROPIC_API_KEY` from cross-project `coverdrive_pred_11/.env`
+  - 10-brief live run with `claude-sonnet-4-6`: 5 CRITICAL / 4 HIGH / 1 MEDIUM
+  - Total cost **$0.36** (29K input / 18K output tokens, ~42s per brief)
+  - **Showcase brief:** Optometrist billing 1,784 cataract surgeries to 12 beneficiaries — Claude identified scope-of-practice violation (CPT 66984 is ophthalmology), anatomical impossibility (148 surgeries/patient), and hypothesized NPI identity theft from the $1.38 average allowed
+  - **Calibration validation:** 2013 multispecialty clinic correctly downgraded to MEDIUM — Claude identified the "specialty-mismatch artifact" rather than calling it fraud
+- **Bugs fixed during build:**
+  - F-string ternary-in-format-spec error in `check_rules.py` (replaced with `_fmt()` helper)
+  - Windows cp1252 encoding errors on Unicode arrows in `compute_npi_profiles.py` (replaced with ASCII)
+  - `dotenv.load_dotenv` not overriding empty `ANTHROPIC_API_KEY` shell var (added `override=True`)
+- **Memory updates:** added `project_anomaly_agent.md`
 
 ### 2026-04-14 — Forecast Track Closeout (V2_09–V2_13 analysis + V2_12/V2_13 implementation)
 - **Phase 8 complete** — Foundation model track + forecast stacker + multivariate TFT. Forecast track formally CLOSED.
