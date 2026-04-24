@@ -177,7 +177,25 @@ sub-specialization that the rule cannot see, (b) specialty label drift
 (provider self-declared specialty in the CMS taxonomy does not match actual
 practice), and (c) genuinely out-of-scope billing that warrants review.
 
-IMPOSSIBLE_DAY, UPCODING, UNBUNDLING, BENEFICIARY_SHARING: structurally NOT
+UPCODING (99214+99215 share of established office visits > specialty P95,
+on volume >= 50 established services, and absolute share >= 50%). Pre-
+computed from silver via em_distribution.py. Interpret carefully: high-tier
+share alone can be clinically defensible in panels with high patient acuity
+(check HCC risk score vs. specialty median) or in specialists who only see
+established complex follow-ups. Narrative should distinguish (a) volume-
+driven statistical outlier with benign case-mix explanation, (b) gradual
+year-over-year drift toward high-tier, and (c) abrupt shift without
+clinical context -- (c) is the classic MLN SE1418 pattern.
+
+LEIE_EXCLUDED (NPI match on OIG List of Excluded Individuals/Entities).
+This is a conviction-grade signal, not a statistical one. An active
+exclusion means any Medicare payment to that NPI is program-ineligible by
+law (42 USC 1320a-7). A match should push the brief to CRITICAL regardless
+of other signals. A historical exclusion that has been reinstated is
+context, not a trigger; describe the period but do not classify as CRITICAL
+solely on that basis.
+
+IMPOSSIBLE_DAY, UNBUNDLING, BENEFICIARY_SHARING: structurally NOT
 EVALUABLE in this dataset. Do not speculate. State the data gap explicitly.
 
 ## Weighting and risk classification guidance
@@ -294,6 +312,50 @@ def format_user_prompt(ctx: ProviderContext, rules: list[RuleCheckResult]) -> st
         lines.append("- (HCPCS-level data unavailable)")
     lines.append(f"- Service category mix (bucket %): {ctx.bucket_distribution}")
     lines.append("")
+
+    # E&M distribution (if available)
+    em_est_total = ctx.metrics.get("em_est_total")
+    if em_est_total is not None:
+        est_high_pct = ctx.metrics.get("em_est_high_pct")
+        new_total    = ctx.metrics.get("em_new_total")
+        new_high_pct = ctx.metrics.get("em_new_high_pct")
+        bench = ctx.specialty_national.get("em_est_high_pct", {})
+
+        est_hp_s = f"{est_high_pct*100:.1f}%" if est_high_pct is not None else "n/a"
+        lines.append("## E&M Code Distribution (UPCODING signal)")
+        lines.append(
+            f"- Established visits (99211-99215): total={int(em_est_total):,}, "
+            f"99214+99215 share={est_hp_s}"
+        )
+        if bench:
+            def _pc(key):
+                v = bench.get(key)
+                return f"{v*100:.1f}%" if v is not None else "n/a"
+            lines.append(
+                f"  - specialty benchmark for est_high_pct: "
+                f"p50={_pc('p50')}, p75={_pc('p75')}, p95={_pc('p95')}"
+            )
+        if new_total:
+            new_hp_s = f"{new_high_pct*100:.1f}%" if new_high_pct is not None else "n/a"
+            lines.append(
+                f"- New visits (99202-99205): total={int(new_total):,}, "
+                f"99204+99205 share={new_hp_s}"
+            )
+        lines.append("")
+
+    # LEIE exclusion record (if applicable)
+    if ctx.leie_record is not None:
+        rec = ctx.leie_record
+        lines.append("## OIG LEIE Match (CRITICAL)")
+        lines.append(f"- Exclusion type: {rec.get('exclusion_type','n/a')}")
+        lines.append(f"- Exclusion date: {rec.get('exclusion_date','n/a')}")
+        if rec.get("reinstate_date"):
+            lines.append(f"- Reinstated: {rec['reinstate_date']} (historical, not currently excluded)")
+        if rec.get("waiver_date"):
+            lines.append(f"- Waiver on file: {rec['waiver_date']}")
+        if rec.get("general"):
+            lines.append(f"- Occupation (LEIE): {rec['general']}")
+        lines.append("")
 
     # Rule checks
     lines.append("## Fraud-Indicator Rule Checks")

@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Medicare & Insurance — Knowledge Report</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --ink:      #0f0e0c;
+    --paper:    #f5f0e8;
+    --paper2:   #ede8df;
+    --forest:   #2a4a3e;
+    --blue:     #8ab0c8;
+    --rust:     #b05a30;
+    --gold:     #c8960a;
+    --muted:    #6b6660;
+    --rule:     #c8bfb0;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 16px; scroll-behavior: smooth; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    line-height: 1.75;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--ink);
+    padding: 0.75rem 2rem;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  nav .brand { font-family: 'DM Mono', monospace; font-size: 0.75rem; color: var(--blue); letter-spacing: 0.15em; text-transform: uppercase; }
+  nav .nav-links { display: flex; gap: 1.5rem; }
+  nav .nav-links a { font-family: 'DM Mono', monospace; font-size: 0.7rem; color: var(--rule); text-decoration: none; letter-spacing: 0.1em; text-transform: uppercase; transition: color 0.2s; }
+  nav .nav-links a:hover { color: var(--blue); }
+
+  /* ── HERO ── */
+  .hero {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 5rem 2rem 4rem;
+    text-align: center;
+  }
+  .hero .eyebrow { font-family: 'DM Mono', monospace; font-size: 0.72rem; letter-spacing: 0.2em; color: var(--blue); text-transform: uppercase; margin-bottom: 1.25rem; }
+  .hero h1 { font-family: 'Playfair Display', serif; font-size: clamp(2.4rem, 5vw, 4rem); font-weight: 700; line-height: 1.15; max-width: 780px; margin: 0 auto 1.25rem; }
+  .hero h1 em { font-style: italic; color: var(--blue); }
+  .hero .sub { font-size: 1.05rem; color: var(--rule); max-width: 600px; margin: 0 auto 2rem; font-weight: 300; }
+  .hero .meta { display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap; }
+  .hero .meta span { font-family: 'DM Mono', monospace; font-size: 0.68rem; letter-spacing: 0.12em; color: var(--muted); text-transform: uppercase; }
+  .hero .meta span strong { color: var(--rule); }
+
+  /* ── LAYOUT ── */
+  .container { max-width: 900px; margin: 0 auto; padding: 0 2rem; }
+  .wide { max-width: 1100px; margin: 0 auto; padding: 0 2rem; }
+
+  /* ── SECTION ── */
+  section { padding: 4rem 0; border-bottom: 1px solid var(--rule); }
+  section:last-of-type { border-bottom: none; }
+  .section-label {
+    font-family: 'DM Mono', monospace; font-size: 0.68rem;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--forest); margin-bottom: 0.5rem;
+  }
+  h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.6rem, 3vw, 2.2rem);
+    font-weight: 600; line-height: 1.2;
+    margin-bottom: 1.5rem;
+  }
+  h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.25rem; font-weight: 600;
+    margin: 2rem 0 0.75rem;
+  }
+  p { margin-bottom: 1rem; font-size: 0.97rem; }
+  p:last-child { margin-bottom: 0; }
+
+  /* ── CALLOUT ── */
+  .callout {
+    border-left: 3px solid var(--forest);
+    background: var(--paper2);
+    padding: 1.25rem 1.5rem;
+    margin: 1.75rem 0;
+    border-radius: 0 4px 4px 0;
+  }
+  .callout .callout-label { font-family: 'DM Mono', monospace; font-size: 0.65rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--forest); margin-bottom: 0.4rem; }
+  .callout p { font-size: 0.93rem; margin-bottom: 0; }
+
+  .callout.rust { border-left-color: var(--rust); }
+  .callout.rust .callout-label { color: var(--rust); }
+  .callout.gold { border-left-color: var(--gold); }
+  .callout.gold .callout-label { color: var(--gold); }
+  .callout.blue { border-left-color: var(--blue); }
+  .callout.blue .callout-label { color: var(--blue); }
+
+  /* ── TERM TABLE ── */
+  .term-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1.5rem 0; }
+  @media(max-width:640px) { .term-grid { grid-template-columns: 1fr; } }
+  .term-card {
+    background: var(--ink);
+    color: var(--paper);
+    border-radius: 6px;
+    padding: 1.25rem 1.4rem;
+  }
+  .term-card .term { font-family: 'DM Mono', monospace; font-size: 0.75rem; color: var(--blue); letter-spacing: 0.1em; margin-bottom: 0.4rem; }
+  .term-card .def { font-size: 0.88rem; line-height: 1.6; color: var(--rule); }
+  .term-card .example { font-family: 'DM Mono', monospace; font-size: 0.72rem; color: var(--gold); margin-top: 0.5rem; }
+
+  /* ── FLOW DIAGRAM ── */
+  .flow { display: flex; align-items: flex-start; gap: 0; margin: 2rem 0; flex-wrap: wrap; }
+  .flow-step {
+    flex: 1; min-width: 140px;
+    background: var(--forest);
+    color: var(--paper);
+    padding: 1rem 1.1rem;
+    position: relative;
+    text-align: center;
+  }
+  .flow-step:not(:last-child)::after {
+    content: '→';
+    position: absolute; right: -14px; top: 50%; transform: translateY(-50%);
+    color: var(--forest); font-size: 1.2rem; z-index: 1;
+  }
+  .flow-step .step-num { font-family: 'DM Mono', monospace; font-size: 0.65rem; letter-spacing: 0.1em; color: var(--blue); margin-bottom: 0.3rem; }
+  .flow-step .step-label { font-size: 0.82rem; font-weight: 500; }
+  .flow-step .step-amt { font-family: 'DM Mono', monospace; font-size: 0.72rem; color: var(--gold); margin-top: 0.25rem; }
+
+  /* ── MONEY EXAMPLE ── */
+  .money-example {
+    background: var(--ink); border-radius: 8px;
+    padding: 2rem; margin: 2rem 0;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1.25rem;
+  }
+  .money-example .me-item { text-align: center; }
+  .money-example .me-label { font-family: 'DM Mono', monospace; font-size: 0.65rem; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
+  .money-example .me-value { font-family: 'Playfair Display', serif; font-size: 1.8rem; color: var(--paper); margin: 0.3rem 0; }
+  .money-example .me-desc { font-size: 0.78rem; color: var(--rule); line-height: 1.4; }
+  .money-example .me-value.blue { color: var(--blue); }
+  .money-example .me-value.gold { color: var(--gold); }
+  .money-example .me-value.rust { color: #d47a50; }
+  .money-example .me-value.green { color: #5fba7d; }
+
+  /* ── COVERAGE TABLE ── */
+  table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; font-size: 0.88rem; }
+  th { background: var(--ink); color: var(--paper); padding: 0.75rem 1rem; text-align: left; font-family: 'DM Mono', monospace; font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; }
+  td { padding: 0.7rem 1rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  tr:nth-child(even) td { background: var(--paper2); }
+  .pill {
+    display: inline-block; padding: 0.15rem 0.55rem;
+    border-radius: 99px; font-family: 'DM Mono', monospace;
+    font-size: 0.65rem; letter-spacing: 0.05em;
+  }
+  .pill.green { background: #1a3a2a; color: #5fba7d; }
+  .pill.amber { background: #3a2a00; color: var(--gold); }
+  .pill.red   { background: #3a1a10; color: #d47a50; }
+
+  /* ── PIPELINE ARCH ── */
+  .arch-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; margin: 1.75rem 0; }
+  .arch-layer { background: var(--paper2); padding: 1.5rem 1.25rem; }
+  .arch-layer .layer-tag { font-family: 'DM Mono', monospace; font-size: 0.65rem; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 0.5rem; }
+  .arch-layer.bronze .layer-tag { color: #b07840; }
+  .arch-layer.silver .layer-tag { color: #8898a8; }
+  .arch-layer.gold   .layer-tag { color: var(--gold); }
+  .arch-layer.model  .layer-tag { color: var(--forest); }
+  .arch-layer h4 { font-family: 'Playfair Display', serif; font-size: 1rem; margin-bottom: 0.5rem; }
+  .arch-layer ul { padding-left: 1rem; font-size: 0.82rem; color: var(--muted); }
+  .arch-layer ul li { margin-bottom: 0.25rem; }
+
+  /* ── STAGE MODEL ── */
+  .stage-box {
+    border: 1px solid var(--rule); border-radius: 8px;
+    margin: 1.25rem 0; overflow: hidden;
+  }
+  .stage-header {
+    background: var(--forest); color: var(--paper);
+    padding: 0.75rem 1.25rem;
+    display: flex; align-items: center; gap: 1rem;
+  }
+  .stage-header .stage-num { font-family: 'DM Mono', monospace; font-size: 0.7rem; color: var(--blue); }
+  .stage-header h4 { font-family: 'Playfair Display', serif; font-size: 1.05rem; }
+  .stage-body { padding: 1.25rem; }
+  .stage-body .io-row { display: flex; gap: 2rem; margin-top: 0.75rem; flex-wrap: wrap; }
+  .stage-body .io-col { flex: 1; min-width: 180px; }
+  .stage-body .io-label { font-family: 'DM Mono', monospace; font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.4rem; }
+  .stage-body code { font-family: 'DM Mono', monospace; font-size: 0.78rem; background: var(--paper2); padding: 0.15rem 0.4rem; border-radius: 3px; display: block; margin: 0.15rem 0; }
+
+  /* ── FOOTER ── */
+  footer {
+    background: var(--ink); color: var(--muted);
+    padding: 2.5rem 2rem; text-align: center;
+  }
+  footer .footer-brand { font-family: 'DM Mono', monospace; font-size: 0.7rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--rule); margin-bottom: 0.5rem; }
+  footer p { font-size: 0.78rem; }
+
+  /* ── RULE ── */
+  .rule { width: 3rem; height: 2px; background: var(--forest); margin: 0 0 1.5rem; }
+
+  /* ── TOC ── */
+  .toc { background: var(--ink); border-radius: 8px; padding: 2rem; margin: 2.5rem 0; }
+  .toc h3 { font-family: 'Playfair Display', serif; color: var(--paper); margin-bottom: 1rem; }
+  .toc ol { padding-left: 1.25rem; }
+  .toc ol li { margin-bottom: 0.4rem; }
+  .toc ol li a { color: var(--blue); font-size: 0.88rem; text-decoration: none; font-family: 'DM Sans', sans-serif; }
+  .toc ol li a:hover { color: var(--paper); }
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="brand">Medicare · Knowledge Report</span>
+  <div class="nav-links">
+    <a href="#basics">Basics</a>
+    <a href="#money">Money Flow</a>
+    <a href="#coverage">Coverage</a>
+    <a href="#data">The Data</a>
+    <a href="#pipeline">Pipeline</a>
+    <a href="#ml">ML Roadmap</a>
+    <a href="#fraud">Fraud Agent</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="eyebrow">Portfolio Knowledge Report · April 2026</div>
+  <h1>Medicare & Insurance<br/><em>From Zero to Patient-Level Prediction</em></h1>
+  <p class="sub">Everything you need to understand the system your models are operating in — written for someone who loves ML but has never touched a Medicare claim.</p>
+  <div class="meta">
+    <span><strong>Author</strong> Raj Vedire</span>
+    <span><strong>Scope</strong> CMS PUF + MCBS Pipeline</span>
+    <span><strong>Goal</strong> Individual Out-of-Pocket Prediction</span>
+    <span><strong>Stack</strong> Databricks · MLflow · XGBoost · LSTM</span>
+  </div>
+</div>
+
+<!-- TOC -->
+<div class="container">
+  <div class="toc">
+    <h3>Table of Contents</h3>
+    <ol>
+      <li><a href="#basics">What is Medicare? The five-minute version</a></li>
+      <li><a href="#parts">The Parts of Medicare — A, B, C, D</a></li>
+      <li><a href="#money">How money actually flows from procedure to patient bill</a></li>
+      <li><a href="#terms">Key terminology your models depend on</a></li>
+      <li><a href="#coverage">Who covers the gap? Medigap, Medicaid, and MA</a></li>
+      <li><a href="#data">What the CMS dataset captures (and doesn't)</a></li>
+      <li><a href="#mcbs">What MCBS adds to the picture</a></li>
+      <li><a href="#pipeline">The two-stage pipeline architecture</a></li>
+      <li><a href="#ml">ML roadmap — from GLM to LSTM to patient OOP</a></li>
+      <li><a href="#fraud">Provider Anomaly Investigation Agent (Phase 9)</a></li>
+      <li><a href="#limitations">Honest limitations of this approach</a></li>
+    </ol>
+  </div>
+</div>
+
+<!-- SECTION 1 -->
+<section id="basics">
+  <div class="container">
+    <div class="section-label">Section 01</div>
+    <div class="rule"></div>
+    <h2>What is Medicare?</h2>
+    <p>Medicare is the United States federal health insurance program, created in 1965. It primarily covers people who are <strong>65 or older</strong>, along with certain younger people with disabilities and individuals with End-Stage Renal Disease (permanent kidney failure). As of 2024, roughly <strong>67 million Americans</strong> are enrolled.</p>
+    <p>It is funded through a combination of payroll taxes (the 1.45% Medicare tax on every paycheck), beneficiary premiums, and general federal revenue. Unlike private insurance, Medicare is not run by a single insurer — CMS (Centers for Medicare & Medicaid Services) sets the rules, but regional Medicare Administrative Contractors (MACs) actually process claims.</p>
+
+    <div class="callout">
+      <div class="callout-label">Why this matters for your models</div>
+      <p>Medicare is the single largest payer of healthcare services in the United States. The fee schedules Medicare sets are used as reference points by virtually every private insurer. Understanding how Medicare prices services is foundational to understanding American healthcare costs at large.</p>
+    </div>
+
+    <h3>Fee-for-Service (FFS) vs. Medicare Advantage</h3>
+    <p>There are two fundamentally different ways to receive Medicare. <strong>Traditional/Original Medicare</strong> (also called Fee-for-Service) is what your entire CMS dataset covers — the government pays providers directly for each service rendered. <strong>Medicare Advantage</strong> (Part C) is where a beneficiary enrolls in a private insurance plan that bundles Medicare benefits, often with extra perks. CMS pays the private plan a fixed monthly rate, and the plan manages the claims internally.</p>
+    <p>As of 2024, approximately <strong>54% of Medicare beneficiaries</strong> are enrolled in Medicare Advantage — meaning your CMS dataset only represents about half of all Medicare patients. This is the single most important structural limitation to state in your project.</p>
+  </div>
+</section>
+
+<!-- SECTION 2 -->
+<section id="parts">
+  <div class="container">
+    <div class="section-label">Section 02</div>
+    <div class="rule"></div>
+    <h2>The Parts of Medicare</h2>
+    <p>Medicare is divided into lettered "Parts" — each covering a different category of care. Your dataset lives entirely within <strong>Part B</strong>.</p>
+
+    <table>
+      <thead>
+        <tr><th>Part</th><th>What It Covers</th><th>How Funded</th><th>Relevant to Your Project?</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Part A</strong><br/><span style="font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--muted)">Hospital Insurance</span></td>
+          <td>Inpatient hospital stays, skilled nursing facility stays, hospice, some home health</td>
+          <td>Payroll taxes (no premium for most)</td>
+          <td><span class="pill amber">Indirect</span></td>
+        </tr>
+        <tr>
+          <td><strong>Part B</strong><br/><span style="font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--muted)">Medical Insurance</span></td>
+          <td>Physician visits, outpatient care, preventive services, medical equipment, labs</td>
+          <td>Premiums (~$174/mo in 2024) + general revenue</td>
+          <td><span class="pill green">Your Dataset</span></td>
+        </tr>
+        <tr>
+          <td><strong>Part C</strong><br/><span style="font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--muted)">Medicare Advantage</span></td>
+          <td>Bundles A+B (and usually D) through private insurers, often with dental/vision</td>
+          <td>CMS pays private plans a risk-adjusted capitation rate</td>
+          <td><span class="pill red">Excluded from CMS data</span></td>
+        </tr>
+        <tr>
+          <td><strong>Part D</strong><br/><span style="font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--muted)">Prescription Drug</span></td>
+          <td>Outpatient prescription drugs</td>
+          <td>Premiums + subsidies</td>
+          <td><span class="pill amber">Indirect</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout blue">
+      <div class="callout-label">HCPCS Codes — the DNA of your dataset</div>
+      <p>Every service in Part B is billed using a <strong>HCPCS code</strong> (Healthcare Common Procedure Coding System, pronounced "hick-picks"). Think of it as a SKU for medical services. "99213" means a standard office visit. "93000" means an electrocardiogram. Your entire prediction target — the allowed amount — is set at the HCPCS code level, adjusted for geography and modifiers.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 3 -->
+<section id="money">
+  <div class="container">
+    <div class="section-label">Section 03</div>
+    <div class="rule"></div>
+    <h2>How Money Actually Flows</h2>
+    <p>When a Medicare patient sees a doctor, a surprisingly complex sequence of events determines what the doctor gets paid and what the patient owes. Here is the full chain, end to end.</p>
+
+    <div class="flow">
+      <div class="flow-step"><div class="step-num">01</div><div class="step-label">Provider Submits Charge</div><div class="step-amt">e.g. $450</div></div>
+      <div class="flow-step"><div class="step-num">02</div><div class="step-label">Medicare Allowed Amount</div><div class="step-amt">e.g. $180</div></div>
+      <div class="flow-step"><div class="step-num">03</div><div class="step-label">Medicare Pays 80%</div><div class="step-amt">$144</div></div>
+      <div class="flow-step"><div class="step-num">04</div><div class="step-label">Patient Owes 20%</div><div class="step-amt">$36</div></div>
+      <div class="flow-step"><div class="step-num">05</div><div class="step-label">Supplement Covers</div><div class="step-amt">$0–$36</div></div>
+    </div>
+
+    <h3>A concrete example — an office visit in Indiana</h3>
+    <div class="money-example">
+      <div class="me-item">
+        <div class="me-label">Submitted Charge</div>
+        <div class="me-value rust">$450</div>
+        <div class="me-desc">What the provider bills. Almost always higher than what they'll receive.</div>
+      </div>
+      <div class="me-item">
+        <div class="me-label">Medicare Allowed Amount</div>
+        <div class="me-value blue">$180</div>
+        <div class="me-desc">The fee schedule ceiling set by CMS for this HCPCS code in this geography. <strong>This is your prediction target.</strong></div>
+      </div>
+      <div class="me-item">
+        <div class="me-label">Medicare Payment</div>
+        <div class="me-value green">$144</div>
+        <div class="me-desc">80% of the allowed amount. Medicare pays this directly to the provider.</div>
+      </div>
+      <div class="me-item">
+        <div class="me-label">Patient Responsibility</div>
+        <div class="me-value gold">$36</div>
+        <div class="me-desc">The remaining 20% coinsurance. This is the gap your Stage 2 model will learn to predict.</div>
+      </div>
+    </div>
+
+    <div class="callout rust">
+      <div class="callout-label">Critical concept — the deductible complication</div>
+      <p>Before Medicare pays anything, the beneficiary must meet their annual Part B deductible ($240 in 2024). A patient visiting in January who hasn't yet met their deductible pays the full allowed amount themselves. The same patient in December — deductible already met — pays only 20%. This time-within-year dynamic is one reason patient out-of-pocket is so difficult to predict without beneficiary-level data.</p>
+    </div>
+
+    <h3>Provider participation status</h3>
+    <p>Not all providers play by the same rules. There are three tiers, and they determine how much a patient can be billed above the allowed amount:</p>
+    <table>
+      <thead><tr><th>Status</th><th>What It Means</th><th>Max Patient Charge</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Participating</strong></td><td>Accepts Medicare assignment — agrees to the allowed amount as full payment</td><td>20% of allowed amount</td></tr>
+        <tr><td><strong>Non-Participating</strong></td><td>Doesn't accept assignment but still must bill through Medicare</td><td>Up to 115% of allowed amount ("limiting charge")</td></tr>
+        <tr><td><strong>Opted-Out</strong></td><td>Completely outside Medicare — patients pay out-of-pocket entirely, Medicare reimburses nothing</td><td>Whatever is privately negotiated</td></tr>
+      </tbody>
+    </table>
+    <p>The vast majority of physicians (~90%) are participating providers, which is why the 80/20 split is the standard mental model. Your CMS dataset only includes participating and non-participating providers — opted-out providers don't submit claims to Medicare at all.</p>
+  </div>
+</section>
+
+<!-- SECTION 4 -->
+<section id="terms">
+  <div class="container">
+    <div class="section-label">Section 04</div>
+    <div class="rule"></div>
+    <h2>Key Terminology Your Models Depend On</h2>
+    <p>These are the terms that appear directly in your dataset or are foundational to interpreting your model outputs.</p>
+    <div class="term-grid">
+      <div class="term-card">
+        <div class="term">NPI — National Provider Identifier</div>
+        <div class="def">A unique 10-digit number assigned to every healthcare provider in the US. Your dataset is organized at the NPI level — one row per provider × HCPCS code × place of service.</div>
+        <div class="example">→ The unit of observation in your CMS data</div>
+      </div>
+      <div class="term-card">
+        <div class="term">HCPCS Code</div>
+        <div class="def">The procedure code that identifies what service was performed. CPT codes (physician services) are a subset of HCPCS. This is the primary categorical feature in your models alongside specialty.</div>
+        <div class="example">→ 99213 = Office visit, 93000 = ECG</div>
+      </div>
+      <div class="term-card">
+        <div class="term">Allowed Amount</div>
+        <div class="def">The maximum amount Medicare will pay for a service, combining both the Medicare payment and the patient cost-sharing portion. This is your Stage 1 prediction target.</div>
+        <div class="example">→ Avg_Medicare_Allowed_Amt in your dataset</div>
+      </div>
+      <div class="term-card">
+        <div class="term">Geographic Practice Cost Index (GPCI)</div>
+        <div class="def">A set of adjustment factors that modify the Medicare fee schedule based on local costs of practicing medicine — labor, office space, and malpractice. This is why the same procedure pays differently in Manhattan vs. rural Indiana.</div>
+        <div class="example">→ Explains ~20–30% of geographic variation</div>
+      </div>
+      <div class="term-card">
+        <div class="term">Place of Service (POS)</div>
+        <div class="def">Indicates whether the service was delivered in a facility (hospital outpatient) or non-facility (private office) setting. Medicare pays different rates for the same HCPCS code depending on POS — facility rates are lower because the facility is separately reimbursed.</div>
+        <div class="example">→ Facility vs. Non-Facility split in your data</div>
+      </div>
+      <div class="term-card">
+        <div class="term">Relative Value Unit (RVU)</div>
+        <div class="def">The building block of Medicare's fee schedule. Each HCPCS code has physician work RVUs, practice expense RVUs, and malpractice RVUs. Multiplied by the conversion factor (~$33.29 in 2024) to get the allowed amount.</div>
+        <div class="example">→ The mechanistic driver of your target variable</div>
+      </div>
+      <div class="term-card">
+        <div class="term">Coinsurance</div>
+        <div class="def">The percentage of the allowed amount the patient pays after meeting their deductible. Standard Part B coinsurance is 20%. Some services (preventive care) are 0%.</div>
+        <div class="example">→ The primary out-of-pocket mechanism for your Stage 2 model</div>
+      </div>
+      <div class="term-card">
+        <div class="term">Medigap / Supplemental</div>
+        <div class="def">Private insurance policies that cover some or all of the cost-sharing that traditional Medicare leaves to the patient. Plans are standardized by letter (A through N). Plan G is the most popular and covers all cost-sharing except the Part B deductible.</div>
+        <div class="example">→ The single biggest predictor of patient OOP after allowed amount</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 5 -->
+<section id="coverage">
+  <div class="container">
+    <div class="section-label">Section 05</div>
+    <div class="rule"></div>
+    <h2>Who Covers the Gap? Supplemental Coverage</h2>
+    <p>The 20% coinsurance that traditional Medicare leaves to patients is the "gap" — and the vast majority of beneficiaries have something that covers part or all of it. This is the most consequential variable for predicting individual out-of-pocket spending, and it's the primary thing MCBS adds to your pipeline.</p>
+
+    <table>
+      <thead><tr><th>Coverage Type</th><th>Who Has It</th><th>What It Covers</th><th>OOP Impact</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Medigap Plan G</strong></td>
+          <td>~28% of FFS beneficiaries; higher-income, older, often urban</td>
+          <td>All coinsurance + Part A deductible. Only gap is Part B annual deductible (~$240)</td>
+          <td><span class="pill green">Near-zero OOP</span></td>
+        </tr>
+        <tr>
+          <td><strong>Medigap Plan N</strong></td>
+          <td>Growing share; slightly lower premium than G</td>
+          <td>Same as G but patient pays copays up to $20/visit + $50 ED visits</td>
+          <td><span class="pill green">Very low OOP</span></td>
+        </tr>
+        <tr>
+          <td><strong>Employer Retiree</strong></td>
+          <td>~25% of FFS beneficiaries; varies widely by former employer</td>
+          <td>Variable — some wrap around Medicare generously, others minimally</td>
+          <td><span class="pill amber">Low–moderate OOP</span></td>
+        </tr>
+        <tr>
+          <td><strong>Medicaid (Dual-Eligible)</strong></td>
+          <td>~20% of FFS; low-income Medicare beneficiaries</td>
+          <td>Medicaid pays what Medicare doesn't — effectively $0 out of pocket</td>
+          <td><span class="pill green">Zero OOP</span></td>
+        </tr>
+        <tr>
+          <td><strong>No Supplement</strong></td>
+          <td>~10% of FFS beneficiaries; often healthier, younger 65–70</td>
+          <td>Nothing — patient pays the full 20% coinsurance indefinitely</td>
+          <td><span class="pill red">Full 20% OOP</span></td>
+        </tr>
+        <tr>
+          <td><strong>Medicare Advantage</strong></td>
+          <td>~54% of all Medicare</td>
+          <td>Plan-specific cost-sharing — copays, out-of-pocket maximums, network restrictions</td>
+          <td><span class="pill amber">Highly variable</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout gold">
+      <div class="callout-label">The key insight for your Stage 2 model</div>
+      <p>Supplemental coverage type is more predictive of patient out-of-pocket than the allowed amount itself. A dual-eligible patient having a $5,000 procedure pays $0. An uninsured FFS patient having a $200 procedure pays $40. Coverage type must be a feature — not an afterthought — in your second-stage model.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 6 -->
+<section id="data">
+  <div class="container">
+    <div class="section-label">Section 06</div>
+    <div class="rule"></div>
+    <h2>What the CMS Dataset Captures (and Doesn't)</h2>
+    <p>Your primary dataset — the CMS Medicare Physician & Other Practitioners PUF — is a population-level administrative dataset. It is not a sample. It contains every Part B FFS claim submitted by every participating provider for every HCPCS code in a given year, aggregated to protect beneficiary privacy.</p>
+
+    <h3>What it contains</h3>
+    <p>Per provider × HCPCS × place of service row: the number of services rendered, the number of unique beneficiaries, total submitted charges, Medicare allowed amounts, Medicare payments, average beneficiary risk scores, and provider demographics from NPPES.</p>
+
+    <h3>What it structurally cannot contain</h3>
+    <table>
+      <thead><tr><th>Missing Element</th><th>Why It's Missing</th><th>Why It Matters</th></tr></thead>
+      <tbody>
+        <tr><td>Individual patient identity</td><td>Suppressed for privacy; rows with ≤10 beneficiaries are excluded</td><td>Can't track a patient's trajectory across providers or over time</td></tr>
+        <tr><td>Beneficiary cost-sharing</td><td>Claims capture what Medicare paid, not what the patient paid</td><td>Direct out-of-pocket is invisible — must be modeled from MCBS</td></tr>
+        <tr><td>Supplemental coverage status</td><td>Not submitted on Part B claims</td><td>The #1 determinant of patient OOP is absent</td></tr>
+        <tr><td>Medicare Advantage claims</td><td>MA plans pay providers internally; claims don't flow through CMS FFS system</td><td>54% of Medicare patients are invisible to this dataset</td></tr>
+        <tr><td>Deductible accumulation</td><td>Not tracked at claim level in this PUF</td><td>Early-year claims have higher patient exposure</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- SECTION 7 -->
+<section id="mcbs">
+  <div class="container">
+    <div class="section-label">Section 07</div>
+    <div class="rule"></div>
+    <h2>What MCBS Adds to the Picture</h2>
+    <p>The Medicare Current Beneficiary Survey (MCBS) is a longitudinal survey of approximately 15,000 Medicare beneficiaries per year, conducted by CMS. It links survey responses to administrative claims, creating the only public dataset that captures <em>both</em> what Medicare paid and what the patient actually paid out of pocket.</p>
+
+    <h3>Key variables MCBS contributes</h3>
+    <div class="term-grid">
+      <div class="term-card">
+        <div class="term">Actual Out-of-Pocket Amount</div>
+        <div class="def">Total annual spending the beneficiary paid themselves across all covered services — the target variable for your Stage 2 model.</div>
+      </div>
+      <div class="term-card">
+        <div class="term">Supplemental Coverage Type</div>
+        <div class="def">Whether the beneficiary has Medigap (and which plan letter), employer retiree, Medicaid dual-eligibility, or no supplement. The most important feature in Stage 2.</div>
+      </div>
+      <div class="term-card">
+        <div class="term">Chronic Condition Burden</div>
+        <div class="def">Number and type of chronic conditions, which correlate with utilization intensity and therefore total out-of-pocket exposure across the year.</div>
+      </div>
+      <div class="term-card">
+        <div class="term">Socioeconomic & Demographic</div>
+        <div class="def">Age, sex, race/ethnicity, income quartile, education — allowing the model to detect equity-relevant patterns in cost-sharing burden.</div>
+      </div>
+    </div>
+
+    <div class="callout rust">
+      <div class="callout-label">The resolution mismatch problem</div>
+      <p>Your CMS data is at state level. MCBS public files are only at census-region level (4 regions) to protect beneficiary privacy. This means Stage 2 geographic granularity is coarser than Stage 1. You'll model "expected OOP for a cardiology patient with Medigap G in the Midwest" — not "in Indiana." This is an acceptable trade-off for a portfolio project, and worth stating clearly.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 8 -->
+<section id="pipeline">
+  <div class="container">
+    <div class="section-label">Section 08</div>
+    <div class="rule"></div>
+    <h2>The Two-Stage Pipeline Architecture</h2>
+    <p>The full pipeline extends your existing Medallion Architecture with a parallel MCBS track and adds a second modeling stage on top of the existing one.</p>
+
+    <div class="arch-grid">
+      <div class="arch-layer bronze">
+        <div class="layer-tag">Bronze</div>
+        <h4>Raw Ingestion</h4>
+        <ul>
+          <li>CMS PUF 2013–2023 (existing)</li>
+          <li>MCBS PUF annual files</li>
+          <li>Both stored as Parquet on S3</li>
+        </ul>
+      </div>
+      <div class="arch-layer silver">
+        <div class="layer-tag">Silver</div>
+        <h4>Cleaning & Integration</h4>
+        <ul>
+          <li>CMS pipeline (existing)</li>
+          <li>MCBS standardization notebook</li>
+          <li>Coverage type encoding</li>
+          <li>Region crosswalk table</li>
+        </ul>
+      </div>
+      <div class="arch-layer gold">
+        <div class="layer-tag">Gold</div>
+        <h4>Feature Matrices</h4>
+        <ul>
+          <li>CMS feature matrix (existing)</li>
+          <li>MCBS feature matrix (new)</li>
+          <li>Specialty × Region lookup</li>
+          <li>LSTM time-series features</li>
+        </ul>
+      </div>
+      <div class="arch-layer model">
+        <div class="layer-tag">Modeling</div>
+        <h4>Two-Stage Models</h4>
+        <ul>
+          <li>Stage 1: GLM / RF / XGBoost</li>
+          <li>Stage 1b: LSTM forecaster</li>
+          <li>Stage 2: OOP cost-sharing model</li>
+          <li>All tracked in MLflow</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="stage-box">
+      <div class="stage-header">
+        <div class="stage-num">Stage 1</div>
+        <h4>Allowed Amount Prediction (CMS Data)</h4>
+      </div>
+      <div class="stage-body">
+        <p>Predicts the average Medicare allowed amount for a given provider–procedure–geography combination. This is your existing academic project model, now serving as a preprocessing step for Stage 2.</p>
+        <div class="io-row">
+          <div class="io-col">
+            <div class="io-label">Input Features</div>
+            <code>provider_specialty</code>
+            <code>hcpcs_code (bucketed)</code>
+            <code>state</code>
+            <code>place_of_service</code>
+            <code>year</code>
+            <code>service_volume</code>
+          </div>
+          <div class="io-col">
+            <div class="io-label">Output</div>
+            <code>predicted_allowed_amount</code>
+            <code>prediction_interval_lower</code>
+            <code>prediction_interval_upper</code>
+          </div>
+          <div class="io-col">
+            <div class="io-label">Models</div>
+            <code>GLM (baseline)</code>
+            <code>Random Forest</code>
+            <code>XGBoost</code>
+            <code>LSTM (time-series)</code>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stage-box">
+      <div class="stage-header">
+        <div class="stage-num">Stage 2</div>
+        <h4>Patient Out-of-Pocket Prediction (MCBS Data)</h4>
+      </div>
+      <div class="stage-body">
+        <p>Takes the Stage 1 predicted allowed amount as an input feature alongside beneficiary characteristics from MCBS to estimate the patient's actual out-of-pocket spending.</p>
+        <div class="io-row">
+          <div class="io-col">
+            <div class="io-label">Input Features</div>
+            <code>predicted_allowed_amount ← Stage 1</code>
+            <code>supplemental_coverage_type</code>
+            <code>dual_eligible_flag</code>
+            <code>chronic_condition_count</code>
+            <code>age_band</code>
+            <code>census_region</code>
+            <code>deductible_met_probability</code>
+          </div>
+          <div class="io-col">
+            <div class="io-label">Output</div>
+            <code>predicted_oop_amount</code>
+            <code>oop_percentile_10</code>
+            <code>oop_percentile_90</code>
+          </div>
+          <div class="io-col">
+            <div class="io-label">Models</div>
+            <code>GLM (interpretable baseline)</code>
+            <code>Gradient Boosting</code>
+            <code>Quantile Regression</code>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 9 -->
+<section id="ml">
+  <div class="container">
+    <div class="section-label">Section 09</div>
+    <div class="rule"></div>
+    <h2>ML Roadmap — From GLM to LSTM to Patient OOP</h2>
+    <p>Each modeling layer builds on the last. The roadmap below lays out the full trajectory from your current academic project to the complete patient-facing prediction system.</p>
+
+    <table>
+      <thead><tr><th>Phase</th><th>Models</th><th>Data</th><th>Output</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Phase 1</strong><br/>Academic baseline</td>
+          <td>GLM, Random Forest, XGBoost</td>
+          <td>CMS PUF 3-state subset</td>
+          <td>Allowed amount prediction, MLflow comparison</td>
+          <td><span class="pill green">In Progress</span></td>
+        </tr>
+        <tr>
+          <td><strong>Phase 2</strong><br/>Full national scale</td>
+          <td>Same models, all 50 states</td>
+          <td>CMS PUF 2013–2023 full</td>
+          <td>Production allowed amount model</td>
+          <td><span class="pill amber">Queued</span></td>
+        </tr>
+        <tr>
+          <td><strong>Phase 3</strong><br/>Time-series forecasting</td>
+          <td>LSTM</td>
+          <td>CMS PUF time-indexed</td>
+          <td>2024–2026 allowed amount forecasts by specialty</td>
+          <td><span class="pill amber">Queued</span></td>
+        </tr>
+        <tr>
+          <td><strong>Phase 4</strong><br/>MCBS integration</td>
+          <td>MCBS ingestion + silver notebook</td>
+          <td>MCBS PUF annual files</td>
+          <td>Beneficiary cost-sharing feature matrix</td>
+          <td><span class="pill red">Not Started</span></td>
+        </tr>
+        <tr>
+          <td><strong>Phase 5</strong><br/>OOP Stage 2 model</td>
+          <td>Gradient Boosting + Quantile Regression</td>
+          <td>MCBS + Stage 1 output</td>
+          <td>Patient out-of-pocket range prediction</td>
+          <td><span class="pill red">Not Started</span></td>
+        </tr>
+        <tr>
+          <td><strong>Phase 6</strong><br/>Portfolio deployment</td>
+          <td>Streamlit / Gradio app</td>
+          <td>Gold layer exports</td>
+          <td>Patient-facing query interface</td>
+          <td><span class="pill red">Not Started</span></td>
+        </tr>
+        <tr>
+          <td><strong>Phase 9</strong><br/>Fraud detection agent</td>
+          <td>Z-score + Isolation Forest + Claude Sonnet 4.6</td>
+          <td>Silver → NPI profiles + OIG LEIE</td>
+          <td>Investigation briefs with 10 fraud-indicator rules</td>
+          <td><span class="pill green">Complete</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout">
+      <div class="callout-label">Why Quantile Regression for Stage 2?</div>
+      <p>Out-of-pocket spending is heavily right-skewed — most patients pay very little, but a small number with high utilization or no supplement pay a lot. A standard regression predicting the mean isn't very useful here. Quantile regression lets you predict the 10th, 50th, and 90th percentile of OOP simultaneously, giving the end user a range ("you'll likely pay between $0 and $72") rather than a single number that's almost never exactly right.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 10 -->
+<section id="fraud">
+  <div class="container">
+    <div class="section-label">Section 10</div>
+    <div class="rule"></div>
+    <h2>Provider Anomaly Investigation Agent (Phase 9)</h2>
+    <p>The same silver layer that drives allowed-amount prediction also supports a fraud detection track. Phase 9 layers a three-stage detection pipeline and an LLM-powered reasoning agent on top of the existing Medicare pipeline, producing structured investigation briefs for 1.76M unique NPIs across 2013–2023.</p>
+
+    <h3>Why build this on top of the cost pipeline?</h3>
+    <p>Medicare improper payments run around <strong>$47B per year</strong> according to HHS. The data to detect a large share of it is already sitting in the silver layer — who billed what, how much, to how many beneficiaries, year over year. The gap between "anomaly detection" and "usable investigation lead" is the hard part: a z-score flag on its own is noise unless an analyst can see the specialty context, patient acuity, trajectory, and which rules actually fit the pattern. That is what the reasoning agent adds.</p>
+
+    <div class="callout">
+      <div class="callout-label">Pipeline shape</div>
+      <p><strong>Phase A</strong> collapses silver to 11.5M NPI-year profiles with 22 metrics (volume, intensity, Herfindahl, YoY changes, HCC risk score). <strong>Phase B</strong> runs three detection methods — z-score on log-transformed metrics, Isolation Forest, and temporal rules. Composite flags (≥2 methods agreeing) hit 0.77% of NPI-years. <strong>Phase C</strong> builds a ProviderContext (profile + specialty benchmarks + top HCPCS + history) and passes it to Claude Sonnet 4.6 along with 10 fraud-indicator rules; the model produces a risk classification (LOW/MEDIUM/HIGH/CRITICAL) and narrative. <strong>Phase D</strong> adds a Next.js analyst review UI with approve/escalate/dismiss actions and NPI redaction.</p>
+    </div>
+
+    <h3>The ten fraud indicators</h3>
+    <p>Each brief walks through the same ten rules, with transparent NOT EVALUABLE reasoning when the public dataset can't support a check. The rules are a mix of statistical outliers, regulatory references, and external data joins:</p>
+    <table>
+      <thead><tr><th>Rule</th><th>Signal</th><th>Source</th></tr></thead>
+      <tbody>
+        <tr><td><strong>LEIE_EXCLUDED</strong></td><td>NPI match on OIG exclusion list</td><td>42 USC 1320a-7</td></tr>
+        <tr><td><strong>HIGH_INTENSITY</strong></td><td>Services per beneficiary ≥ specialty P99</td><td>OIG OEI-03-17-00470</td></tr>
+        <tr><td><strong>VOLUME_SPIKE</strong></td><td>YoY volume &gt; +200% on ≥1,000 services</td><td>CMS FPS Algorithm</td></tr>
+        <tr><td><strong>CHARGE_INFLATION</strong></td><td>Charge-to-allowed ratio &gt; specialty P95 × 1.5</td><td>CMS Limiting Charge</td></tr>
+        <tr><td><strong>PROCEDURE_CONCENTRATION</strong></td><td>Herfindahl index at specialty P99</td><td>Derived from billing pattern analysis</td></tr>
+        <tr><td><strong>UPCODING</strong></td><td>99214+99215 share &gt; specialty P95 on ≥50 established visits</td><td>CMS MLN Matters SE1418</td></tr>
+        <tr><td><strong>OUT_OF_SPECIALTY</strong></td><td>&gt;20% of services on codes outside empirical specialty scope</td><td>42 CFR 424.22</td></tr>
+        <tr><td><strong>IMPOSSIBLE_DAY</strong></td><td>Requires date of service — not in public PUF</td><td><em>NOT EVALUABLE</em></td></tr>
+        <tr><td><strong>UNBUNDLING</strong></td><td>Requires per-encounter claim grouping — not in public PUF</td><td><em>NOT EVALUABLE</em></td></tr>
+        <tr><td><strong>BENEFICIARY_SHARING</strong></td><td>Requires patient-level linkage — not in public PUF</td><td><em>NOT EVALUABLE</em></td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout rust">
+      <div class="callout-label">Why transparency about NOT EVALUABLE matters</div>
+      <p>A fraud detection system that silently skips unchecked rules is worse than one that names them. Every brief disclaims which rules couldn't be evaluated and why — typically because the CMS public PUF is an annual aggregate without date-of-service, claim grouping, or beneficiary-level linkage. Honest scope beats false precision.</p>
+    </div>
+
+    <h3>The two follow-up rules (UPCODING + LEIE_EXCLUDED)</h3>
+    <p>Two rules that started as NOT EVALUABLE stubs were unlocked by pre-computation and an external data join. <strong>UPCODING</strong> needed per-NPI E&amp;M code distributions: a one-pass scan over silver produces 5.94M (NPI, year) rows and 863 (specialty, year) benchmark rows with P50/P75/P95 of the 99214+99215 share. The rule fires when a provider's high-tier share exceeds specialty P95 on at least 50 established visits. Roughly 16 of 84 specialties (Orthopedics, Dermatology, Podiatry, Optometry, Urology) have enough spread for the rule to discriminate; the other 68 have the high-tier share saturated at P95=100%, and the rule transparently reports that saturation rather than fabricating a verdict.</p>
+    <p><strong>LEIE_EXCLUDED</strong> joins the OIG List of Excluded Individuals/Entities (~83K rows, ~8,375 with NPI) against flagged providers. An exclusion match is conviction-grade — any Medicare payment to an actively excluded NPI is program-ineligible by law — so it carries CRITICAL severity and overrides the statistical risk ranking.</p>
+
+    <h3>Interpretive findings from the first 100-brief validation run</h3>
+    <p>The 2023 validation set (top 100 composite-severity flags) surfaced the pattern the agent was built for. The highest-severity flags are dominated by Mass Immunizer Roster Billers and COVID-era supply-code billing — both archetypes of opportunistic volume spikes in a temporary Medicare program. The agent distinguishes these from genuine fraud by reading context: a 9,655% volume spike on Q9967 contrast material with a 1.23 HCC risk score and no prior billing history reads differently than a 300% spike in established patient visits for a provider with a history in the same code family. The brief pushes the ambiguous ones to MEDIUM for analyst review rather than claiming certainty.</p>
+
+    <h3>Why Claude Sonnet 4.6 and not a rule engine?</h3>
+    <p>A pure rule engine can flag outliers but can't reconcile them against specialty norms, patient acuity, or trajectory. The reasoning the analyst actually needs — "this Internal Medicine provider's 94% high-tier share is technically above P95=92%, but their HCC panel is 1.8 vs. specialty median 1.2, which explains the intensity" — is LLM work, not regex work. The prompt cache carries a 2,584-token system prompt with HCPCS bucket references, specialty norm heuristics, and rule-by-rule interpretive guidance; after the first call in a batch, 2,578 tokens come back as cache reads at ~90% cost savings. Per-brief cost on Sonnet 4.6 comes out to about $0.04.</p>
+
+    <div class="callout blue">
+      <div class="callout-label">What the agent is NOT</div>
+      <p>This is not a fraud determination system. Briefs are investigation leads — structured evidence for a human analyst to decide whether to escalate. No brief concludes fraud definitively. The classification is a prioritization signal, not a legal finding. The analyst UI enforces this by requiring approve/escalate/dismiss decisions on every brief before it moves off the review queue.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 11 -->
+<section id="limitations">
+  <div class="container">
+    <div class="section-label">Section 11</div>
+    <div class="rule"></div>
+    <h2>Honest Limitations of This Approach</h2>
+    <p>A strong portfolio project acknowledges what it can't do. These are the structural limitations that any honest writeup must address.</p>
+
+    <h3>The Medicare Advantage gap is real and growing</h3>
+    <p>Your entire pipeline operates on Traditional Medicare FFS data. As MA enrollment crosses 54% and continues to grow, your models increasingly describe a minority of Medicare patients. A truly complete system would require access to MA encounter data, which is not publicly available at the procedure level.</p>
+
+    <h3>MCBS is a sample, not a census</h3>
+    <p>With ~15,000 beneficiaries per year, some cells — particularly rare procedure categories crossed with uncommon coverage types in specific regions — will have very few observations. Confidence intervals will be wide for these edge cases, and the model should communicate that uncertainty rather than hiding it.</p>
+
+    <h3>Geographic resolution loss in Stage 2</h3>
+    <p>Stage 1 operates at the state level. Stage 2 can only use census-region level geography from MCBS public files. A patient in rural Indiana and a patient in Chicago are both "Midwest" to Stage 2, even though their healthcare markets are dramatically different.</p>
+
+    <h3>This predicts cost-sharing, not total healthcare cost</h3>
+    <p>The model predicts what a patient will owe for a specific Part B service encounter. It does not predict total annual healthcare spending, doesn't capture inpatient costs (Part A), prescription drug costs (Part D), or the interaction effects between multiple conditions and multiple providers over a year.</p>
+
+    <h3>Prices change annually</h3>
+    <p>Medicare fee schedules are updated every January. The LSTM helps here for forecasting trends, but any deployed application needs an annual retraining cycle tied to CMS's release calendar (typically mid-year for the prior year's data).</p>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-brand">Cobbles &amp; Currents Studios · Raj Vedire</div>
+  <p>Medicare Knowledge Report · April 2026 · Built as part of the Medicare Provider Utilization &amp; Cost Analysis portfolio project</p>
+</footer>
+
+</body>
+</html>

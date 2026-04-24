@@ -34,9 +34,13 @@ DEFAULT_ANOMALY  = os.path.join(_PROJECT_ROOT, "local_pipeline", "anomaly")
 DEFAULT_BRIEFS   = os.path.join(DEFAULT_ANOMALY, "briefs")
 
 
-def rank_flags(flags_path: str, top_n: int) -> list[tuple[str, int]]:
+def rank_flags(flags_path: str, top_n: int, year: int | None = None) -> list[tuple[str, int]]:
     """Rank flagged NPI-years by composite severity (sum of severity across flags)."""
     flags = pd.read_parquet(flags_path)
+    if year is not None:
+        before = len(flags)
+        flags = flags[flags["year"] == year]
+        print(f"Filtered flags to year={year}: {before:,} -> {len(flags):,}")
     comp = (
         flags.groupby(["Rndrng_NPI", "year"])
              .agg(composite_severity=("severity", "sum"),
@@ -71,6 +75,8 @@ def main():
     ap.add_argument("--output-dir",   default=DEFAULT_BRIEFS)
     ap.add_argument("--top-n",        type=int, default=10,
                     help="Number of top-severity NPI-years to process")
+    ap.add_argument("--year",         type=int, default=None,
+                    help="Restrict ranking to a single year (e.g. 2023)")
     ap.add_argument("--targets",      type=str, default=None,
                     help="Override ranking with explicit NPI:year pairs, comma-separated")
     ap.add_argument("--live",         action="store_true",
@@ -89,7 +95,7 @@ def main():
         targets = parse_targets(args.targets)
         print(f"Targets from CLI: {len(targets)}")
     else:
-        targets = rank_flags(args.flags, args.top_n)
+        targets = rank_flags(args.flags, args.top_n, year=args.year)
 
     # 2. Load retriever once (profiles + benchmarks amortized across all briefs)
     retriever = ContextRetriever()

@@ -93,6 +93,67 @@ class ContextRetriever:
                     self.scope_meta = json.load(fh).get("thresholds")
             print(f"  scopes:   {len(self.scopes):,} specialties loaded")
 
+        # Optional: E&M distribution + specialty benchmarks (for UPCODING rule).
+        em_path    = os.path.join(anomaly_dir, "em_distributions.parquet")
+        em_bench_p = os.path.join(anomaly_dir, "em_specialty_benchmarks.parquet")
+        self.em_dist: pd.DataFrame | None = None
+        self.em_bench_idx: pd.DataFrame | None = None
+        if os.path.exists(em_path) and os.path.exists(em_bench_p):
+            em = pd.read_parquet(em_path)
+            em["Rndrng_NPI"] = em["Rndrng_NPI"].astype(str).str.strip()
+            em["year"]       = pd.to_numeric(em["year"], errors="coerce").astype("Int16")
+            self.em_dist = em.set_index(["Rndrng_NPI", "year"], drop=False).sort_index()
+            em_bench = pd.read_parquet(em_bench_p)
+            em_bench["year"] = pd.to_numeric(em_bench["year"], errors="coerce").astype("Int16")
+            self.em_bench_idx = em_bench.set_index(["specialty", "year"], drop=False)
+            print(f"  em_dist:  {len(em):,} (NPI, year) rows; "
+                  f"benchmarks for {em_bench['specialty'].nunique():,} specialties")
+
+        # Optional: OIG LEIE exclusion list (for LEIE_EXCLUDED rule).
+        leie_path = os.path.join(anomaly_dir, "leie_exclusions.parquet")
+        self.leie: dict[str, dict] | None = None
+        self.leie_meta: dict | None = None
+        if os.path.exists(leie_path):
+            try:
+                l = pd.read_parquet(leie_path)
+                # LEIE uses "0000000000" (10 zeros) for "no NPI on record" --
+                # these are historical exclusions pre-dating NPI adoption and
+                # cannot be joined to CMS data. Filter them out.
+                l["NPI"] = l["NPI"].astype(str).str.strip()
+                l = l[l["NPI"].str.len().ge(10) & l["NPI"].ne("0000000000")]
+                # REINDATE uses "00000000" as the "not reinstated" sentinel.
+                # Normalize so downstream code can treat it as empty.
+                def _norm(v):
+                    s = str(v).strip() if pd.notna(v) else ""
+                    return "" if s in ("", "00000000") else s
+                # Sort so that if an NPI has multiple rows, we keep the most
+                # recent exclusion event.
+                if "EXCLDATE" in l.columns:
+                    l = l.sort_values("EXCLDATE", ascending=False)
+                self.leie = {}
+                for _, r in l.iterrows():
+                    npi = r["NPI"]
+                    if npi in self.leie:
+                        continue
+                    self.leie[npi] = {
+                        "exclusion_type": str(r.get("EXCLTYPE", "")),
+                        "exclusion_date": _norm(r.get("EXCLDATE", "")),
+                        "reinstate_date": _norm(r.get("REINDATE", "")),
+                        "waiver_date":    _norm(r.get("WAIVERDATE", "")),
+                        "general":        str(r.get("GENERAL", "")),
+                        "specialty":      str(r.get("SPECIALTY", "")),
+                        "state":          str(r.get("STATE", "")),
+                    }
+                meta_path = os.path.join(anomaly_dir, "leie_metadata.json")
+                if os.path.exists(meta_path):
+                    import json
+                    with open(meta_path, encoding="utf-8") as fh:
+                        self.leie_meta = json.load(fh)
+                print(f"  leie:     {len(self.leie):,} excluded NPIs loaded")
+            except Exception as e:
+                print(f"  [WARN] failed to load LEIE: {e}")
+                self.leie = None
+
         # Index for fast NPI lookup
         self.profiles_by_npi = self.profiles.set_index("Rndrng_NPI", drop=False).sort_index()
 
@@ -290,6 +351,47 @@ class ContextRetriever:
         if oos_pct is not None:
             metrics_snapshot["out_of_specialty_pct"] = oos_pct
 
+        # E&M distribution + specialty benchmark (for UPCODING rule).
+        # Flag em_distribution=True whenever the table is loaded (the rule
+        # differentiates "no E&M volume" from "table missing" using
+        # em_est_total). When the provider has no E&M services, em_est_total
+        # stays absent from metrics_snapshot and the rule gates correctly.
+        em_available = self.em_dist is not None
+        if self.em_dist is not None:
+            try:
+                em_row = self.em_dist.loc[(npi, year)]
+                if isinstance(em_row, pd.DataFrame):
+                    em_row = em_row.iloc[0]
+                for k in ["em_est_total", "em_est_high", "em_est_high_pct",
+                          "em_new_total", "em_new_high", "em_new_high_pct"]:
+                    if k in em_row.index and pd.notna(em_row[k]):
+                        metrics_snapshot[k] = float(em_row[k])
+            except KeyError:
+                pass
+
+        if self.em_bench_idx is not None:
+            try:
+                bench_row = self.em_bench_idx.loc[(specialty, year)]
+                if isinstance(bench_row, pd.DataFrame):
+                    bench_row = bench_row.iloc[0]
+                for col_src, metric_name in [("est_high", "em_est_high_pct"),
+                                              ("new_high", "em_new_high_pct")]:
+                    stats = {}
+                    for stat in ["p50", "p75", "p90", "p95", "p99", "mean"]:
+                        col = f"{col_src}_{stat}"
+                        if col in bench_row.index and pd.notna(bench_row[col]):
+                            stats[stat] = float(bench_row[col])
+                    if stats:
+                        specialty_national[metric_name] = stats
+            except KeyError:
+                pass
+
+        # LEIE exclusion lookup (NPI match)
+        leie_record = None
+        leie_checked = self.leie is not None
+        if self.leie is not None:
+            leie_record = self.leie.get(npi)
+
         return ProviderContext(
             npi=npi,
             year=int(year),
@@ -314,11 +416,14 @@ class ContextRetriever:
                 "state_benchmark":    bool(specialty_state),
                 "top_hcpcs":          bool(top_hcpcs),
                 "out_of_specialty":   oos_pct is not None,
+                "em_distribution":    em_available,
+                "leie":               leie_checked,
                 "rural_geocontext":   False,
                 "beneficiary_linkage": False,
                 "date_of_service":    False,
                 "diagnosis_codes":    False,
             },
+            leie_record=leie_record,
         )
 
 

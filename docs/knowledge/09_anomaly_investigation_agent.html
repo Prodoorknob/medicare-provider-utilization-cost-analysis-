@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>09 Provider Anomaly Investigation Agent &mdash; AllowanceMap</title>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Geist:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--white:#fff;--off:#fafafa;--light:#f4f4f4;--mid:#e8e8e8;--border:#d4d4d4;--text:#1a1a1a;--text-mid:#555;--text-light:#999;--accent:#1a3a5c;--accent-mid:#2a5a8c;--accent-light:#e8f0f8;--red:#c0392b;--green:#27ae60;--amber:#b8860b;--serif:'Libre Baskerville',Georgia,serif;--sans:'Geist','Helvetica Neue',sans-serif;--mono:'JetBrains Mono',Menlo,Consolas,monospace;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:#fff;color:var(--text);font-family:var(--sans);font-weight:300;line-height:1.65;font-size:0.92rem;}
+  .letterhead{background:var(--accent);color:#fff;padding:2.5rem 4rem;display:grid;grid-template-columns:1fr auto;align-items:end;gap:2rem;}
+  .lh-org{font-size:0.65rem;letter-spacing:0.15em;text-transform:uppercase;font-weight:500;opacity:0.7;margin-bottom:0.4rem;}
+  .lh-title{font-family:var(--serif);font-size:clamp(1.4rem,2.5vw,2.2rem);font-weight:700;line-height:1.2;}
+  .lh-subtitle{font-size:0.85rem;opacity:0.7;margin-top:0.4rem;}
+  .lh-meta{text-align:right;font-size:0.72rem;opacity:0.65;line-height:1.9;}
+  .lh-meta strong{opacity:1;font-weight:500;}
+  .status-strip{background:var(--accent-mid);padding:0.6rem 4rem;display:flex;gap:2.5rem;align-items:center;flex-wrap:wrap;}
+  .ss-item{font-size:0.65rem;letter-spacing:0.08em;color:rgba(255,255,255,0.7);text-transform:uppercase;}
+  .ss-item span{color:#fff;font-weight:500;margin-left:0.4rem;}
+  .report-body{max-width:980px;margin:0 auto;padding:3rem 4rem;}
+  .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:1.2rem;margin-bottom:2.6rem;}
+  @media (max-width:780px){.kpi-row{grid-template-columns:repeat(2,1fr);}}
+  .kpi-box{border:1px solid var(--border);padding:1.1rem 1.2rem;background:#fff;border-top:3px solid var(--accent);}
+  .kpi-label{font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-light);margin-bottom:0.45rem;font-weight:500;}
+  .kpi-value{font-family:var(--serif);font-size:1.6rem;color:var(--accent);line-height:1.1;}
+  .kpi-sub{font-size:0.66rem;margin-top:0.35rem;color:var(--text-light);}
+  .section{margin-bottom:2.6rem;}
+  .section h2{font-family:var(--serif);font-size:1.2rem;font-weight:400;color:var(--accent);padding-bottom:0.55rem;border-bottom:2px solid var(--accent);margin-bottom:1.2rem;}
+  .section h3{font-size:0.75rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-mid);margin:1.2rem 0 0.6rem;}
+  .prose p{margin-bottom:0.9rem;}
+  .highlight-box{background:var(--accent-light);border-left:4px solid var(--accent);padding:1.1rem 1.4rem;margin:1.4rem 0;}
+  .highlight-box p{font-size:0.86rem;color:var(--accent);margin:0;}
+  .exec-table{width:100%;border-collapse:collapse;font-size:0.83rem;margin:0.4rem 0 0.8rem;}
+  .exec-table thead th{background:var(--accent);color:#fff;padding:0.6rem 0.9rem;text-align:left;font-size:0.62rem;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;}
+  .exec-table tbody td{padding:0.6rem 0.9rem;border-bottom:1px solid var(--mid);vertical-align:top;}
+  .exec-table tbody tr:nth-child(even) td{background:var(--off);}
+  .exec-table .num{text-align:right;font-feature-settings:'tnum';}
+  .exec-table .good{color:var(--green);font-weight:500;}
+  .exec-table .bad{color:var(--red);font-weight:500;}
+  .exec-table .warn{color:var(--amber);font-weight:500;}
+  .code-block{font-family:var(--mono);font-size:0.78rem;background:#0f1d2c;color:#d8e4f1;padding:1rem 1.2rem;border-radius:3px;overflow-x:auto;margin:0.6rem 0 1rem;line-height:1.55;white-space:pre;}
+  .file-ref{font-family:var(--mono);font-size:0.82rem;background:var(--accent-light);color:var(--accent);padding:1px 6px;border-radius:2px;border:1px solid #cfdfee;}
+  .rec-list{list-style:none;}
+  .rec-list li{display:flex;gap:0.8rem;padding:0.65rem 0;border-bottom:1px solid var(--mid);font-size:0.86rem;line-height:1.6;}
+  .rec-list li:last-child{border-bottom:none;}
+  .rec-num{width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font-size:0.6rem;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;}
+  .pitch-box{border:2px solid var(--accent);background:var(--off);padding:1.2rem 1.4rem;margin:1.6rem 0;}
+  .pitch-box h4{font-family:var(--serif);color:var(--accent);font-size:0.95rem;font-weight:700;margin-bottom:0.5rem;}
+  .pitch-box p{font-size:0.86rem;line-height:1.7;}
+  .role-columns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.6rem;margin-top:1rem;}
+  @media (max-width:780px){.role-columns{grid-template-columns:1fr;}}
+  .role-col{border:1px solid var(--border);border-top:3px solid var(--accent);padding:1.1rem 1.2rem;background:#fff;}
+  .role-col h4{font-size:0.7rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);margin-bottom:0.6rem;}
+  .role-col ul{list-style:disc;padding-left:1.1rem;font-size:0.83rem;line-height:1.6;}
+  .role-col ul li{margin-bottom:0.45rem;}
+  .flow-box{border:1px solid var(--border);background:var(--off);padding:1.1rem 1.4rem;margin:1rem 0;font-family:var(--mono);font-size:0.78rem;line-height:1.7;color:var(--text-mid);white-space:pre;overflow-x:auto;}
+  .report-footer{background:var(--light);border-top:1px solid var(--mid);padding:1.2rem 4rem;display:flex;justify-content:space-between;font-size:0.65rem;color:var(--text-light);margin-top:3rem;}
+</style>
+</head>
+<body>
+
+<div class="letterhead">
+  <div>
+    <div class="lh-org">AllowanceMap Knowledge Series &middot; Report 09</div>
+    <div class="lh-title">Provider Anomaly Investigation Agent</div>
+    <div class="lh-subtitle">An LLM-driven fraud-investigation pipeline on top of the AllowanceMap silver layer</div>
+  </div>
+  <div class="lh-meta">
+    <div><strong>2026-04-24</strong></div>
+    <div>Prepared by Raj Vedire</div>
+    <div>Version 1.0</div>
+  </div>
+</div>
+
+<div class="status-strip">
+  <div class="ss-item">Status<span>Phases A&ndash;D shipped, tagged phase-9d-complete</span></div>
+  <div class="ss-item">Branch<span>agent/provider-anomaly &rarr; main via PRs #2&ndash;4</span></div>
+  <div class="ss-item">Rules evaluable<span>7 of 10 (3 structurally not evaluable)</span></div>
+  <div class="ss-item">Surface<span>/investigations on Next.js, briefs on disk</span></div>
+</div>
+
+<div class="report-body">
+
+  <div class="kpi-row">
+    <div class="kpi-box"><div class="kpi-label">NPI-years profiled</div><div class="kpi-value">11.52 M</div><div class="kpi-sub">1.76 M unique NPIs &times; up to 11 years, 22 metrics each</div></div>
+    <div class="kpi-box"><div class="kpi-label">Composite flag rate</div><div class="kpi-value">0.77 %</div><div class="kpi-sub">NPI-years firing on &ge; 2 detection methods (within spec 1&ndash;3 % target)</div></div>
+    <div class="kpi-box"><div class="kpi-label">Validation briefs (2023)</div><div class="kpi-value">100</div><div class="kpi-sub">Top-severity NPIs in 2023; all 10 rules executed including new UPCODING + LEIE</div></div>
+    <div class="kpi-box"><div class="kpi-label">Cost per brief</div><div class="kpi-value">$0.04</div><div class="kpi-sub">Sonnet 4.6 with prompt caching after first call</div></div>
+  </div>
+
+  <div class="section">
+    <h2>Why an agent on this dataset</h2>
+    <div class="prose">
+      <p>Medicare fraud, waste, and abuse cost an estimated $60&ndash;100 B annually. Rule-based screens catch obvious violations but miss the cases that require contextual reasoning. A cardiologist billing 3&times; the state average might be committing fraud, running a high-volume legitimate practice, or treating a sicker-than-typical panel. Distinguishing those cases requires knowing specialty norms, geographic variation, patient acuity, and the procedural meaning of HCPCS code families &mdash; the kind of judgement work where an LLM with structured evidence is meaningfully better than thresholds.</p>
+      <p>The AllowanceMap silver layer already had the prerequisites: 103 M provider-service rows, 131 specialties, 63 states, 11 years, NPI preserved, HCC risk scores joined. The agent re-uses that infrastructure to identify, contextualize, and triage provider anomalies, then hands the analyst a brief that explains what is suspicious and what is explainable. Specification: <span class="file-ref">PROVIDER_ANOMALY_AGENT_SPEC.md</span> (2026-04-08); built end-to-end 2026-04-23 to 2026-04-24.</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Architecture &mdash; five-step pipeline</h2>
+    <div class="flow-box">Step 1  Statistical detection      anomaly/detect_outliers.py
+        z-score (log1p) + Isolation Forest + temporal rules
+        &darr;
+Step 2  Contextual retrieval       anomaly/retrieve_context.py
+        profiles + benchmarks + top HCPCS + scope check
+        &darr;
+Step 3  Rule cross-reference       anomaly/check_rules.py
+        10 OIG/CMS-derived fraud indicators (7 evaluable, 3 not)
+        &darr;
+Step 4  Investigation brief        anomaly/generate_brief.py
+        Claude Sonnet 4.6 with cached system prompt
+        &darr;
+Step 5  Human review gate          web/src/app/investigations/
+        Approve / Escalate / Dismiss + analyst notes</div>
+    <div class="prose">
+      <p>Steps 1&ndash;3 are deterministic data operations; the LLM is only invoked at Step 4 to interpret the structured evidence. The orchestrator <span class="file-ref">anomaly/agent.py</span> ranks flagged NPI-years by composite severity, runs Steps 2&ndash;4 for each, and writes the brief to <span class="file-ref">local_pipeline/anomaly/briefs/{npi}_{year}.md</span>. Dry-run is the default; <span class="file-ref">--live</span> opts in to API spend.</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Phase A &mdash; Data foundation</h2>
+    <div class="prose">
+      <p>Two scripts produce the substrate every later phase reads from. Both are streaming-friendly and complete on the full dataset in under five minutes on a workstation.</p>
+    </div>
+    <table class="exec-table">
+      <thead><tr><th>Script</th><th>Output</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><span class="file-ref">anomaly/compute_npi_profiles.py</span></td><td><span class="file-ref">npi_profiles.parquet</span> &mdash; 11.52 M rows &times; 22 metrics</td><td>Per-state silver &rarr; per-(NPI, year) aggregates: log/level volume, srvcs_per_bene, charge_to_allowed_ratio, Herfindahl, bucket distribution (6 cols), YoY changes, joined risk score. Re-uses <span class="file-ref">hcpcs_to_bucket()</span> from the gold script for parity. Path-inheritance bug from gold caught and fixed (<span class="file-ref">../data</span> &rarr; <span class="file-ref">data/</span>) &mdash; risk-score coverage went from 0 % to 100 %.</td></tr>
+        <tr><td><span class="file-ref">anomaly/compute_benchmarks.py</span></td><td>Three parquets: specialty &times; year, state &times; specialty &times; year, national &times; year</td><td>Mean + P5/P25/P50/P75/P95 for each metric. Yields 1,067 specialty-year groups, 50,078 state-specialty-year groups (26.8 % thin with &lt; 10 providers &mdash; this is the rural / small-peer caveat the spec called out, and z-score detection falls back to specialty-year benchmark when state-level groups are too thin).</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>Phase B &mdash; Detection engine</h2>
+    <div class="prose">
+      <p>Three independent methods run over <span class="file-ref">npi_profiles.parquet</span> and emit a unified long-format <span class="file-ref">flags.parquet</span>. Each method targets a different failure mode and they are intentionally ORed at the row level &mdash; the credible-signal rate comes from the intersection, not the union.</p>
+    </div>
+    <table class="exec-table">
+      <thead><tr><th>Method</th><th>What it catches</th><th>Calibration</th></tr></thead>
+      <tbody>
+        <tr><td>Z-score on six metrics, log1p-transformed for heavy-tailed ones</td><td>Univariate outliers within the (specialty, state, year) peer group, with fallback to (specialty, year) when peer count &lt; 30</td><td>Threshold |z| &gt; 3.0. Naive z-score over-fired on lognormal billing distributions; log1p transform brought the per-metric tail back to roughly 1&ndash;2 %.</td></tr>
+        <tr><td>Isolation Forest per specialty (&ge; 200 providers)</td><td>Multivariate anomalies that look normal on each axis but unusual in combination</td><td><span class="file-ref">contamination=0.01</span>; calibrated at exactly 1.0 % flag rate as expected. 16 features including the 6-bucket distribution.</td></tr>
+        <tr><td>Temporal YoY rules with absolute-volume gate</td><td>Sudden spikes that are not explained by a comparable beneficiary increase</td><td>Requires <span class="file-ref">total_services &ge; 1000</span>; excludes COVID recovery year 2021 (where everyone YoY rebounded artificially). Volume spike with flat beneficiary count is the highest-severity sub-rule.</td></tr>
+      </tbody>
+    </table>
+
+    <table class="exec-table">
+      <thead><tr><th>Tier</th><th>Definition</th><th>Count</th><th>Rate</th></tr></thead>
+      <tbody>
+        <tr><td>Critical</td><td>All 3 methods fire</td><td class="num">8,391</td><td class="num warn">0.073 %</td></tr>
+        <tr><td>High (credible signal)</td><td>&ge; 2 methods fire</td><td class="num">89,201</td><td class="num good">0.77 %</td></tr>
+        <tr><td>Any method (raw union)</td><td>&ge; 1 method fires</td><td class="num">786,721</td><td class="num">6.83 %</td></tr>
+        <tr><td>Isolation Forest alone</td><td>contamination = 0.01</td><td class="num">115,252</td><td class="num">1.00 %</td></tr>
+      </tbody>
+    </table>
+
+    <div class="highlight-box">
+      <p>The composite (&ge; 2 methods) rate of 0.77 % is the credible-signal tier and lands inside the spec's 1&ndash;3 % target without further threshold tightening. Top-flagged specialties &mdash; Pain Management, Radiation Oncology, Diagnostic Radiology, Cardiology &mdash; match historical OIG fraud priorities, which is the right sanity check.</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Phase C &mdash; Investigation brief generation</h2>
+    <div class="prose">
+      <p>For each flagged NPI-year, the orchestrator builds a <span class="file-ref">ProviderContext</span> dataclass containing the provider's metrics, percentile ranks, full year-by-year history, top 10 HCPCS codes (read on demand from the relevant state's silver parquet), benchmark snapshots at national and state levels, and a per-rule <span class="file-ref">RuleCheckResult</span>. That structured evidence is passed to Claude Sonnet 4.6 with a fixed system prompt that defines the analyst persona and the output schema.</p>
+      <p>The system prompt was originally 1,200 tokens and silently failed to engage Sonnet 4.6's prompt cache (the minimum cacheable prefix on Sonnet 4.6 is 2,048 tokens). In Phase D I padded it to 2,584 tokens with reference material on dataset constraints, HCPCS bucket families, specialty norm heuristics, and per-rule interpretation guidance. <span class="file-ref">cache_read_input_tokens</span> is now non-zero on every call after the first.</p>
+    </div>
+    <table class="exec-table">
+      <thead><tr><th>Rule</th><th>Status</th><th>Reason</th></tr></thead>
+      <tbody>
+        <tr><td>LEIE_EXCLUDED</td><td class="good">Evaluable (Phase E)</td><td>NPI match on OIG List of Excluded Individuals/Entities; conviction-grade CRITICAL override</td></tr>
+        <tr><td>HIGH_INTENSITY</td><td class="good">Evaluable</td><td>srvcs_per_bene at specialty P &ge; 99</td></tr>
+        <tr><td>VOLUME_SPIKE</td><td class="good">Evaluable</td><td>YoY &gt; 200 % on &ge; 1,000 services, gated</td></tr>
+        <tr><td>CHARGE_INFLATION</td><td class="good">Evaluable</td><td>charge_to_allowed_ratio &gt; specialty P95 &times; 1.5</td></tr>
+        <tr><td>PROCEDURE_CONCENTRATION</td><td class="good">Evaluable</td><td>Herfindahl at specialty P &ge; 99</td></tr>
+        <tr><td>OUT_OF_SPECIALTY</td><td class="good">Evaluable (Phase D)</td><td>&gt; 20 % of services on codes outside specialty's empirical scope set</td></tr>
+        <tr><td>UPCODING</td><td class="good">Evaluable (Phase E)</td><td>99214+99215 share &gt; specialty P95 on &ge; 50 established visits; saturated specialties reported transparently</td></tr>
+        <tr><td>IMPOSSIBLE_DAY</td><td class="bad">Not evaluable</td><td>CMS public data is annual aggregate, no date-of-service field</td></tr>
+        <tr><td>UNBUNDLING</td><td class="bad">Not evaluable</td><td>Requires per-encounter claim grouping, not in CMS PUF</td></tr>
+        <tr><td>BENEFICIARY_SHARING</td><td class="bad">Not evaluable</td><td>Requires beneficiary-level cross-provider linkage</td></tr>
+      </tbody>
+    </table>
+    <div class="prose">
+      <p>The three remaining "not evaluable" rules are surfaced in every brief with the specific data gap that blocks them. This is a deliberate design choice &mdash; the analyst sees the full ten-rule grid and knows what could not be checked, which keeps the brief honest about the limits of public data.</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Phase D &mdash; Specialty scopes, UI, and redaction</h2>
+    <div class="prose">
+      <p>Three additions closed the spec out: an empirical specialty-HCPCS scope table, a Next.js review surface, and a runtime NPI-redaction toggle for demos.</p>
+    </div>
+
+    <h3>Specialty-HCPCS scope table</h3>
+    <div class="prose">
+      <p><span class="file-ref">anomaly/rules/specialty_scopes.py</span> scans silver to build <span class="file-ref">specialty_scopes.parquet</span> &mdash; for each specialty, the set of HCPCS codes that are either billed by &ge; 1 % of providers in the specialty OR fall in the cumulative top 99 % of the specialty's service volume. Output: 86,924 rows across 130 specialties; ~27 % of code-specialty pairs are in-scope. Coverage threshold is intentionally generous because most providers legitimately bill an occasional out-of-bucket code (DME supplies, vaccines, transport).</p>
+    </div>
+
+    <div class="highlight-box">
+      <p><strong>Most interpretively important call:</strong> "specialty scope" is defined empirically from what a specialty's population <em>actually bills</em>, NOT from regulatory scope-of-practice rules. Of the 10 regenerated briefs, two trigger OUT_OF_SPECIALTY: an Internal Medicine NPI billing 99.7 % of services on J7170 (a hemophilia biologic) and the multispecialty clinic with 100 % umbrella drift. The notorious optometrist-doing-cataract-surgery case (NPI 1710906219) does NOT trigger OUT_OF_SPECIALTY because 28 % of optometrists in CMS data bill HCPCS 66984 under co-management arrangements. The empirical definition is more honest than a regulatory one and pushes the LLM to do the harder reasoning step (scale and concentration, not just code identity).</p>
+    </div>
+
+    <h3>Review surface</h3>
+    <div class="prose">
+      <p>Next.js routes <span class="file-ref">/investigations</span> (list) and <span class="file-ref">/investigations/[id]</span> (detail) render the briefs sitting in <span class="file-ref">web/public/data/investigations/</span>. <span class="file-ref">web/scripts/sync-briefs.mjs</span> copies briefs from the agent output directory and parses per-rule summaries. The detail page exposes Approve / Escalate / Dismiss buttons and a free-text analyst notes field; decisions persist to localStorage as a placeholder for the eventual feedback-loop / threshold-recalibration pipeline.</p>
+    </div>
+
+    <h3>NPI redaction</h3>
+    <div class="prose">
+      <p>Briefs reference real NPIs from real CMS public data. NPIs are technically public via NPPES, but a list of "providers Claude classified CRITICAL" is a different artifact than a name in NPPES. Redaction is implemented two ways: <span class="file-ref">--mask-npis</span> on the sync script for pre-deploy masking (format <span class="file-ref">1033****74</span>), and a runtime toggle in the list and detail headers backed by localStorage and synced cross-tab via CustomEvent. <span class="file-ref">NEXT_PUBLIC_REDACT_NPIS=1</span> locks redaction on for any public deploy.</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Phase E &mdash; UPCODING and LEIE unlocked</h2>
+    <div class="prose">
+      <p>Two rules that started as NOT EVALUABLE stubs became evaluable in this phase: UPCODING via internal pre-computation, and LEIE_EXCLUDED via an external data join. Both use the same pattern as the Phase D specialty-scopes work &mdash; a one-pass script produces a sidecar parquet that the retriever loads alongside profiles and benchmarks.</p>
+    </div>
+
+    <h3>UPCODING &mdash; E&amp;M code-level distribution</h3>
+    <div class="prose">
+      <p><span class="file-ref">anomaly/rules/em_distribution.py</span> scans silver for E&amp;M codes and produces two sidecar parquets: <span class="file-ref">em_distributions.parquet</span> (5.94 M NPI-year rows with per-code service counts plus <span class="file-ref">em_est_high_pct</span> = 99214+99215 share of established visits) and <span class="file-ref">em_specialty_benchmarks.parquet</span> (863 specialty-year rows with P50/P75/P90/P95/P99 of the high-tier share). Runtime: 28 seconds on the full 2013&ndash;2023 silver.</p>
+      <p>The rule fires when <span class="file-ref">em_est_high_pct &gt; specialty_P95</span> on at least 50 established visits. In practice, this is the classic OIG MLN SE1418 upcoding pattern: a provider whose 99214/99215 share sits far above their specialty peers with volume that makes the ratio statistically meaningful.</p>
+    </div>
+    <div class="highlight-box">
+      <p><strong>The saturated-specialty calibration:</strong> 68 of 84 analysed specialties have high-tier share saturated at P95 = 100 % (Internal Medicine, Cardiology, Neurology, Psychiatry, etc. &mdash; specialties where 99215 is the default established visit). In those specialties the rule literally cannot discriminate, so it reports NOT TRIGGERED with evidence stating "specialty baseline saturated at high-tier." This is the honest behavior; a rule that silently returned FALSE in these cases would be a false negative disguised as a verdict. The rule discriminates meaningfully in 16 specialties with real spread: Orthopedics, Dermatology, Podiatry, Optometry, Urology, Gastroenterology, Ophthalmology, and similar procedural subspecialties.</p>
+    </div>
+
+    <h3>LEIE_EXCLUDED &mdash; OIG exclusion list join</h3>
+    <div class="prose">
+      <p><span class="file-ref">anomaly/external/leie_loader.py</span> downloads the OIG LEIE "UPDATED" CSV from <span class="file-ref">oig.hhs.gov/exclusions/downloadables/UPDATED.csv</span> (~15 MB, 83,001 exclusion records) and writes it to <span class="file-ref">leie_exclusions.parquet</span>. Of those records, 8,375 have valid NPI; the remainder are historical exclusions pre-dating NPI adoption and cannot be joined to CMS data. The retriever indexes by NPI and attaches the exclusion record (type, date, reinstatement status) to every <span class="file-ref">ProviderContext</span>.</p>
+      <p>An NPI match is a conviction-grade signal under 42 USC 1320a-7: any Medicare payment to an actively excluded NPI is program-ineligible by law. The rule's behaviour reflects that &mdash; a match pushes severity to CRITICAL and overrides the statistical risk ranking. Historical (reinstated) exclusions are surfaced as context but do not trigger.</p>
+    </div>
+    <div class="highlight-box">
+      <p><strong>The base-rate observation:</strong> 0 of the top 100 composite-severity flags in 2023 were on the active LEIE. This is expected and reassuring &mdash; the statistical anomaly detector is finding a different population than the OIG exclusion process. The value of LEIE_EXCLUDED is not in the frequent match (rare by construction) but in ensuring that if an excluded NPI <em>does</em> appear in a flag batch, it cannot slip past the analyst with a LOW classification.</p>
+    </div>
+
+    <h3>Validation &mdash; 100 briefs on 2023</h3>
+    <div class="prose">
+      <p>The validation run ranks the top 100 composite-severity NPI-years in 2023 and regenerates briefs through the updated retriever and rule engine. Every brief now evaluates all 10 rules, including the two previously-stub UPCODING and LEIE_EXCLUDED. Reading a representative HIGH-risk brief (NPI 1023087285, Gastroenterology, PA, 2023) shows the model correctly distinguishing vedolizumab biologic unit-billing from phantom billing and pushing the case to HIGH rather than CRITICAL, while flagging the 96365/J3380 administration-code ratio for manual follow-up in data limitations &mdash; exactly the kind of reasoning that rule thresholds alone cannot produce.</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Showcase finding &mdash; NPI 1710906219, Optometry, OH, 2018</h2>
+    <div class="prose">
+      <p>The single most defensible artifact for "the LLM is doing real work" comes from the top-severity brief.</p>
+    </div>
+    <table class="exec-table">
+      <thead><tr><th>Metric</th><th>Provider</th><th>Specialty national P95</th><th>Interpretation</th></tr></thead>
+      <tbody>
+        <tr><td>srvcs_per_bene</td><td class="num">148.67</td><td class="num">3.65</td><td>~41&times; the 95th percentile</td></tr>
+        <tr><td>charge_to_allowed_ratio</td><td class="num">16.28</td><td class="num">2.49</td><td>~6.5&times; the 95th percentile</td></tr>
+        <tr><td>avg_allowed per service</td><td class="num">$1.38</td><td class="num">$80.72</td><td>Medicare paying near zero (likely denying claims)</td></tr>
+        <tr><td>n_unique_hcpcs</td><td class="num">1</td><td class="num">12</td><td>100 % concentration on HCPCS 66984 (cataract surgery)</td></tr>
+        <tr><td>YoY volume change 2017&rarr;2018</td><td class="num">+5,847 %</td><td>&ndash;</td><td>30 services in 2017, 1,784 in 2018, sustained through 2021</td></tr>
+        <tr><td>Beneficiary count</td><td class="num">12</td><td>&ndash;</td><td>1,784 cataract surgeries / 12 patients = 148 surgeries per patient (humans have &le; 2 eyes)</td></tr>
+      </tbody>
+    </table>
+    <div class="prose">
+      <p>What the LLM did with that evidence: identified HCPCS 66984 as a code optometrists can legitimately bill in some states under co-management, but called the scale "entirely different" from any co-management convention. Noted the $1.38 avg allowed as evidence Medicare may already be denying or severely discounting these claims. Recommended five specific actions including immediate referral to the Ohio Zone Program Integrity Contractor, claim-level audit for 2018&ndash;2021 with date-of-service and rendering-provider fields, identifying the facility associated with the 100 % facility billing setting, cross-referencing the 12 beneficiaries against ophthalmologist claims, and verifying the provider's enrollment record for any group-affiliation change in 2018 that explains the structural shift.</p>
+      <p>OUT_OF_SPECIALTY did <em>not</em> trigger on this NPI &mdash; co-management billing is common enough that the empirical scope set includes 66984 for optometry. The CRITICAL classification came from HIGH_INTENSITY plus PROCEDURE_CONCENTRATION plus the temporal context, with the LLM tying them together. This is exactly the case the spec's Step 4 was designed to surface: a pattern that no single rule can convict on but that becomes obvious when the evidence is read jointly.</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Calibration check &mdash; the MEDIUM that should have been MEDIUM</h2>
+    <div class="prose">
+      <p>NPI 1386678977 (Multispecialty Clinic / Group Practice, MI, 2013) sat at composite-severity rank 3 but received a MEDIUM (42/100) classification rather than HIGH or CRITICAL. The brief's reasoning &mdash; that the elevated avg_allowed is a "specialty-mismatch artifact" because the practice billed pure radiation oncology codes under a multispecialty group designation, that the 2.45 HCC risk score is legitimate for an oncology panel, and that no formal fraud rules triggered &mdash; is the calibration check the spec called for. A naive scoring system that summed flag severity would have classified this CRITICAL. The LLM resisted because the evidence taken jointly is not actually suspicious.</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>What this proves about the dataset</h2>
+    <table class="exec-table">
+      <thead><tr><th>Claim</th><th>Evidence</th></tr></thead>
+      <tbody>
+        <tr><td>Silver has enough resolution to support meaningful peer comparisons</td><td>26.8 % thin (state, specialty, year) groups force fallback to (specialty, year), but the fallback works &mdash; rare specialties like Advanced Heart Failure (783 providers) still surface coherent benchmarks.</td></tr>
+        <tr><td>Empirical specialty scope is more useful than regulatory scope</td><td>Optometrists legitimately bill 66984 28 % of the time under co-management. A regulatory scope rule would over-fire on this; the empirical rule lets the LLM decide whether the scale is consistent with co-management or not.</td></tr>
+        <tr><td>Risk-score-aware reasoning is necessary, not optional</td><td>The MEDIUM brief explicitly invoked HCC = 2.45 to argue the high avg_allowed was clinically defensible. Without the join from <span class="file-ref">pull_provider_data.py</span>, the agent could not distinguish "sicker panel" from "fraud."</td></tr>
+        <tr><td>Composite (multi-method) signal is the right detection unit</td><td>Single-method flag rates (1&ndash;2 % each) compound to ~7 % on union but intersect to 0.77 % on &ge; 2 methods. The intersection is where false-positive rate drops to a triage-friendly level without threshold tightening.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>What this can't do</h2>
+    <table class="exec-table">
+      <thead><tr><th>Limitation</th><th>What would unblock it</th></tr></thead>
+      <tbody>
+        <tr><td>Detect impossible-day billing (more than 24 hours of services on one calendar date)</td><td>Claim-level date-of-service field, only available in non-public CMS data</td></tr>
+        <tr><td>Detect unbundling (billing components separately that should be bundled)</td><td>Per-encounter claim grouping; not in CMS Provider &amp; Service public data</td></tr>
+        <tr><td>Detect beneficiary-sharing rings (kickback indicators)</td><td>Beneficiary-level claims linkage across providers; would require LDS or RIF</td></tr>
+        <tr><td>Verify medical necessity</td><td>Diagnosis codes linked to procedures; requires Medicare LDS / RIF access (paid)</td></tr>
+        <tr><td>Persist analyst decisions for threshold recalibration</td><td>localStorage placeholder is wired; needs a Supabase table and a feedback-loop script</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>Per-role things to volunteer before being asked</h2>
+    <div class="role-columns">
+      <div class="role-col">
+        <h4>Data Engineer interview</h4>
+        <ul>
+          <li>NPI was preserved at silver but dropped at gold &mdash; this agent depended on the silver layer surviving the feature-engineering step</li>
+          <li>The path-inheritance bug from the gold script (<span class="file-ref">../data</span>) silently produced 0 % risk-score coverage on first run; caught by smoke test before scaling</li>
+          <li>Specialty-HCPCS scope is computed once with a streaming pass; per-state silver sharding made this trivially parallelizable</li>
+          <li>Empirical scope vs regulatory scope is the right call given that scope-of-practice varies by state and the data does not encode it</li>
+        </ul>
+      </div>
+      <div class="role-col">
+        <h4>ML Engineer interview</h4>
+        <ul>
+          <li>Naive z-score fired at 5&times; the spec target on lognormal billing data; log1p-on-heavy-tailed-metrics brought it back to ~1 %</li>
+          <li>Composite (&ge; 2 methods) signal is the calibration unit; raw OR is not actionable at 7 % flag rate</li>
+          <li>System prompt cached only after padding to 2,048-token Sonnet 4.6 minimum; first run silently no-cached and I caught it in the usage telemetry</li>
+          <li>Top-flagged specialties (Pain Management, Radiation Oncology, Diagnostic Radiology) match OIG fraud priorities &mdash; that is the sanity check, not synthetic-data evals</li>
+          <li>Three detection methods are intentionally independent: z-score is univariate, Isolation Forest is multivariate, temporal is sequence-aware</li>
+        </ul>
+      </div>
+      <div class="role-col">
+        <h4>Data Scientist interview</h4>
+        <ul>
+          <li>Sample MEDIUM brief is the calibration check &mdash; the LLM correctly resisted convicting on a specialty-mismatch artifact</li>
+          <li>OUT_OF_SPECIALTY does NOT trigger on the optometrist case because 28 % of optometrists bill 66984 &mdash; the empirical definition forces the model to reason about scale, not just code identity</li>
+          <li>Three of the ten rules are structurally not evaluable on public CMS data (IMPOSSIBLE_DAY, UNBUNDLING, BENEFICIARY_SHARING); brief discloses this every time. The original fourth &mdash; UPCODING &mdash; was unlocked in Phase E via a one-pass E&amp;M distribution pre-compute</li>
+          <li>HCC risk score is the single most important context variable for distinguishing "sicker panel" from "fraud" &mdash; without it, intensity rules over-flag oncology, nephrology, hospice</li>
+          <li>Cost: $0.04 per brief on Sonnet 4.6 with caching; Opus 4.7 was not necessary for this task</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Top-5 design decisions</h2>
+    <ul class="rec-list">
+      <li><span class="rec-num">1</span><span>Composite signal (&ge; 2 methods fire) over single-rule thresholds. Single-rule flag rates compound badly; intersection is where credible-signal rate lives.</span></li>
+      <li><span class="rec-num">2</span><span>Empirical specialty scope, not regulatory. The optometrist-billing-cataract-surgery case is exactly the wrong thing for a regulatory scope rule to flag, because co-management is real. Force the LLM to do the scale-and-concentration reasoning.</span></li>
+      <li><span class="rec-num">3</span><span>Disclose what was NOT checked in every brief. Three of the ten rules are structurally not evaluable; pretending otherwise is dishonest. The "Data Limitations" section is part of the contract.</span></li>
+      <li><span class="rec-num">4</span><span>Dry-run as the default; <span class="file-ref">--live</span> opts in to API spend. The harness should not auto-cost the user's account; the cost boundary deserves a flag.</span></li>
+      <li><span class="rec-num">5</span><span>Padded system prompt to engage Sonnet 4.6's 2,048-token cache minimum. The first 10-brief run cost $0.36 with no caching; subsequent runs are cheaper and the prompt itself got better because the padding is real domain context, not filler.</span></li>
+    </ul>
+  </div>
+
+  <div class="pitch-box">
+    <h4>30-second pitch</h4>
+    <p>Phase 9 ships a fraud-investigation agent on top of the AllowanceMap silver layer. Statistical detection (z-score, Isolation Forest, temporal) flags 0.77 % of NPI-years on a multi-method intersection; for each, a contextual evidence package &mdash; provider metrics, percentile ranks, year-by-year history, top HCPCS codes, specialty benchmarks, empirical scope check, E&amp;M distribution, OIG LEIE match &mdash; is passed to Claude Sonnet 4.6 with a cached 2,584-token system prompt that defines the analyst persona and the output schema. Briefs are analyst-grade: the top brief identified an optometrist billing 1,784 cataract surgeries to 12 beneficiaries, hypothesized NPI identity theft from the $1.38 avg allowed pattern, and recommended five concrete next steps. Seven of ten rules are now evaluable (LEIE_EXCLUDED and UPCODING unlocked in Phase E); the remaining three are structurally blocked by CMS public data scope, and the brief discloses that every time. Cost is $0.04 per brief with caching, and the briefs are reviewable on a Next.js <span class="file-ref">/investigations</span> page with Approve / Escalate / Dismiss controls.</p>
+  </div>
+
+</div>
+
+<div class="report-footer">
+  <div>AllowanceMap &middot; Report 09 of 9 &middot; Raj Vedire</div>
+  <div>2026-04-24 &middot; Version 1.0</div>
+</div>
+
+</body>
+</html>

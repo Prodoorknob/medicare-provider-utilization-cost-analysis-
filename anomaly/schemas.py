@@ -40,6 +40,11 @@ class ProviderContext:
     # Data completeness flags -- what we could / could not compute
     data_available: dict[str, bool] = field(default_factory=dict)
 
+    # Optional: LEIE exclusion record if this NPI appears on the OIG LEIE list.
+    # None means either not checked (retriever has no LEIE table) or not excluded.
+    # The data_available flag 'leie' distinguishes the two cases.
+    leie_record: dict[str, Any] | None = None
+
 
 @dataclass
 class RuleCheckResult:

@@ -151,15 +151,116 @@ def check_impossible_day(ctx: ProviderContext) -> RuleCheckResult:
     )
 
 
+# Minimum established-visit volume required for the ratio to be stable.
+# Keep aligned with em_distribution.MIN_EST_VOLUME.
+UPCODING_MIN_EST_VOLUME = 50
+
+
 def check_upcoding(ctx: ProviderContext) -> RuleCheckResult:
+    """High-tier E&M share outlier: 99214/99215 share > specialty P95.
+
+    Unlocked by anomaly/rules/em_distribution.py, which pre-computes per-NPI
+    E&M counts and per-specialty benchmark percentiles. If either input is
+    missing the rule transparently reports NOT EVALUABLE.
+    """
+    if not ctx.data_available.get("em_distribution"):
+        return RuleCheckResult(
+            rule_id="UPCODING",
+            rule_name="Systematic Upcoding",
+            triggered=False,
+            severity="high",
+            evidence=(
+                "Cannot evaluate: em_distributions table not available. Build "
+                "with anomaly/rules/em_distribution.py."
+            ),
+            reference="CMS MLN Matters SE1418",
+            available=False,
+        )
+
+    est_total = ctx.metrics.get("em_est_total")
+    est_high_pct = ctx.metrics.get("em_est_high_pct")
+    bench = ctx.specialty_national.get("em_est_high_pct", {})
+    p95 = bench.get("p95")
+
+    # Low-volume short-circuit: the ratio is too noisy to act on. Note that
+    # est_total=None means the provider billed zero established office visits
+    # this year; est_total<threshold means they billed some but not enough.
+    if est_total is None:
+        return RuleCheckResult(
+            rule_id="UPCODING",
+            rule_name="Systematic Upcoding",
+            triggered=False,
+            severity="high",
+            evidence="No established office-visit volume (99211-99215) this year.",
+            reference="CMS MLN Matters SE1418",
+            available=True,
+        )
+    if est_total < UPCODING_MIN_EST_VOLUME:
+        return RuleCheckResult(
+            rule_id="UPCODING",
+            rule_name="Systematic Upcoding",
+            triggered=False,
+            severity="high",
+            evidence=(
+                f"Insufficient E&M volume: est_total={int(est_total)} "
+                f"(min {UPCODING_MIN_EST_VOLUME}). Ratio is unstable at low n."
+            ),
+            reference="CMS MLN Matters SE1418",
+            available=True,
+        )
+
+    if est_high_pct is None or p95 is None:
+        return RuleCheckResult(
+            rule_id="UPCODING",
+            rule_name="Systematic Upcoding",
+            triggered=False,
+            severity="high",
+            evidence="Specialty benchmark missing for E&M high-tier share.",
+            reference="CMS MLN Matters SE1418",
+            available=False,
+        )
+
+    # Saturated-specialty short-circuit: if the top 5% of the peer group
+    # already bills 99214/99215 exclusively, the high-tier share cannot
+    # discriminate. Report transparently rather than returning a false
+    # negative. This is the case for ~80% of specialties (IM, Cardiology,
+    # Neurology, Psychiatry, etc. where 99215 is the default established
+    # visit).
+    if p95 >= 0.99:
+        return RuleCheckResult(
+            rule_id="UPCODING",
+            rule_name="Systematic Upcoding",
+            triggered=False,
+            severity="high",
+            evidence=(
+                f"Cannot discriminate: specialty P95 for high-tier E&M share "
+                f"is {p95*100:.1f}% (i.e., the norm is already saturated at "
+                f"99214/99215). Provider high-tier share is "
+                f"{est_high_pct*100:.1f}% of {int(est_total):,} established "
+                f"visits. Consider YoY drift or absolute volume instead."
+            ),
+            reference="CMS MLN Matters SE1418",
+            available=True,
+        )
+
+    # Trigger when high-tier share exceeds specialty P95 in a non-saturated
+    # specialty. We do NOT add a separate absolute-share floor because P95 is
+    # already specialty-aware: in a specialty where P95=35%, a 45% share is
+    # meaningfully high; in a specialty where P95=60%, a 45% share is not.
+    triggered = est_high_pct > p95
+    evidence = (
+        f"99214+99215 share = {est_high_pct*100:.1f}% of "
+        f"{int(est_total):,} established visits "
+        f"(specialty P95={p95*100:.1f}%, trigger at > P95)"
+    )
     return RuleCheckResult(
         rule_id="UPCODING",
         rule_name="Systematic Upcoding",
-        triggered=False,
+        triggered=triggered,
         severity="high",
-        evidence="Cannot evaluate: requires E&M code level distribution (99211-99215 split), which requires per-code filtering not pre-computed in npi_profiles.",
+        evidence=evidence,
         reference="CMS MLN Matters SE1418",
-        available=False,
+        available=True,
     )
 
 
@@ -217,6 +318,69 @@ def check_out_of_specialty(ctx: ProviderContext) -> RuleCheckResult:
     )
 
 
+def check_leie_excluded(ctx: ProviderContext) -> RuleCheckResult:
+    """OIG LEIE cross-reference: NPI match on the exclusion list.
+
+    An exclusion is a conviction-grade signal and should top-rank any flagged
+    provider. Not in the spec's original 9 rules but a natural addition once
+    the LEIE loader (anomaly/external/leie_loader.py) has run.
+    """
+    if not ctx.data_available.get("leie"):
+        return RuleCheckResult(
+            rule_id="LEIE_EXCLUDED",
+            rule_name="OIG Exclusion List Match",
+            triggered=False,
+            severity="critical",
+            evidence=(
+                "Cannot evaluate: LEIE exclusion list not loaded. Fetch with "
+                "anomaly/external/leie_loader.py."
+            ),
+            reference="OIG LEIE 42 USC 1320a-7",
+            available=False,
+        )
+
+    if ctx.leie_record is None:
+        return RuleCheckResult(
+            rule_id="LEIE_EXCLUDED",
+            rule_name="OIG Exclusion List Match",
+            triggered=False,
+            severity="critical",
+            evidence="NPI not found on OIG LEIE at time of agent run.",
+            reference="OIG LEIE 42 USC 1320a-7",
+            available=True,
+        )
+
+    rec = ctx.leie_record
+    # Active vs. reinstated: a present, non-empty REINDATE indicates the
+    # individual was reinstated after the exclusion period. An active exclusion
+    # is the most severe signal; a reinstatement is still worth flagging as
+    # historical context but not a trigger.
+    reinstated = bool(rec.get("reinstate_date"))
+    excl_date  = rec.get("exclusion_date") or ""
+    excl_type  = rec.get("exclusion_type") or ""
+    if reinstated:
+        evidence = (
+            f"Historical exclusion: {excl_type} on {excl_date}, reinstated "
+            f"{rec.get('reinstate_date')}. Active exclusion no longer in force."
+        )
+        triggered = False
+    else:
+        evidence = (
+            f"ACTIVE exclusion on OIG LEIE: type={excl_type}, date={excl_date}. "
+            f"Any Medicare payment to this NPI is program-ineligible."
+        )
+        triggered = True
+    return RuleCheckResult(
+        rule_id="LEIE_EXCLUDED",
+        rule_name="OIG Exclusion List Match",
+        triggered=triggered,
+        severity="critical",
+        evidence=evidence,
+        reference="OIG LEIE 42 USC 1320a-7",
+        available=True,
+    )
+
+
 def check_beneficiary_sharing(ctx: ProviderContext) -> RuleCheckResult:
     return RuleCheckResult(
         rule_id="BENEFICIARY_SHARING",
@@ -233,6 +397,7 @@ def check_beneficiary_sharing(ctx: ProviderContext) -> RuleCheckResult:
 
 
 RULE_CHECKS = [
+    check_leie_excluded,
     check_high_intensity,
     check_volume_spike,
     check_charge_inflation,
