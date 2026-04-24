@@ -19,10 +19,17 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import FlagIcon from '@mui/icons-material/Flag';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Switch from '@mui/material/Switch';
+import Tooltip from '@mui/material/Tooltip';
 import {
   fetchBrief,
   RISK_COLORS,
   RULE_STATUS_COLORS,
+  displayNpi,
+  displayText,
+  useRedactNpis,
+  REDACT_LOCKED,
   type BriefDetail,
   type RuleStatus,
 } from '@/lib/investigations';
@@ -43,6 +50,7 @@ export default function BriefDetailPage({ params }: { params: Promise<{ id: stri
   const [decision, setDecision] = useState<Decision | null>(null);
   const [notes, setNotes] = useState('');
   const [toast, setToast] = useState('');
+  const [redact, setRedact] = useRedactNpis();
 
   useEffect(() => {
     if (!npiStr || !Number.isFinite(year)) {
@@ -110,9 +118,22 @@ export default function BriefDetailPage({ params }: { params: Promise<{ id: stri
 
   return (
     <Box sx={{ py: 2, maxWidth: 1100 }}>
-      <Button component={Link} href="/investigations" startIcon={<ArrowBackIcon />} sx={{ mb: 2 }}>
-        All investigations
-      </Button>
+      <Stack direction="row" sx={{ mb: 2, alignItems: 'center' }}>
+        <Button component={Link} href="/investigations" startIcon={<ArrowBackIcon />} sx={{ flex: 1 }}>
+          All investigations
+        </Button>
+        <Tooltip title={
+          REDACT_LOCKED
+            ? 'NPI redaction is enforced for this deployment and cannot be disabled'
+            : 'Mask NPIs for live demos and screenshots. Saved locally.'
+        }>
+          <FormControlLabel
+            control={<Switch size="small" checked={redact} disabled={REDACT_LOCKED} onChange={(e) => setRedact(e.target.checked)} />}
+            label="Redact NPIs"
+            sx={{ m: 0, '& .MuiFormControlLabel-label': { fontSize: '0.8125rem', color: 'text.secondary' } }}
+          />
+        </Tooltip>
+      </Stack>
 
       {/* Header */}
       <Card sx={{ mb: 3 }}>
@@ -123,7 +144,7 @@ export default function BriefDetailPage({ params }: { params: Promise<{ id: stri
                 Investigation Brief · {brief.year}
               </Typography>
               <Typography variant="h4" component="h1" sx={{ fontFamily: 'monospace', fontWeight: 700 }}>
-                NPI {brief.npi}
+                NPI {displayNpi(brief.npi, redact)}
               </Typography>
               <Typography color="text.secondary">
                 {brief.specialty} · {brief.state}
@@ -189,34 +210,34 @@ export default function BriefDetailPage({ params }: { params: Promise<{ id: stri
 
       {/* Executive summary */}
       <Section title="Executive Summary">
-        <Typography>{brief.executive_summary}</Typography>
+        <Typography>{displayText(brief.executive_summary, redact)}</Typography>
       </Section>
 
       {/* Statistical findings */}
       <Section title="Statistical Findings">
-        <BulletList text={brief.statistical_findings} />
+        <BulletList text={displayText(brief.statistical_findings, redact)} />
       </Section>
 
       {/* Contextual interpretation */}
       <Section title="Contextual Interpretation">
-        <Typography>{brief.contextual_interpretation}</Typography>
+        <Typography>{displayText(brief.contextual_interpretation, redact)}</Typography>
       </Section>
 
       {/* Rule checks */}
       <Section title="Rule Check Results">
         <Stack spacing={1.25}>
           {brief.rule_summary.rules.map((r) => (
-            <RuleCheckRow key={r.rule_id} id={r.rule_id} status={r.status} evidence={r.evidence} />
+            <RuleCheckRow key={r.rule_id} id={r.rule_id} status={r.status} evidence={displayText(r.evidence, redact)} />
           ))}
           {brief.rule_summary.rules.length === 0 && (
-            <BulletList text={brief.rule_check_results} />
+            <BulletList text={displayText(brief.rule_check_results, redact)} />
           )}
         </Stack>
       </Section>
 
       {/* Data limitations */}
       <Section title="Data Limitations">
-        <BulletList text={brief.data_limitations} />
+        <BulletList text={displayText(brief.data_limitations, redact)} />
       </Section>
 
       {/* Recommended actions */}
@@ -224,7 +245,7 @@ export default function BriefDetailPage({ params }: { params: Promise<{ id: stri
         <Box component="ol" sx={{ pl: 3, m: 0 }}>
           {brief.recommended_actions.map((a, i) => (
             <Box component="li" key={i} sx={{ mb: 1 }}>
-              <InlineMarkdown text={a} />
+              <InlineMarkdown text={displayText(a, redact)} />
             </Box>
           ))}
         </Box>
