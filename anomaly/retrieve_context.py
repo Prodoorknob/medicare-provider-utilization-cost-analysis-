@@ -75,6 +75,24 @@ class ContextRetriever:
         self.sp_bench = pd.read_parquet(os.path.join(anomaly_dir, "specialty_benchmarks.parquet"))
         self.ss_bench = pd.read_parquet(os.path.join(anomaly_dir, "state_specialty_benchmarks.parquet"))
 
+        # Optional: specialty-HCPCS scope table. If absent, out-of-specialty
+        # evaluation stays disabled (rule reports NOT EVALUABLE, same as before).
+        scope_path = os.path.join(anomaly_dir, "specialty_scopes.parquet")
+        self.scopes: dict[str, set[str]] | None = None
+        self.scope_meta: dict | None = None
+        if os.path.exists(scope_path):
+            sc = pd.read_parquet(scope_path, columns=["specialty", "HCPCS_Cd", "in_scope"])
+            self.scopes = {
+                spec: set(grp.loc[grp["in_scope"], "HCPCS_Cd"].astype(str).tolist())
+                for spec, grp in sc.groupby("specialty", observed=True)
+            }
+            summary_path = os.path.join(anomaly_dir, "specialty_scopes_summary.json")
+            if os.path.exists(summary_path):
+                import json
+                with open(summary_path, encoding="utf-8") as fh:
+                    self.scope_meta = json.load(fh).get("thresholds")
+            print(f"  scopes:   {len(self.scopes):,} specialties loaded")
+
         # Index for fast NPI lookup
         self.profiles_by_npi = self.profiles.set_index("Rndrng_NPI", drop=False).sort_index()
 
@@ -136,24 +154,47 @@ class ContextRetriever:
             out[m] = float((v <= npi_row[m]).mean() * 100)
         return out
 
-    def _top_hcpcs(self, npi: str, state: str, year: int, top_n: int = 10) -> list[dict]:
+    def _npi_hcpcs_frame(self, npi: str, state: str, year: int) -> pd.DataFrame | None:
+        """All (HCPCS_Cd, HCPCS_Desc, total Tot_Srvcs) for one (NPI, year)."""
         silver = self._load_silver_state(state)
         if silver is None:
-            return []
+            return None
         sub = silver[(silver["Rndrng_NPI"] == npi) & (silver["year"] == year)]
         if sub.empty:
-            return []
-        agg = (
+            return None
+        return (
             sub.groupby(["HCPCS_Cd", "HCPCS_Desc"], observed=True, sort=False)
                ["Tot_Srvcs"].sum()
                .reset_index()
                .rename(columns={"Tot_Srvcs": "count"})
                .sort_values("count", ascending=False)
-               .head(top_n)
         )
-        total = agg["count"].sum()
-        agg["pct_of_total"] = (agg["count"] / total * 100).round(1) if total > 0 else 0.0
-        return agg.to_dict(orient="records")
+
+    def _top_hcpcs(self, all_codes: pd.DataFrame | None, top_n: int = 10) -> list[dict]:
+        if all_codes is None or all_codes.empty:
+            return []
+        total = all_codes["count"].sum()
+        out = all_codes.head(top_n).copy()
+        out["pct_of_total"] = (out["count"] / total * 100).round(1) if total > 0 else 0.0
+        return out.to_dict(orient="records")
+
+    def _out_of_specialty(
+        self, all_codes: pd.DataFrame | None, specialty: str,
+    ) -> tuple[float | None, list[str]]:
+        """Return (pct of services on out-of-scope codes, up-to-10 out-of-scope codes)."""
+        if self.scopes is None or all_codes is None or all_codes.empty:
+            return None, []
+        whitelist = self.scopes.get(specialty)
+        if whitelist is None:
+            return None, []
+        total = float(all_codes["count"].sum())
+        if total <= 0:
+            return None, []
+        mask = ~all_codes["HCPCS_Cd"].astype(str).isin(whitelist)
+        oos = all_codes[mask]
+        pct = float(oos["count"].sum() / total)
+        top_out = oos.head(10)["HCPCS_Cd"].astype(str).tolist()
+        return pct, top_out
 
     def _trend_direction(self, history: list[dict]) -> str:
         """Classify volume trajectory from history (chronological)."""
@@ -242,8 +283,12 @@ class ContextRetriever:
         # Percentile ranks
         pct_ranks = self._percentile_ranks(specialty, year, r)
 
-        # Top HCPCS (requires silver)
-        top_hcpcs = self._top_hcpcs(npi, state, year)
+        # HCPCS breakdown (requires silver)
+        all_codes = self._npi_hcpcs_frame(npi, state, year)
+        top_hcpcs = self._top_hcpcs(all_codes)
+        oos_pct, oos_codes = self._out_of_specialty(all_codes, specialty)
+        if oos_pct is not None:
+            metrics_snapshot["out_of_specialty_pct"] = oos_pct
 
         return ProviderContext(
             npi=npi,
@@ -261,14 +306,14 @@ class ContextRetriever:
             trend_direction=self._trend_direction(history),
             top_hcpcs=top_hcpcs,
             bucket_distribution=bucket_dist,
-            out_of_specialty_codes=[],  # requires specialty-HCPCS scope table (future work)
+            out_of_specialty_codes=oos_codes,
             data_available={
                 "metrics": True,
                 "history": True,
                 "national_benchmark": bool(specialty_national),
                 "state_benchmark":    bool(specialty_state),
                 "top_hcpcs":          bool(top_hcpcs),
-                "out_of_specialty":   False,
+                "out_of_specialty":   oos_pct is not None,
                 "rural_geocontext":   False,
                 "beneficiary_linkage": False,
                 "date_of_service":    False,

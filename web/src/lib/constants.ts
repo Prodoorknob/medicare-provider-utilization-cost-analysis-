@@ -53,5 +53,6 @@ export const FEATURE_DISPLAY_NAMES: Record<string, string> = {
 export const NAV_LINKS = [
   { label: 'Estimator', href: '/' },
   { label: 'Forecast', href: '/forecast' },
+  { label: 'Investigations', href: '/investigations' },
   { label: 'About', href: '/about' },
 ];
