@@ -177,7 +177,49 @@ python modeling/train_oop_local.py --sample 0.3 --rounds 500
 
 See `PROGRESS.md` for detailed milestone tracking, changelogs, model results, and phase-by-phase execution log. Update PROGRESS.md after every phase/milestone completion.
 
-**Current status:** Phases 3-5 code complete. LSTM training pending (GPU). MCBS pipeline done. OOP model ready to train.
+**Current status:** Phases 3-5 code complete. LSTM training pending (GPU). MCBS pipeline done. OOP model ready to train. Phase 9 (Provider Anomaly Investigation Agent) Phases A-C complete on `agent/provider-anomaly` branch.
+
+## Provider Anomaly Investigation Agent (Phase 9)
+
+End-to-end fraud investigation pipeline on top of the existing silver layer. See [`PROVIDER_ANOMALY_AGENT_SPEC.md`](PROVIDER_ANOMALY_AGENT_SPEC.md) for the full design.
+
+### Anomaly pipeline files (`anomaly/`)
+- `compute_npi_profiles.py` — silver → 11.52M NPI-year profiles with 22 metrics (volume, intensity, charge ratios, Herfindahl, bucket distribution, YoY changes, risk score)
+- `compute_benchmarks.py` — specialty/state/national benchmark tables (mean + P5/P25/P50/P75/P95)
+- `detect_outliers.py` — z-score (log1p-transformed) + Isolation Forest + temporal-rule detection → `flags.parquet`
+- `schemas.py` — `ProviderContext`, `RuleCheckResult`, `InvestigationBrief` dataclasses
+- `retrieve_context.py` — `ContextRetriever` builds the evidence package for a (NPI, year)
+- `check_rules.py` — 9 fraud-indicator rules (4 evaluable, 5 transparently NOT EVALUABLE with reason)
+- `generate_brief.py` — Claude API call (`claude-sonnet-4-6` default) with structured markdown output
+- `agent.py` — orchestrator: rank flags → context → rules → brief → markdown + JSON
+
+### Anomaly outputs (`local_pipeline/anomaly/`, gitignored)
+- `npi_profiles.parquet` — 11.52M rows (1.76M unique NPIs × 11 years)
+- `specialty_benchmarks.parquet`, `state_specialty_benchmarks.parquet`, `national_benchmarks.parquet`
+- `flags.parquet` — long-format detection flags; composite (≥2 methods) hits 0.77% of NPI-years
+- `briefs/{NPI}_{YEAR}.md` and `.json` — generated investigation briefs
+
+### Anomaly commands
+```bash
+# 1. Build NPI profiles (~3 min) and benchmarks (~30s)
+python anomaly/compute_npi_profiles.py
+python anomaly/compute_benchmarks.py
+
+# 2. Run detection (~3 min)
+python anomaly/detect_outliers.py
+
+# 3. Generate investigation briefs
+# Dry-run (formats prompts, no API spend)
+python anomaly/agent.py --top-n 10
+
+# Live run (Claude API; ~$0.04/brief on Sonnet 4.6)
+python anomaly/agent.py --top-n 10 --live \
+    --env-path "C:/Users/rajas/Documents/ADS/coverdrive_pred_11/.env"
+```
+
+### Anomaly agent dependencies
+- `anthropic >= 0.97`, `python-dotenv` (in addition to base pipeline deps)
+- `ANTHROPIC_API_KEY` env var; the helper loads from `--env-path` with `override=True` (necessary when an empty shell var would otherwise block dotenv)
 
 ## Notes
 
