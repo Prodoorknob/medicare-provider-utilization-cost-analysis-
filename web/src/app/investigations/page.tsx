@@ -20,6 +20,9 @@ import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Stack from '@mui/material/Stack';
 import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Switch from '@mui/material/Switch';
+import Tooltip from '@mui/material/Tooltip';
 import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined';
 import ReportProblemOutlinedIcon from '@mui/icons-material/ReportProblemOutlined';
 import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined';
@@ -27,6 +30,9 @@ import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlineOutlin
 import {
   fetchIndex,
   RISK_COLORS,
+  displayNpi,
+  useRedactNpis,
+  REDACT_LOCKED,
   type BriefIndex,
   type BriefIndexEntry,
   type RiskClassification,
@@ -46,6 +52,7 @@ export default function InvestigationsPage() {
   const [query, setQuery] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('risk_score');
   const [order, setOrder] = useState<Order>('desc');
+  const [redact, setRedact] = useRedactNpis();
 
   useEffect(() => {
     fetchIndex()
@@ -103,7 +110,18 @@ export default function InvestigationsPage() {
     <Box sx={{ py: 2 }}>
       <Stack direction="row" spacing={1.5} sx={{ mb: 1, alignItems: 'center' }}>
         <ShieldOutlinedIcon sx={{ color: 'primary.main', fontSize: 32 }} />
-        <Typography variant="h4" component="h1">Provider Investigations</Typography>
+        <Typography variant="h4" component="h1" sx={{ flex: 1 }}>Provider Investigations</Typography>
+        <Tooltip title={
+          REDACT_LOCKED
+            ? 'NPI redaction is enforced for this deployment and cannot be disabled'
+            : 'Mask NPIs (e.g. 1033****74) for live demos and screenshots. Saved locally.'
+        }>
+          <FormControlLabel
+            control={<Switch size="small" checked={redact} disabled={REDACT_LOCKED} onChange={(e) => setRedact(e.target.checked)} />}
+            label="Redact NPIs"
+            sx={{ m: 0, '& .MuiFormControlLabel-label': { fontSize: '0.8125rem', color: 'text.secondary' } }}
+          />
+        </Tooltip>
       </Stack>
       <Typography color="text.secondary" sx={{ mb: 3, maxWidth: 800 }}>
         Claude-generated investigation briefs for providers that triggered anomaly detection. Each brief
@@ -143,7 +161,7 @@ export default function InvestigationsPage() {
         </ToggleButtonGroup>
         <TextField
           size="small"
-          placeholder="Filter by NPI, specialty, or state"
+          placeholder={redact ? 'Filter by specialty or state' : 'Filter by NPI, specialty, or state'}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           sx={{ minWidth: 300 }}
@@ -196,7 +214,7 @@ export default function InvestigationsPage() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {rows.map((b) => <InvestigationRow key={`${b.npi}_${b.year}`} b={b} />)}
+                {rows.map((b) => <InvestigationRow key={`${b.npi}_${b.year}`} b={b} redact={redact} />)}
                 {rows.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={6} align="center" sx={{ py: 4, color: 'text.secondary' }}>
@@ -213,7 +231,7 @@ export default function InvestigationsPage() {
   );
 }
 
-function InvestigationRow({ b }: { b: BriefIndexEntry }) {
+function InvestigationRow({ b, redact }: { b: BriefIndexEntry; redact: boolean }) {
   const c = RISK_COLORS[b.risk_classification];
   const router = useRouter();
   return (
@@ -238,7 +256,7 @@ function InvestigationRow({ b }: { b: BriefIndexEntry }) {
           <Typography variant="body2" sx={{ fontWeight: 700 }}>{b.risk_score.toFixed(0)}</Typography>
         </Stack>
       </TableCell>
-      <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>{b.npi}</TableCell>
+      <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>{displayNpi(b.npi, redact)}</TableCell>
       <TableCell>{b.year}</TableCell>
       <TableCell>{b.specialty}</TableCell>
       <TableCell>{b.state}</TableCell>

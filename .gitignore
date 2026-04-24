@@ -3,6 +3,10 @@ data/
 partitioned_data/
 local_pipeline/
 
+# web/public/data is intentionally tracked (synced investigation briefs)
+!web/public/data/
+!web/public/data/**
+
 # Python artifacts
 __pycache__/
 *.py[cod]

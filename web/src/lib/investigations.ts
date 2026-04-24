@@ -1,6 +1,8 @@
 // Client-side helpers for fetching investigation briefs synced to
 // web/public/data/investigations/ by scripts/sync-briefs.mjs.
 
+import { useEffect, useState, useCallback } from 'react';
+
 export type RiskClassification = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 export type RuleStatus = 'TRIGGERED' | 'NOT_TRIGGERED' | 'NOT_EVALUABLE';
 
@@ -84,6 +86,96 @@ export function extractRuleSummary(text: string): RuleSummary {
     rules,
   };
 }
+
+// --- NPI redaction ---------------------------------------------------------
+// NPIs are public identifiers via NPPES, but naming them in a live demo or
+// public deploy can feel invasive. The redaction helpers mask the middle
+// digits so list/detail cross-reference still works but no full NPI appears
+// on screen or in shared screenshots. Format: 1033****74 (first 4 + last 2).
+
+const NPI_RE = /\b(\d{4})(\d{4})(\d{2})\b/g;
+
+export function maskNpi(npi: string | null | undefined): string {
+  if (!npi) return '';
+  const digits = String(npi).trim();
+  if (!/^\d{10}$/.test(digits)) return digits;
+  return `${digits.slice(0, 4)}****${digits.slice(8)}`;
+}
+
+/**
+ * Mask every 10-digit NPI-shaped token inside an arbitrary string
+ * (e.g. executive summary text that names the provider inline).
+ */
+export function maskNpisInText(text: string): string {
+  return text.replace(NPI_RE, (_m, p1: string, _p2: string, p3: string) => `${p1}****${p3}`);
+}
+
+const REDACT_KEY = 'inv:redactNpis';
+
+/** Raw read of the redaction pref from localStorage. SSR-safe. */
+export function getRedactPref(): boolean {
+  if (typeof window === 'undefined') return false;
+  // Allow an env-baked default for public deploys: NEXT_PUBLIC_REDACT_NPIS=1
+  if (process.env.NEXT_PUBLIC_REDACT_NPIS === '1') return true;
+  try {
+    return window.localStorage.getItem(REDACT_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export function setRedactPref(value: boolean): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(REDACT_KEY, value ? '1' : '0');
+    // Notify other tabs / components in the same tab
+    window.dispatchEvent(new CustomEvent('inv:redactChanged', { detail: value }));
+  } catch {}
+}
+
+/**
+ * Display helper: returns the NPI as-is or masked, based on the toggle.
+ * Keep pure so server-rendered paths can call it too.
+ */
+export function displayNpi(npi: string, redact: boolean): string {
+  return redact ? maskNpi(npi) : npi;
+}
+
+export function displayText(text: string, redact: boolean): string {
+  return redact ? maskNpisInText(text) : text;
+}
+
+/**
+ * Reactive redaction state. Reads localStorage on mount, subscribes to
+ * cross-component change events, exposes a setter that persists.
+ */
+export function useRedactNpis(): [boolean, (v: boolean) => void] {
+  const [redact, setRedact] = useState(false);
+
+  useEffect(() => {
+    setRedact(getRedactPref());
+    const onChange = (e: Event) => {
+      const detail = (e as CustomEvent<boolean>).detail;
+      if (typeof detail === 'boolean') setRedact(detail);
+      else setRedact(getRedactPref());
+    };
+    window.addEventListener('inv:redactChanged', onChange);
+    window.addEventListener('storage', onChange);
+    return () => {
+      window.removeEventListener('inv:redactChanged', onChange);
+      window.removeEventListener('storage', onChange);
+    };
+  }, []);
+
+  const update = useCallback((v: boolean) => {
+    setRedact(v);
+    setRedactPref(v);
+  }, []);
+
+  return [redact, update];
+}
+
+export const REDACT_LOCKED = process.env.NEXT_PUBLIC_REDACT_NPIS === '1';
 
 export const RISK_COLORS: Record<RiskClassification, { bg: string; fg: string; border: string }> = {
   LOW:      { bg: '#F0FAF7', fg: '#0E5241', border: '#1CA082' },

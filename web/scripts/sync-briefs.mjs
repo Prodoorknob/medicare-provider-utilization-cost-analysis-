@@ -26,6 +26,33 @@ const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const BRIEFS_SRC = path.join(REPO_ROOT, 'local_pipeline', 'anomaly', 'briefs');
 const BRIEFS_DST = path.join(REPO_ROOT, 'web', 'public', 'data', 'investigations');
 
+// --- NPI redaction helpers (mirror web/src/lib/investigations.ts) ----------
+// When --mask-npis is set, rewrite every NPI-shaped token in the synced JSONs
+// so deployed builds never expose real identifiers, even via devtools.
+const NPI_RE = /\b(\d{4})(\d{4})(\d{2})\b/g;
+const maskNpi = (npi) => {
+  const d = String(npi || '').trim();
+  if (!/^\d{10}$/.test(d)) return d;
+  return `${d.slice(0, 4)}****${d.slice(8)}`;
+};
+const maskText = (t) =>
+  typeof t === 'string' ? t.replace(NPI_RE, (_, p1, _p2, p3) => `${p1}****${p3}`) : t;
+
+function deepMask(value) {
+  if (value == null) return value;
+  if (typeof value === 'string') return maskText(value);
+  if (Array.isArray(value)) return value.map(deepMask);
+  if (typeof value === 'object') {
+    const out = {};
+    for (const [k, v] of Object.entries(value)) out[k] = deepMask(v);
+    return out;
+  }
+  return value;
+}
+
+const MASK = process.argv.includes('--mask-npis')
+          || process.env.MASK_NPIS === '1';
+
 function extractRuleSummary(brief) {
   // Parse the rule_check_results markdown block into structured flags. Claude
   // emits two slightly different bullet formats; we accept both:
@@ -76,16 +103,21 @@ function main() {
 
     // Strip the full_markdown blob from the copied file -- the Next.js viewer
     // renders from structured fields directly. Keep usage metadata for debug.
-    const copy = { ...brief };
+    let copy = { ...brief };
     if (copy.evidence_summary && copy.evidence_summary.full_markdown) {
       const { full_markdown, ...rest } = copy.evidence_summary;
       copy.evidence_summary = rest;
     }
+    if (MASK) {
+      copy = deepMask(copy);
+      copy.npi = maskNpi(brief.npi); // top-level exact mask
+    }
     const dstJsonPath = path.join(BRIEFS_DST, f);
     fs.writeFileSync(dstJsonPath, JSON.stringify(copy, null, 2));
 
+    const ruleSummary = extractRuleSummary(brief);
     index.push({
-      npi:                 brief.npi,
+      npi:                 MASK ? maskNpi(brief.npi) : brief.npi,
       year:                brief.year,
       specialty:           brief.specialty,
       state:               brief.state,
@@ -93,7 +125,7 @@ function main() {
       risk_score:          brief.risk_score,
       generated_at:        brief.generated_at,
       model_version:       brief.model_version,
-      rule_summary:        extractRuleSummary(brief),
+      rule_summary:        MASK ? deepMask(ruleSummary) : ruleSummary,
     });
   }
 
@@ -105,13 +137,18 @@ function main() {
     JSON.stringify({ count: index.length, briefs: index }, null, 2),
   );
 
-  // Copy summary.json if it exists
+  // Copy summary.json if it exists (mask NPIs if requested)
   const summarySrc = path.join(BRIEFS_SRC, 'summary.json');
   if (fs.existsSync(summarySrc)) {
-    fs.copyFileSync(summarySrc, path.join(BRIEFS_DST, 'summary.json'));
+    if (MASK) {
+      const s = JSON.parse(fs.readFileSync(summarySrc, 'utf8'));
+      fs.writeFileSync(path.join(BRIEFS_DST, 'summary.json'), JSON.stringify(deepMask(s), null, 2));
+    } else {
+      fs.copyFileSync(summarySrc, path.join(BRIEFS_DST, 'summary.json'));
+    }
   }
 
-  console.log(`[sync-briefs] wrote ${index.length} briefs to ${BRIEFS_DST}`);
+  console.log(`[sync-briefs]${MASK ? ' [MASKED]' : ''} wrote ${index.length} briefs to ${BRIEFS_DST}`);
 }
 
 main();
