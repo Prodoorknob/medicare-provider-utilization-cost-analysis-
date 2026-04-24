@@ -175,15 +175,45 @@ def check_unbundling(ctx: ProviderContext) -> RuleCheckResult:
     )
 
 
+OUT_OF_SPECIALTY_THRESHOLD = 0.20  # 20% of services on codes outside specialty scope
+
+
 def check_out_of_specialty(ctx: ProviderContext) -> RuleCheckResult:
+    # Retriever only populates out_of_specialty_pct when the specialty_scopes
+    # table is available and the specialty was covered in the scan.
+    if not ctx.data_available.get("out_of_specialty") or "out_of_specialty_pct" not in ctx.metrics:
+        return RuleCheckResult(
+            rule_id="OUT_OF_SPECIALTY",
+            rule_name="Out-of-Specialty Billing",
+            triggered=False,
+            severity="medium",
+            evidence=(
+                "Cannot evaluate: specialty-HCPCS scope table not available for "
+                "this specialty. Build with anomaly/rules/specialty_scopes.py."
+            ),
+            reference="42 CFR 424.22",
+            available=False,
+        )
+
+    pct = ctx.metrics["out_of_specialty_pct"]
+    triggered = pct > OUT_OF_SPECIALTY_THRESHOLD
+    n_codes  = len(ctx.out_of_specialty_codes)
+    preview  = ", ".join(ctx.out_of_specialty_codes[:5])
+    if preview:
+        preview = f" (top out-of-scope: {preview}{'...' if n_codes > 5 else ''})"
+    evidence = (
+        f"{_fmt(pct*100, '.1f')}% of services on codes outside {ctx.specialty} scope "
+        f"(trigger at >{OUT_OF_SPECIALTY_THRESHOLD*100:.0f}%); "
+        f"{n_codes} distinct out-of-scope code(s){preview}"
+    )
     return RuleCheckResult(
         rule_id="OUT_OF_SPECIALTY",
         rule_name="Out-of-Specialty Billing",
-        triggered=False,
+        triggered=triggered,
         severity="medium",
-        evidence="Cannot evaluate in this run: specialty-HCPCS scope table not yet built. Planned follow-up.",
+        evidence=evidence,
         reference="42 CFR 424.22",
-        available=False,
+        available=True,
     )
 
 
