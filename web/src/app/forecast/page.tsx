@@ -83,7 +83,7 @@ function ForecastContent() {
       ),
       Promise.all(
         TOP_SPECIALTY_IDXS.map((idx) =>
-          getSpecialtyHistory(idx).then((data) => [idx, data] as const).catch(() => [idx, []] as const)
+          getSpecialtyHistory(idx).then((data) => [idx, data] as const).catch(() => [idx, [] as SpecialtyYearlyAvg[]] as const)
         )
       ),
     ])
