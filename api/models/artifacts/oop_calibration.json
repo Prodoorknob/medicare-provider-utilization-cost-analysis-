@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "alpha": 0.2,
+  "split": "60_20_20",
+  "n_calibration": 2053399,
+  "n_test": 2053399,
+  "method_default": "asymmetric",
+  "symmetric": {
+    "q_hat": 3.6883538236235403,
+    "test_coverage": 0.8000096425487692,
+    "test_width": 18.814503616763822
+  },
+  "asymmetric": {
+    "q_lo": 0.0004021900121269199,
+    "q_hi": 14.470973947239537,
+    "test_coverage": 0.8008433821191108,
+    "test_p10_marginal": 0.14491435907001027,
+    "test_p90_marginal": 0.9001197526637541,
+    "test_width": 29.5969765635523
+  },
+  "raw_baseline": {
+    "test_coverage": 0.5437472210710145,
+    "test_p10_marginal": 0.1449357869561639,
+    "test_p90_marginal": 0.6748517945124157,
+    "test_width": 15.125655127351566
+  },
+  "notes": "Asymmetric CQR with alpha/2 per tail. Apply at inference: p10' = max(0, pred_p10 - q_lo); p90' = pred_p90 + q_hi. Then enforce non-crossing against P50."
+}

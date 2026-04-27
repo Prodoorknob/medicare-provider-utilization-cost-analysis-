@@ -234,8 +234,11 @@ def predict_stage2(
 ) -> tuple[float, float, float, int]:
     """Run Stage 2 CatBoost monotonic quantile prediction.
 
-    Returns (p10, p50, p90, census_region) with non-crossing enforcement.
-    OOP model was trained on raw dollars — no inverse transform needed.
+    Returns (p10, p50, p90, census_region) with asymmetric CQR calibration
+    (oop_q_lo subtracted from P10, oop_q_hi added to P90), then floor-at-zero
+    and non-crossing enforcement against P50. Raw-dollar target — no inverse
+    transform. Calibration constants come from oop_calibration.json; if absent,
+    both are zero and bands are uncalibrated.
     """
     if not artifacts.stage2_ready:
         raise RuntimeError("Stage 2 OOP models not loaded")
@@ -253,6 +256,10 @@ def predict_stage2(
     p10 = float(artifacts.oop_p10.predict(pool)[0])
     p50 = float(artifacts.oop_p50.predict(pool)[0])
     p90 = float(artifacts.oop_p90.predict(pool)[0])
+
+    # Apply asymmetric CQR calibration (zero if no sidecar loaded)
+    p10 = p10 - artifacts.oop_q_lo
+    p90 = p90 + artifacts.oop_q_hi
 
     # Floor at 0 and enforce non-crossing
     p10 = max(0.0, round(p10, 2))

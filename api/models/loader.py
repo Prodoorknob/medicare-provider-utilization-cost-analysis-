@@ -18,6 +18,12 @@ class ModelArtifacts:
     oop_p50: Any = None
     oop_p90: Any = None
 
+    # CQR calibration constants (asymmetric split, V2_04 reproduction)
+    # Apply at inference: p10' = max(0, pred_p10 - oop_q_lo); p90' = pred_p90 + oop_q_hi
+    oop_q_lo: float = 0.0
+    oop_q_hi: float = 0.0
+    oop_calibration_meta: dict = field(default_factory=dict)
+
     # Encoding lookups
     label_encoders: dict[str, list[str]] = field(default_factory=dict)
     hcpcs_target_enc: dict[str, float] = field(default_factory=dict)
@@ -99,5 +105,22 @@ def load_all_models(artifacts_dir: str) -> ModelArtifacts:
             print(f"  Loaded CatBoost OOP {quantile} from {path}")
         else:
             print(f"  WARNING: CatBoost OOP {quantile} not found at {path}")
+
+    # -- CQR calibration constants --
+    cal_path = os.path.join(artifacts_dir, "oop_calibration.json")
+    if os.path.exists(cal_path):
+        with open(cal_path, "r") as f:
+            cal = json.load(f)
+        asym = cal.get("asymmetric", {})
+        artifacts.oop_q_lo = float(asym.get("q_lo", 0.0))
+        artifacts.oop_q_hi = float(asym.get("q_hi", 0.0))
+        artifacts.oop_calibration_meta = cal
+        print(
+            f"  Loaded OOP CQR calibration: q_lo={artifacts.oop_q_lo:+.4f}, "
+            f"q_hi={artifacts.oop_q_hi:+.4f} "
+            f"(test coverage {asym.get('test_coverage', 0):.1%})"
+        )
+    else:
+        print(f"  WARNING: No oop_calibration.json — bands served UNCALIBRATED")
 
     return artifacts
