@@ -272,7 +272,7 @@ export default function AboutPage() {
                 <Typography variant="body2">MLflow &middot; Databricks</Typography>
                 <Divider sx={{ my: 1.5 }} />
                 <Typography variant="body2">Next.js &middot; Material UI &middot; Recharts</Typography>
-                <Typography variant="body2">Supabase (PostgreSQL) &middot; Railway &middot; Vercel</Typography>
+                <Typography variant="body2">Railway Postgres &middot; Railway &middot; Vercel</Typography>
               </CardContent>
             </Card>
           </Grid>

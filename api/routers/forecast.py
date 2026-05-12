@@ -1,8 +1,8 @@
-"""LSTM forecast endpoint — proxies Supabase lstm_forecasts table."""
+"""LSTM forecast endpoint — proxies Postgres lstm_forecasts table."""
 
 from fastapi import APIRouter, HTTPException, Query
 
-from services.supabase import fetch_forecasts
+from services.database import fetch_forecasts
 
 router = APIRouter(tags=["forecast"])
 
@@ -17,5 +17,5 @@ async def forecast(
     try:
         data = await fetch_forecasts(specialty_idx, state_idx, hcpcs_bucket)
     except Exception as e:
-        raise HTTPException(502, f"Supabase query failed: {e}")
+        raise HTTPException(502, f"Database query failed: {e}")
     return data

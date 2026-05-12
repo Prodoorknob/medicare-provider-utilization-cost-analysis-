@@ -5,9 +5,8 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    # Supabase (server-side, service role key bypasses RLS)
-    supabase_url: str = ""
-    supabase_service_role_key: str = ""
+    # Postgres connection string (Railway-provided DATABASE_URL)
+    database_url: str = ""
 
     # CORS
     allowed_origins: str = "http://localhost:3000"

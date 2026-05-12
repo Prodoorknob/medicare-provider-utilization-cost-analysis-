@@ -1,8 +1,8 @@
-"""Reference data endpoints — proxies Supabase tables."""
+"""Reference data endpoints — proxies Postgres reference tables."""
 
 from fastapi import APIRouter, HTTPException, Query
 
-from services.supabase import (
+from services.database import (
     fetch_feature_importances,
     fetch_labels,
     fetch_model_metrics,
@@ -19,7 +19,7 @@ async def labels(category: str | None = None):
     try:
         data = await fetch_labels(category)
     except Exception as e:
-        raise HTTPException(502, f"Supabase query failed: {e}")
+        raise HTTPException(502, f"Database query failed: {e}")
     return data
 
 
@@ -29,7 +29,7 @@ async def state_summary():
     try:
         data = await fetch_state_summary()
     except Exception as e:
-        raise HTTPException(502, f"Supabase query failed: {e}")
+        raise HTTPException(502, f"Database query failed: {e}")
     return data
 
 
@@ -39,7 +39,7 @@ async def model_metrics():
     try:
         data = await fetch_model_metrics()
     except Exception as e:
-        raise HTTPException(502, f"Supabase query failed: {e}")
+        raise HTTPException(502, f"Database query failed: {e}")
     return data
 
 
@@ -51,7 +51,7 @@ async def specialty_history(
     try:
         data = await fetch_specialty_history(specialty_idx)
     except Exception as e:
-        raise HTTPException(502, f"Supabase query failed: {e}")
+        raise HTTPException(502, f"Database query failed: {e}")
     return data
 
 
@@ -61,5 +61,5 @@ async def feature_importances():
     try:
         data = await fetch_feature_importances()
     except Exception as e:
-        raise HTTPException(502, f"Supabase query failed: {e}")
+        raise HTTPException(502, f"Database query failed: {e}")
     return data

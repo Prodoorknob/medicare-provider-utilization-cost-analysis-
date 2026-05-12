@@ -8,17 +8,21 @@ from fastapi.middleware.cors import CORSMiddleware
 from config import settings
 from models.loader import ModelArtifacts, load_all_models
 from routers import forecast, health, predict, reference
+from services.database import close_pool, get_pool
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Load model artifacts at startup, release at shutdown."""
+    """Load model artifacts and warm DB pool at startup; release on shutdown."""
     print("Loading model artifacts...")
     app.state.models = load_all_models(settings.artifacts_dir)
     print(f"Stage 1 ready: {app.state.models.stage1_ready}")
     print(f"Stage 2 ready: {app.state.models.stage2_ready}")
+    if settings.database_url:
+        await get_pool()
+        print("Postgres pool ready.")
     yield
-    # Cleanup (Python GC handles the rest)
+    await close_pool()
     app.state.models = ModelArtifacts()
     print("Models unloaded.")
 

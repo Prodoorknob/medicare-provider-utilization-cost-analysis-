@@ -1,9 +1,14 @@
-"""Server-side Supabase client for reference data queries."""
+"""Server-side Postgres client for reference data queries.
+
+Replaces the previous Supabase/PostgREST data layer with direct asyncpg against
+Railway Postgres. Query shapes (single-table SELECT + filters + ORDER BY) are
+the same; the merge/aggregation logic for CMS specialty-rename pairs lives in
+Python and is unchanged.
+"""
 
 from collections import defaultdict
-from functools import lru_cache
 
-from supabase import create_client, Client
+import asyncpg
 
 from config import settings
 from services.specialty_canonicalization import (
@@ -13,40 +18,68 @@ from services.specialty_canonicalization import (
 )
 
 
-@lru_cache(maxsize=1)
-def get_client() -> Client:
-    """Cached Supabase client using service role key."""
-    return create_client(settings.supabase_url, settings.supabase_service_role_key)
+_pool: asyncpg.Pool | None = None
+
+
+async def get_pool() -> asyncpg.Pool:
+    """Lazy-init shared connection pool against Railway Postgres."""
+    global _pool
+    if _pool is None:
+        _pool = await asyncpg.create_pool(
+            dsn=settings.database_url,
+            min_size=1,
+            max_size=10,
+            command_timeout=30,
+        )
+    return _pool
+
+
+async def close_pool() -> None:
+    global _pool
+    if _pool is not None:
+        await _pool.close()
+        _pool = None
+
+
+def _records_to_dicts(records: list[asyncpg.Record]) -> list[dict]:
+    return [dict(r) for r in records]
 
 
 async def fetch_labels(category: str | None = None) -> list[dict]:
-    client = get_client()
-    query = client.table("lookup_labels").select("*")
+    pool = await get_pool()
     if category:
-        query = query.eq("category", category)
-    result = query.execute()
-    data = result.data
+        rows = await pool.fetch(
+            "SELECT * FROM lookup_labels WHERE category = $1",
+            category,
+        )
+    else:
+        rows = await pool.fetch("SELECT * FROM lookup_labels")
+    data = _records_to_dicts(rows)
     if category == "specialty":
         data = [row for row in data if row.get("idx") not in ALIAS_IDXS]
     return data
 
 
 async def fetch_state_summary() -> list[dict]:
-    client = get_client()
-    result = client.table("state_summary").select("*").order("state_abbrev").execute()
-    return result.data
+    pool = await get_pool()
+    rows = await pool.fetch(
+        "SELECT * FROM state_summary ORDER BY state_abbrev"
+    )
+    return _records_to_dicts(rows)
 
 
 async def fetch_model_metrics() -> list[dict]:
-    client = get_client()
-    result = client.table("model_metrics").select("*").execute()
-    return result.data
+    pool = await get_pool()
+    rows = await pool.fetch("SELECT * FROM model_metrics")
+    return _records_to_dicts(rows)
 
 
 async def fetch_feature_importances() -> list[dict]:
-    client = get_client()
-    result = client.table("feature_importances").select("*").order("importance", desc=True).execute()
-    return result.data
+    pool = await get_pool()
+    rows = await pool.fetch(
+        "SELECT * FROM feature_importances ORDER BY importance DESC"
+    )
+    return _records_to_dicts(rows)
 
 
 async def fetch_specialty_history(specialty_idx: int) -> list[dict]:
@@ -56,21 +89,20 @@ async def fetch_specialty_history(specialty_idx: int) -> list[dict]:
     Oral Surgery), rows across all indices in the group are unioned and aggregated
     (mean) per year so callers see full 2013-2023 coverage.
     """
-    client = get_client()
+    pool = await get_pool()
     idxs = expand_canonical(specialty_idx)
     canonical = canonicalize_idx(specialty_idx)
-    result = (
-        client.table("specialty_yearly_avg")
-        .select("*")
-        .in_("specialty_idx", idxs)
-        .order("year")
-        .execute()
+    rows = await pool.fetch(
+        "SELECT * FROM specialty_yearly_avg "
+        "WHERE specialty_idx = ANY($1::int[]) "
+        "ORDER BY year",
+        idxs,
     )
-    rows = result.data
+    data = _records_to_dicts(rows)
     if len(idxs) == 1:
-        return rows
+        return data
     by_year: dict[int, list[dict]] = defaultdict(list)
-    for r in rows:
+    for r in data:
         year = r.get("year")
         if year is not None:
             by_year[year].append(r)
@@ -96,24 +128,28 @@ async def fetch_forecasts(
     If `specialty_idx` belongs to a CMS-rename pair, forecast rows from all indices in
     the group are unioned and aggregated (mean) per (state, bucket, year).
     """
-    client = get_client()
+    pool = await get_pool()
     idxs = expand_canonical(specialty_idx)
     canonical = canonicalize_idx(specialty_idx)
-    query = (
-        client.table("lstm_forecasts")
-        .select("*")
-        .in_("specialty_idx", idxs)
-    )
+    clauses = ["specialty_idx = ANY($1::int[])"]
+    params: list = [idxs]
     if state_idx is not None:
-        query = query.eq("state_idx", state_idx)
+        params.append(state_idx)
+        clauses.append(f"state_idx = ${len(params)}")
     if hcpcs_bucket is not None:
-        query = query.eq("hcpcs_bucket", hcpcs_bucket)
-    result = query.order("forecast_year").execute()
-    rows = result.data
+        params.append(hcpcs_bucket)
+        clauses.append(f"hcpcs_bucket = ${len(params)}")
+    sql = (
+        "SELECT * FROM lstm_forecasts "
+        f"WHERE {' AND '.join(clauses)} "
+        "ORDER BY forecast_year"
+    )
+    rows = await pool.fetch(sql, *params)
+    data = _records_to_dicts(rows)
     if len(idxs) == 1:
-        return rows
+        return data
     buckets: dict[tuple, list[dict]] = defaultdict(list)
-    for r in rows:
+    for r in data:
         key = (r.get("state_idx"), r.get("hcpcs_bucket"), r.get("forecast_year"))
         buckets[key].append(r)
     numeric_cols = (
