@@ -187,6 +187,28 @@ driven statistical outlier with benign case-mix explanation, (b) gradual
 year-over-year drift toward high-tier, and (c) abrupt shift without
 clinical context -- (c) is the classic MLN SE1418 pattern.
 
+REVENUE_DEVIATION (revenue_ratio = actual_total_allowed / expected_total_allowed > 1.30, on expected >= $50K).
+Per-row predictions come from the production Stage 1 LightGBM (no-charge variant,
+R^2=0.943 on temporal holdout). The model already conditions on specialty,
+state, HCPCS, place-of-service, patient acuity (HCC risk score), and volume,
+so a ratio meaningfully above 1.0 is residual that the model could NOT explain
+from those inputs. The most common fraud-adjacent explanations are:
+(a) MODIFIER ABUSE -- modifiers (-22 increased procedural services, -50
+bilateral, -59 distinct procedural service, -76 repeat) inflate the allowed
+amount per service but are NOT in the model's feature set, so consistent
+modifier-driven uplift surfaces as a positive residual; (b) CODE-FAMILY
+UPCODING outside E&M -- e.g., advanced imaging variants, prolonged-service
+codes (99354/99355), or higher-tier procedure codes within a family the
+UPCODING rule does not cover; (c) POS misreporting that pumps the facility
+differential beyond what the recorded POS predicts. Benign explanations to
+weigh first: clinically complex panel with HCC >> specialty median (the
+model partially captures this via Bene_Avg_Risk_Scre but not perfectly);
+sub-specialty practice within a coarse CMS specialty label; legitimate use of
+modifier -22 on genuinely complex cases (look for whether top HCPCS are
+surgical codes prone to complexity uplift). REVENUE_DEVIATION + UPCODING +
+high-tier HCPCS in a single brief is a strong combined narrative; REVENUE_
+DEVIATION alone with a benign mix explanation is typically MEDIUM, not HIGH.
+
 LEIE_EXCLUDED (NPI match on OIG List of Excluded Individuals/Entities).
 This is a conviction-grade signal, not a statistical one. An active
 exclusion means any Medicare payment to that NPI is program-ineligible by
@@ -341,6 +363,30 @@ def format_user_prompt(ctx: ProviderContext, rules: list[RuleCheckResult]) -> st
                 f"- New visits (99202-99205): total={int(new_total):,}, "
                 f"99204+99205 share={new_hp_s}"
             )
+        lines.append("")
+
+    # Revenue residual (if sidecar present and this NPI-year was scored)
+    rev_ratio    = ctx.metrics.get("revenue_ratio")
+    rev_expected = ctx.metrics.get("expected_total_allowed")
+    rev_actual   = ctx.metrics.get("actual_total_allowed")
+    rev_n_rows   = ctx.metrics.get("n_rows_scored")
+    if rev_ratio is not None and rev_expected is not None and rev_actual is not None:
+        delta = rev_actual - rev_expected
+        lines.append("## Model Revenue Residual (REVENUE_DEVIATION signal)")
+        lines.append(
+            f"- Actual total allowed: ${rev_actual:,.0f}; "
+            f"Stage 1 LightGBM expected: ${rev_expected:,.0f}"
+        )
+        lines.append(
+            f"- revenue_ratio = {rev_ratio:.2f}  (excess vs. model: ${delta:+,.0f})"
+        )
+        if rev_n_rows is not None:
+            lines.append(f"- Scored across {int(rev_n_rows):,} silver rows (NPI x HCPCS x POS)")
+        lines.append(
+            "- Model conditions on specialty, state, HCPCS, place-of-service, "
+            "HCC risk score, log_srvcs, log_benes. A ratio > 1.0 is residual "
+            "those inputs did NOT explain."
+        )
         lines.append("")
 
     # LEIE exclusion record (if applicable)

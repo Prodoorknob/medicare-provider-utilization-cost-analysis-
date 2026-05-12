@@ -318,6 +318,112 @@ def check_out_of_specialty(ctx: ProviderContext) -> RuleCheckResult:
     )
 
 
+# Threshold + minimum expected dollars for REVENUE_DEVIATION. Volume gate
+# keeps the rule away from low-expected NPI-years where the ratio is unstable
+# and where a $5K residual is uninteresting. n_rows gate filters out group /
+# facility / supplier NPIs that roll up many physicians' billings into a
+# handful of code-rows -- the model's per-provider features don't apply
+# there and the ratios are uninterpretable.
+REVENUE_DEVIATION_RATIO_THRESHOLD = 1.30
+REVENUE_DEVIATION_MIN_EXPECTED    = 50_000.0
+REVENUE_DEVIATION_MIN_ROWS        = 10
+
+
+def check_revenue_deviation(ctx: ProviderContext) -> RuleCheckResult:
+    """Model-residual rule.
+
+    Compares the NPI's realized total allowed dollars to the LightGBM Stage 1
+    prediction summed across the NPI-year's silver rows. Catches case-mix-aware
+    anomalies the per-specialty rules miss (modifier abuse, non-E&M
+    upcoding, code-family selection).
+    """
+    if not ctx.data_available.get("revenue_residuals"):
+        return RuleCheckResult(
+            rule_id="REVENUE_DEVIATION",
+            rule_name="Allowed-Amount Model Residual",
+            triggered=False,
+            severity="high",
+            evidence=(
+                "Cannot evaluate: revenue_residuals sidecar not built. "
+                "Run anomaly/rules/revenue_residuals.py."
+            ),
+            reference="LightGBM v2 Stage 1 (no-charge, R^2=0.943)",
+            available=False,
+        )
+
+    ratio    = _value(ctx, "revenue_ratio")
+    expected = _value(ctx, "expected_total_allowed")
+    actual   = _value(ctx, "actual_total_allowed")
+    n_rows   = _value(ctx, "n_rows_scored")
+
+    # Sidecar loaded but this (NPI, year) wasn't scored
+    if ratio is None or expected is None:
+        return RuleCheckResult(
+            rule_id="REVENUE_DEVIATION",
+            rule_name="Allowed-Amount Model Residual",
+            triggered=False,
+            severity="high",
+            evidence="No residual row for this (NPI, year) -- silver coverage gap.",
+            reference="LightGBM v2 Stage 1 (no-charge, R^2=0.943)",
+            available=False,
+        )
+
+    # Volume gate: small expected total -> unstable ratio, skip
+    if expected < REVENUE_DEVIATION_MIN_EXPECTED:
+        return RuleCheckResult(
+            rule_id="REVENUE_DEVIATION",
+            rule_name="Allowed-Amount Model Residual",
+            triggered=False,
+            severity="high",
+            evidence=(
+                f"Below volume gate: expected_total_allowed=${expected:,.0f} "
+                f"(min ${REVENUE_DEVIATION_MIN_EXPECTED:,.0f}). Ratio unreliable at low n."
+            ),
+            reference="LightGBM v2 Stage 1 (no-charge, R^2=0.943)",
+            available=True,
+        )
+
+    # Row-count gate: <10 silver rows almost always means a group / facility /
+    # supplier NPI rolling up multiple physicians' billings. The model's
+    # per-provider features (specialty, risk_score, srvcs_per_bene) don't
+    # apply meaningfully to an aggregate NPI, so the ratio is uninterpretable
+    # even if the dollar magnitudes are real.
+    if n_rows is not None and n_rows < REVENUE_DEVIATION_MIN_ROWS:
+        return RuleCheckResult(
+            rule_id="REVENUE_DEVIATION",
+            rule_name="Allowed-Amount Model Residual",
+            triggered=False,
+            severity="high",
+            evidence=(
+                f"Below row-coverage gate: n_rows_scored={int(n_rows)} "
+                f"(min {REVENUE_DEVIATION_MIN_ROWS}). Likely a group / facility "
+                f"NPI; model's per-provider features don't apply to aggregate "
+                f"billings. revenue_ratio={ratio:.2f} for reference."
+            ),
+            reference="LightGBM v2 Stage 1 (no-charge, R^2=0.943)",
+            available=True,
+        )
+
+    triggered = ratio > REVENUE_DEVIATION_RATIO_THRESHOLD
+    delta = (actual - expected) if (actual is not None and expected is not None) else None
+    delta_s = f", excess=${delta:+,.0f}" if delta is not None else ""
+    n_rows_s = f" across {int(n_rows):,} silver rows" if n_rows is not None else ""
+    evidence = (
+        f"revenue_ratio={ratio:.2f} "
+        f"(actual=${actual:,.0f}, expected=${expected:,.0f}{delta_s}, "
+        f"trigger at >{REVENUE_DEVIATION_RATIO_THRESHOLD:.2f}){n_rows_s}"
+    )
+    return RuleCheckResult(
+        rule_id="REVENUE_DEVIATION",
+        rule_name="Allowed-Amount Model Residual",
+        triggered=triggered,
+        severity="high",
+        evidence=evidence,
+        reference="LightGBM v2 Stage 1 (no-charge, R^2=0.943)",
+        available=True,
+    )
+
+
 def check_leie_excluded(ctx: ProviderContext) -> RuleCheckResult:
     """OIG LEIE cross-reference: NPI match on the exclusion list.
 
@@ -398,6 +504,7 @@ def check_beneficiary_sharing(ctx: ProviderContext) -> RuleCheckResult:
 
 RULE_CHECKS = [
     check_leie_excluded,
+    check_revenue_deviation,
     check_high_intensity,
     check_volume_spike,
     check_charge_inflation,

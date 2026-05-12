@@ -109,6 +109,20 @@ class ContextRetriever:
             print(f"  em_dist:  {len(em):,} (NPI, year) rows; "
                   f"benchmarks for {em_bench['specialty'].nunique():,} specialties")
 
+        # Optional: per-(NPI, year) revenue residuals against Stage 1 LightGBM
+        # (for REVENUE_DEVIATION rule).
+        rr_path = os.path.join(anomaly_dir, "revenue_residuals.parquet")
+        self.revenue_residuals: pd.DataFrame | None = None
+        if os.path.exists(rr_path):
+            try:
+                rr = pd.read_parquet(rr_path)
+                rr["Rndrng_NPI"] = rr["Rndrng_NPI"].astype(str).str.strip()
+                rr["year"]       = pd.to_numeric(rr["year"], errors="coerce").astype("Int16")
+                self.revenue_residuals = rr.set_index(["Rndrng_NPI", "year"], drop=False).sort_index()
+                print(f"  revenue: {len(rr):,} (NPI, year) residual rows loaded")
+            except Exception as e:
+                print(f"  [WARN] failed to load revenue_residuals: {e}")
+
         # Optional: OIG LEIE exclusion list (for LEIE_EXCLUDED rule).
         leie_path = os.path.join(anomaly_dir, "leie_exclusions.parquet")
         self.leie: dict[str, dict] | None = None
@@ -386,6 +400,20 @@ class ContextRetriever:
             except KeyError:
                 pass
 
+        # Revenue residual lookup (per-(NPI, year))
+        rr_available = self.revenue_residuals is not None
+        if self.revenue_residuals is not None:
+            try:
+                rr_row = self.revenue_residuals.loc[(npi, year)]
+                if isinstance(rr_row, pd.DataFrame):
+                    rr_row = rr_row.iloc[0]
+                for k in ["actual_total_allowed", "expected_total_allowed",
+                          "revenue_ratio", "n_rows_scored"]:
+                    if k in rr_row.index and pd.notna(rr_row[k]):
+                        metrics_snapshot[k] = float(rr_row[k])
+            except KeyError:
+                pass
+
         # LEIE exclusion lookup (NPI match)
         leie_record = None
         leie_checked = self.leie is not None
@@ -417,6 +445,7 @@ class ContextRetriever:
                 "top_hcpcs":          bool(top_hcpcs),
                 "out_of_specialty":   oos_pct is not None,
                 "em_distribution":    em_available,
+                "revenue_residuals":  rr_available,
                 "leie":               leie_checked,
                 "rural_geocontext":   False,
                 "beneficiary_linkage": False,
