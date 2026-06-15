@@ -1,88 +1,214 @@
 {
-  "targets": 10,
-  "generated": 10,
+  "targets": 25,
+  "generated": 25,
   "live": true,
   "model": "claude-sonnet-4-6",
+  "usage": {
+    "input": 68510,
+    "output": 49120,
+    "cache_read": 82400,
+    "cache_create": 10345
+  },
   "briefs": [
     {
-      "npi": "1063xxxx95",
-      "year": 2023,
-      "specialty": "Mass Immunizer Roster Biller",
-      "state": "TX",
-      "risk_classification": "CRITICAL",
-      "risk_score": 91
-    },
-    {
-      "npi": "1255xxxx38",
-      "year": 2023,
-      "specialty": "Mass Immunizer Roster Biller",
-      "state": "TX",
-      "risk_classification": "CRITICAL",
-      "risk_score": 91
-    },
-    {
-      "npi": "1285xxxx41",
-      "year": 2020,
-      "specialty": "Emergency Medicine",
-      "state": "NY",
-      "risk_classification": "CRITICAL",
-      "risk_score": 91
-    },
-    {
-      "npi": "1710xxxx19",
-      "year": 2018,
-      "specialty": "Optometry",
-      "state": "OH",
-      "risk_classification": "CRITICAL",
-      "risk_score": 91
-    },
-    {
-      "npi": "1952xxxx27",
-      "year": 2022,
-      "specialty": "Internal Medicine",
-      "state": "IN",
-      "risk_classification": "CRITICAL",
-      "risk_score": 91
-    },
-    {
-      "npi": "1295xxxx51",
-      "year": 2023,
-      "specialty": "Emergency Medicine",
-      "state": "NY",
-      "risk_classification": "CRITICAL",
-      "risk_score": 88
-    },
-    {
-      "npi": "1194xxxx07",
-      "year": 2020,
-      "specialty": "Gastroenterology",
-      "state": "OH",
+      "npi": "1497xxxx09",
+      "year": 2017,
+      "specialty": "Infectious Disease",
+      "state": "OK",
       "risk_classification": "HIGH",
       "risk_score": 78
+    },
+    {
+      "npi": "1134xxxx70",
+      "year": 2015,
+      "specialty": "Diagnostic Radiology",
+      "state": "IL",
+      "risk_classification": "HIGH",
+      "risk_score": 72
+    },
+    {
+      "npi": "1134xxxx36",
+      "year": 2017,
+      "specialty": "Gastroenterology",
+      "state": "CA",
+      "risk_classification": "HIGH",
+      "risk_score": 74
     },
     {
       "npi": "1851xxxx66",
       "year": 2020,
       "specialty": "Otolaryngology",
       "state": "GA",
-      "risk_classification": "HIGH",
-      "risk_score": 78
+      "risk_classification": "CRITICAL",
+      "risk_score": 88
     },
     {
-      "npi": "1033xxxx74",
-      "year": 2018,
-      "specialty": "Cardiology",
+      "npi": "1740xxxx39",
+      "year": 2022,
+      "specialty": "Mass Immunizer Roster Biller",
+      "state": "TX",
+      "risk_classification": "HIGH",
+      "risk_score": 72
+    },
+    {
+      "npi": "1841xxxx88",
+      "year": 2019,
+      "specialty": "Diagnostic Radiology",
       "state": "NY",
       "risk_classification": "HIGH",
       "risk_score": 72
     },
     {
-      "npi": "1386xxxx77",
-      "year": 2013,
-      "specialty": "Multispecialty Clinic/Group Practice",
-      "state": "MI",
-      "risk_classification": "LOW",
-      "risk_score": 18
+      "npi": "1326xxxx10",
+      "year": 2023,
+      "specialty": "Mass Immunizer Roster Biller",
+      "state": "OH",
+      "risk_classification": "HIGH",
+      "risk_score": 74
+    },
+    {
+      "npi": "1558xxxx50",
+      "year": 2014,
+      "specialty": "Physical Therapist",
+      "state": "FL",
+      "risk_classification": "HIGH",
+      "risk_score": 72
+    },
+    {
+      "npi": "1083xxxx74",
+      "year": 2023,
+      "specialty": "Ophthalmology",
+      "state": "WI",
+      "risk_classification": "HIGH",
+      "risk_score": 78
+    },
+    {
+      "npi": "1811xxxx66",
+      "year": 2017,
+      "specialty": "Ophthalmology",
+      "state": "CT",
+      "risk_classification": "MEDIUM",
+      "risk_score": 38
+    },
+    {
+      "npi": "1942xxxx79",
+      "year": 2023,
+      "specialty": "Diagnostic Radiology",
+      "state": "IL",
+      "risk_classification": "HIGH",
+      "risk_score": 72
+    },
+    {
+      "npi": "1790xxxx32",
+      "year": 2018,
+      "specialty": "Dermatology",
+      "state": "LA",
+      "risk_classification": "HIGH",
+      "risk_score": 72
+    },
+    {
+      "npi": "1477xxxx88",
+      "year": 2023,
+      "specialty": "Ophthalmology",
+      "state": "NE",
+      "risk_classification": "CRITICAL",
+      "risk_score": 91
+    },
+    {
+      "npi": "1962xxxx71",
+      "year": 2022,
+      "specialty": "Diagnostic Radiology",
+      "state": "FL",
+      "risk_classification": "HIGH",
+      "risk_score": 72
+    },
+    {
+      "npi": "1730xxxx62",
+      "year": 2022,
+      "specialty": "Mass Immunizer Roster Biller",
+      "state": "FL",
+      "risk_classification": "MEDIUM",
+      "risk_score": 42
+    },
+    {
+      "npi": "1386xxxx69",
+      "year": 2017,
+      "specialty": "Ophthalmology",
+      "state": "OH",
+      "risk_classification": "MEDIUM",
+      "risk_score": 42
+    },
+    {
+      "npi": "1265xxxx98",
+      "year": 2023,
+      "specialty": "Interventional Cardiology",
+      "state": "FL",
+      "risk_classification": "HIGH",
+      "risk_score": 72
+    },
+    {
+      "npi": "1568xxxx92",
+      "year": 2023,
+      "specialty": "Physical Therapist In Private Practice",
+      "state": "NE",
+      "risk_classification": "MEDIUM",
+      "risk_score": 38
+    },
+    {
+      "npi": "1750xxxx88",
+      "year": 2014,
+      "specialty": "Ophthalmology",
+      "state": "NY",
+      "risk_classification": "HIGH",
+      "risk_score": 72
+    },
+    {
+      "npi": "1982xxxx55",
+      "year": 2019,
+      "specialty": "Dermatology",
+      "state": "PA",
+      "risk_classification": "HIGH",
+      "risk_score": 72
+    },
+    {
+      "npi": "1861xxxx64",
+      "year": 2019,
+      "specialty": "Ophthalmology",
+      "state": "WI",
+      "risk_classification": "HIGH",
+      "risk_score": 72
+    },
+    {
+      "npi": "1669xxxx81",
+      "year": 2017,
+      "specialty": "Emergency Medicine",
+      "state": "UT",
+      "risk_classification": "HIGH",
+      "risk_score": 72
+    },
+    {
+      "npi": "1023xxxx89",
+      "year": 2014,
+      "specialty": "Internal Medicine",
+      "state": "FL",
+      "risk_classification": "MEDIUM",
+      "risk_score": 42
+    },
+    {
+      "npi": "1780xxxx08",
+      "year": 2016,
+      "specialty": "Gastroenterology",
+      "state": "CA",
+      "risk_classification": "HIGH",
+      "risk_score": 78
+    },
+    {
+      "npi": "1578xxxx66",
+      "year": 2016,
+      "specialty": "Gastroenterology",
+      "state": "TX",
+      "risk_classification": "HIGH",
+      "risk_score": 72
     }
   ]
 }

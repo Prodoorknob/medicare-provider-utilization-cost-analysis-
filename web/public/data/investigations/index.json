@@ -1,436 +1,74 @@
 {
-  "count": 10,
+  "count": 25,
   "briefs": [
     {
-      "npi": "1063xxxx95",
+      "npi": "1477xxxx88",
       "year": 2023,
-      "specialty": "Mass Immunizer Roster Biller",
-      "state": "TX",
+      "specialty": "Ophthalmology",
+      "state": "NE",
       "risk_classification": "CRITICAL",
       "risk_score": 91,
-      "generated_at": "2026-04-24T03:16:15.524179",
-      "model_version": "claude-sonnet-4-6",
-      "rule_summary": {
-        "triggered": 2,
-        "not_triggered": 3,
-        "not_evaluable": 4,
-        "rules": [
-          {
-            "rule_id": "HIGH_INTENSITY",
-            "status": "NOT_TRIGGERED",
-            "evidence": "srvcs_per_bene of 8.37 is elevated (P99) but K-codes billed per unit routinely generate such ratios; insufficient alone to trigger"
-          },
-          {
-            "rule_id": "VOLUME_SPIKE",
-            "status": "TRIGGERED",
-            "evidence": "+1,115,263% YoY growth from 57 to 635,757 services, far exceeding the +200% / ≥1,000 services threshold; no plausible organic explanation"
-          },
-          {
-            "rule_id": "CHARGE_INFLATION",
-            "status": "NOT_TRIGGERED",
-            "evidence": "charge-to-allowed ratio of 1.04 (P31) is unremarkable"
-          },
-          {
-            "rule_id": "PROCEDURE_CONCENTRATION",
-            "status": "TRIGGERED",
-            "evidence": "Herfindahl = 1.000 (P100), single-code billing on K1034; partially expected for mass immunizer/test-kit billers but extreme even within that specialty"
-          },
-          {
-            "rule_id": "IMPOSSIBLE_DAY",
-            "status": "NOT_EVALUABLE",
-            "evidence": "CMS public data is annual aggregate; no date-of-service field available"
-          },
-          {
-            "rule_id": "UPCODING",
-            "status": "NOT_EVALUABLE",
-            "evidence": "not applicable to this code type; structural data gap"
-          },
-          {
-            "rule_id": "UNBUNDLING",
-            "status": "NOT_EVALUABLE",
-            "evidence": "requires per-encounter claim grouping unavailable in this dataset"
-          },
-          {
-            "rule_id": "OUT_OF_SPECIALTY",
-            "status": "NOT_TRIGGERED",
-            "evidence": "100% of services on K1034, which is within Mass Immunizer scope"
-          },
-          {
-            "rule_id": "BENEFICIARY_SHARING",
-            "status": "NOT_EVALUABLE",
-            "evidence": "requires beneficiary-level cross-provider linkage unavailable in public data"
-          }
-        ]
-      }
-    },
-    {
-      "npi": "1255xxxx38",
-      "year": 2023,
-      "specialty": "Mass Immunizer Roster Biller",
-      "state": "TX",
-      "risk_classification": "CRITICAL",
-      "risk_score": 91,
-      "generated_at": "2026-04-24T03:09:39.459923",
+      "generated_at": "2026-06-15T18:51:20.043626",
       "model_version": "claude-sonnet-4-6",
       "rule_summary": {
         "triggered": 3,
-        "not_triggered": 2,
-        "not_evaluable": 4,
+        "not_triggered": 5,
+        "not_evaluable": 3,
         "rules": [
           {
             "rule_id": "HIGH_INTENSITY",
             "status": "TRIGGERED",
-            "evidence": "srvcs_per_bene of 14.95 at P100 nationally; not explained by J-code unit-of-measure billing; 15 COVID kits/beneficiary/year lacks a clear clinical rationale"
+            "evidence": "srvcs_per_bene of 42.60 is at P100 nationally (P95 = 8.03); partially explained by J-code unit billing for anti-VEGF injections but the magnitude exceeds plausible dosing schedules for the beneficiary count"
           },
           {
             "rule_id": "VOLUME_SPIKE",
             "status": "TRIGGERED",
-            "evidence": "+6,419% YoY on 87,679 services, with a prior-year spike of +537%; two consecutive extreme spikes concentrated in a single temporary-program code is a high-weight fraud pattern"
+            "evidence": "+614% YoY service increase on 216,718 services far exceeds the ≥200%/≥1,000 threshold; billing growth (+139%) did not scale proportionally, deepening concern"
           },
           {
-            "rule_id": "CHARGE_INFLATION",
+            "rule_id": "REVENUE_DEVIATION",
             "status": "TRIGGERED",
-            "evidence": "charge-to-allowed ratio of 9.66 at P100, with TX peer P95 of only 1.19; not adequately explained by standard charge-master pricing for a regulated supply item"
+            "evidence": "revenue_ratio = 1.36, excess of $2.25M across 13 rows; model accounts for HCPCS, acuity, and volume, making this residual analytically significant"
           },
           {
             "rule_id": "PROCEDURE_CONCENTRATION",
             "status": "NOT_TRIGGERED",
-            "evidence": "formally) — Herfindahl of 0.999 is at P98 but below the P99 trigger; however, 99.9% single-code concentration is substantively notable and consistent with the overall risk narrative"
-          },
-          {
-            "rule_id": "OUT_OF_SPECIALTY",
-            "status": "NOT_TRIGGERED",
-            "evidence": "all billed codes fall within Mass Immunizer scope"
-          },
-          {
-            "rule_id": "IMPOSSIBLE_DAY",
-            "status": "NOT_EVALUABLE",
-            "evidence": "annual aggregate data; no date-of-service field available"
-          },
-          {
-            "rule_id": "UPCODING",
-            "status": "NOT_EVALUABLE",
-            "evidence": "no E&M code distribution present; not applicable to this code mix"
-          },
-          {
-            "rule_id": "UNBUNDLING",
-            "status": "NOT_EVALUABLE",
-            "evidence": "requires per-encounter claim grouping unavailable in public data"
-          },
-          {
-            "rule_id": "BENEFICIARY_SHARING",
-            "status": "NOT_EVALUABLE",
-            "evidence": "requires beneficiary-level cross-provider linkage unavailable in public data"
-          }
-        ]
-      }
-    },
-    {
-      "npi": "1285xxxx41",
-      "year": 2020,
-      "specialty": "Emergency Medicine",
-      "state": "NY",
-      "risk_classification": "CRITICAL",
-      "risk_score": 91,
-      "generated_at": "2026-04-24T03:15:20.760636",
-      "model_version": "claude-sonnet-4-6",
-      "rule_summary": {
-        "triggered": 1,
-        "not_triggered": 4,
-        "not_evaluable": 4,
-        "rules": [
-          {
-            "rule_id": "HIGH_INTENSITY",
-            "status": "TRIGGERED",
-            "evidence": "srvcs_per_bene of 40.78 is at P100, over 33× the specialty P95; J-code unit billing partially explains the ratio but does not explain the specialty mismatch"
-          },
-          {
-            "rule_id": "VOLUME_SPIKE",
-            "status": "NOT_TRIGGERED",
-            "evidence": "rule evaluated on most recent YoY = −13%); however, the 2019→2020 spike of +2,176% is analytically critical and is addressed in contextual findings"
+            "evidence": "Herfindahl of 0.90 is at P97 but the rule threshold was not formally triggered; concentration is expected in a drug-administration retinal subspecialty and is contextualized accordingly"
           },
           {
             "rule_id": "CHARGE_INFLATION",
             "status": "NOT_TRIGGERED",
-            "evidence": "charge-to-allowed ratio of 1.45 is at P1, far below threshold; low ratio is consistent with J-code drug billing where per-unit charges are tightly constrained"
-          },
-          {
-            "rule_id": "PROCEDURE_CONCENTRATION",
-            "status": "NOT_TRIGGERED",
-            "evidence": "Herfindahl of 0.43 at P74; however, the top-3 J-codes represent 96.7% of services, and the Herfindahl is diluted by 23 unique codes, most with trivial volume"
-          },
-          {
-            "rule_id": "IMPOSSIBLE_DAY",
-            "status": "NOT_EVALUABLE",
-            "evidence": "CMS public data contains no date-of-service field"
+            "evidence": "charge-to-allowed ratio of 2.51 is at P52, well below specialty P95 × 1.5 threshold"
           },
           {
             "rule_id": "UPCODING",
-            "status": "NOT_EVALUABLE",
-            "evidence": "E&M code-level distribution analysis requires per-code filtering not available in aggregated profiles"
-          },
-          {
-            "rule_id": "UNBUNDLING",
-            "status": "NOT_EVALUABLE",
-            "evidence": "requires per-encounter claim grouping unavailable in public dataset"
+            "status": "NOT_TRIGGERED",
+            "evidence": "specialty P95 for high-tier E&M share is 100%, making the rule non-discriminating; high-tier share (96.9% established) is consistent with a specialist panel"
           },
           {
             "rule_id": "OUT_OF_SPECIALTY",
             "status": "NOT_TRIGGERED",
-            "evidence": "0.4% out-of-scope by rule definition); this rule does not capture the inverse problem — that 97% of services are J-code biologics which are outside EM scope but constitute the dominant, not marginal, billing pattern"
+            "evidence": "0% of services outside ophthalmology scope"
           },
           {
-            "rule_id": "BENEFICIARY_SHARING",
-            "status": "NOT_EVALUABLE",
-            "evidence": "requires beneficiary-level cross-provider linkage not available in public data"
-          }
-        ]
-      }
-    },
-    {
-      "npi": "1710xxxx19",
-      "year": 2018,
-      "specialty": "Optometry",
-      "state": "OH",
-      "risk_classification": "CRITICAL",
-      "risk_score": 91,
-      "generated_at": "2026-04-24T03:08:51.071402",
-      "model_version": "claude-sonnet-4-6",
-      "rule_summary": {
-        "triggered": 3,
-        "not_triggered": 2,
-        "not_evaluable": 4,
-        "rules": [
-          {
-            "rule_id": "HIGH_INTENSITY",
-            "status": "TRIGGERED",
-            "evidence": "srvcs_per_bene of 148.67 at P100 is not explained by J-code/A-code unit billing; 66984 is a procedure code billed per surgical encounter."
-          },
-          {
-            "rule_id": "VOLUME_SPIKE",
+            "rule_id": "LEIE_EXCLUDED",
             "status": "NOT_TRIGGERED",
-            "evidence": "the 2018 spike (+5,847%) precedes the analysis window; 2018-to-2019 growth is only +16%, within threshold. The historical spike is nonetheless material context."
-          },
-          {
-            "rule_id": "CHARGE_INFLATION",
-            "status": "TRIGGERED",
-            "evidence": "ratio of 16.28 is 4.3× the rule trigger; not typical for a facility-billed surgical code with a CMS fee schedule."
-          },
-          {
-            "rule_id": "PROCEDURE_CONCENTRATION",
-            "status": "TRIGGERED",
-            "evidence": "Herfindahl of 1.0 and single HCPCS code is contextually anomalous; while concentration alone is normal in subspecialty practice, single-code optometric billing on a surgical code is not."
+            "evidence": "NPI not found on OIG LEIE at time of screening"
           },
           {
             "rule_id": "IMPOSSIBLE_DAY",
             "status": "NOT_EVALUABLE",
-            "evidence": "no date-of-service data available in public dataset."
-          },
-          {
-            "rule_id": "UPCODING",
-            "status": "NOT_EVALUABLE",
-            "evidence": "no E&M level distribution available; not applicable to this code mix."
+            "evidence": "annual aggregate public data; no date-of-service field available"
           },
           {
             "rule_id": "UNBUNDLING",
             "status": "NOT_EVALUABLE",
-            "evidence": "requires per-encounter claim grouping not available in public data."
-          },
-          {
-            "rule_id": "OUT_OF_SPECIALTY",
-            "status": "NOT_TRIGGERED",
-            "evidence": "66984 appears within the optometry peer group's billing universe, but scale and context substantially undermine the benign interpretation."
+            "evidence": "requires per-encounter claim grouping not present in public data"
           },
           {
             "rule_id": "BENEFICIARY_SHARING",
             "status": "NOT_EVALUABLE",
-            "evidence": "requires beneficiary-level cross-provider linkage not available in public data."
-          }
-        ]
-      }
-    },
-    {
-      "npi": "1952xxxx27",
-      "year": 2022,
-      "specialty": "Internal Medicine",
-      "state": "IN",
-      "risk_classification": "CRITICAL",
-      "risk_score": 91,
-      "generated_at": "2026-04-24T03:14:11.626892",
-      "model_version": "claude-sonnet-4-6",
-      "rule_summary": {
-        "triggered": 3,
-        "not_triggered": 2,
-        "not_evaluable": 4,
-        "rules": [
-          {
-            "rule_id": "HIGH_INTENSITY",
-            "status": "TRIGGERED",
-            "evidence": "srvcs_per_bene of 409.69 at P100 (national P95 = 3.17); partially attributable to J-code unit billing but scale remains extreme and unexplained given specialty and practice history"
-          },
-          {
-            "rule_id": "VOLUME_SPIKE",
-            "status": "TRIGGERED",
-            "evidence": "system logged NOT TRIGGERED based on 2022→2023 direction, but the 2021→2022 surge of +38,202% on ≥1,000 services is a severe spike by any standard and warrants override notation)"
-          },
-          {
-            "rule_id": "CHARGE_INFLATION",
-            "status": "NOT_TRIGGERED",
-            "evidence": "charge-to-allowed ratio of 1.62 is at P18; no inflation signal"
-          },
-          {
-            "rule_id": "PROCEDURE_CONCENTRATION",
-            "status": "NOT_TRIGGERED",
-            "evidence": "by threshold (P94 vs. P95 cutoff), but functionally a single-code practice at 99.7% concentration is clinically extraordinary for internal medicine"
-          },
-          {
-            "rule_id": "OUT_OF_SPECIALTY",
-            "status": "TRIGGERED",
-            "evidence": "J7170 (hemophilia A biologic) constitutes 99.7% of services and falls outside internal medicine scope; this is the dominant billing activity, not incidental"
-          },
-          {
-            "rule_id": "IMPOSSIBLE_DAY",
-            "status": "NOT_EVALUABLE",
-            "evidence": "no date-of-service data in public CMS aggregate dataset"
-          },
-          {
-            "rule_id": "UPCODING",
-            "status": "NOT_EVALUABLE",
-            "evidence": "E&M code distribution not resolvable at this aggregation level"
-          },
-          {
-            "rule_id": "UNBUNDLING",
-            "status": "NOT_EVALUABLE",
-            "evidence": "requires per-encounter claim grouping unavailable in public data"
-          },
-          {
-            "rule_id": "BENEFICIARY_SHARING",
-            "status": "NOT_EVALUABLE",
-            "evidence": "requires cross-provider beneficiary linkage unavailable in public data"
-          }
-        ]
-      }
-    },
-    {
-      "npi": "1295xxxx51",
-      "year": 2023,
-      "specialty": "Emergency Medicine",
-      "state": "NY",
-      "risk_classification": "CRITICAL",
-      "risk_score": 88,
-      "generated_at": "2026-04-24T03:17:45.573053",
-      "model_version": "claude-sonnet-4-6",
-      "rule_summary": {
-        "triggered": 3,
-        "not_triggered": 2,
-        "not_evaluable": 4,
-        "rules": [
-          {
-            "rule_id": "HIGH_INTENSITY",
-            "status": "TRIGGERED",
-            "evidence": "srvcs/bene of 2.71 at P99; partially explained by per-unit Q/A codes but magnitude and HCC context do not fully account for it"
-          },
-          {
-            "rule_id": "VOLUME_SPIKE",
-            "status": "TRIGGERED",
-            "evidence": "+9,655% YoY on 24,874 services (well above the 1,000-service threshold); no benign explanation (new practice, group affiliation) apparent given prior near-dormancy in 2021–2022"
-          },
-          {
-            "rule_id": "CHARGE_INFLATION",
-            "status": "TRIGGERED",
-            "evidence": "charge-to-allowed ratio of 25.51 exceeds the P95×1.5 trigger (16.39) and sits at P100; while per-unit supply codes can inflate this ratio, the magnitude is extreme"
-          },
-          {
-            "rule_id": "PROCEDURE_CONCENTRATION",
-            "status": "NOT_TRIGGERED",
-            "evidence": "Herfindahl of 0.255 at P12, reflecting a broadly diversified code set; not a flag in isolation"
-          },
-          {
-            "rule_id": "OUT_OF_SPECIALTY",
-            "status": "NOT_TRIGGERED",
-            "evidence": "10.2% out-of-specialty services is below the 20% trigger, though the broader mix is substantively inconsistent with EM norms"
-          },
-          {
-            "rule_id": "IMPOSSIBLE_DAY",
-            "status": "NOT_EVALUABLE",
-            "evidence": "annual aggregate data; no date-of-service field available"
-          },
-          {
-            "rule_id": "UPCODING",
-            "status": "NOT_EVALUABLE",
-            "evidence": "requires per-code E&M level distribution not available in public data"
-          },
-          {
-            "rule_id": "UNBUNDLING",
-            "status": "NOT_EVALUABLE",
-            "evidence": "requires per-encounter claim grouping not available in public data"
-          },
-          {
-            "rule_id": "BENEFICIARY_SHARING",
-            "status": "NOT_EVALUABLE",
-            "evidence": "requires beneficiary-level cross-provider linkage not available in public data"
-          }
-        ]
-      }
-    },
-    {
-      "npi": "1194xxxx07",
-      "year": 2020,
-      "specialty": "Gastroenterology",
-      "state": "OH",
-      "risk_classification": "HIGH",
-      "risk_score": 78,
-      "generated_at": "2026-04-24T03:11:44.622897",
-      "model_version": "claude-sonnet-4-6",
-      "rule_summary": {
-        "triggered": 1,
-        "not_triggered": 4,
-        "not_evaluable": 4,
-        "rules": [
-          {
-            "rule_id": "HIGH_INTENSITY",
-            "status": "TRIGGERED",
-            "evidence": "srvcs_per_bene = 58.51 at national P100; partially explained by J-code per-mg unit billing convention, but scale and abruptness of onset require verification"
-          },
-          {
-            "rule_id": "VOLUME_SPIKE",
-            "status": "NOT_TRIGGERED",
-            "evidence": "by rule logic (rule evaluated 2019→2020 as -27% using 2021 data point), though the 2019→2020 transition represents a +1,809% spike per historical trajectory; this is a data-framing artifact requiring analyst attention"
-          },
-          {
-            "rule_id": "CHARGE_INFLATION",
-            "status": "NOT_TRIGGERED",
-            "evidence": "ratio of 1.78 is well below threshold; low ratio is consistent with regulated drug pricing"
-          },
-          {
-            "rule_id": "PROCEDURE_CONCENTRATION",
-            "status": "NOT_TRIGGERED",
-            "evidence": "Herfindahl at P98 but below P99 threshold) — high concentration is expected and normal for a biologic infusion-focused practice; single-code dominance by a J-code is not inherently suspicious"
-          },
-          {
-            "rule_id": "IMPOSSIBLE_DAY",
-            "status": "NOT_EVALUABLE",
-            "evidence": "no date-of-service data in public CMS aggregate file"
-          },
-          {
-            "rule_id": "UPCODING",
-            "status": "NOT_EVALUABLE",
-            "evidence": "E&M level distribution requires per-code claim data not available here"
-          },
-          {
-            "rule_id": "UNBUNDLING",
-            "status": "NOT_EVALUABLE",
-            "evidence": "requires per-encounter claim grouping unavailable in this dataset"
-          },
-          {
-            "rule_id": "OUT_OF_SPECIALTY",
-            "status": "NOT_TRIGGERED",
-            "evidence": "0% out-of-specialty billing; infusion-related codes (J3380, 96365, J7050, 36415) are within GI scope"
-          },
-          {
-            "rule_id": "BENEFICIARY_SHARING",
-            "status": "NOT_EVALUABLE",
-            "evidence": "beneficiary-level cross-provider linkage not available in public data"
+            "evidence": "requires beneficiary-level cross-provider linkage not present in public data"
           }
         ]
       }
@@ -440,34 +78,198 @@
       "year": 2020,
       "specialty": "Otolaryngology",
       "state": "GA",
-      "risk_classification": "HIGH",
-      "risk_score": 78,
-      "generated_at": "2026-04-24T03:16:57.747861",
+      "risk_classification": "CRITICAL",
+      "risk_score": 88,
+      "generated_at": "2026-06-15T18:44:36.329762",
       "model_version": "claude-sonnet-4-6",
       "rule_summary": {
         "triggered": 3,
-        "not_triggered": 2,
-        "not_evaluable": 4,
+        "not_triggered": 5,
+        "not_evaluable": 3,
         "rules": [
+          {
+            "rule_id": "LEIE_EXCLUDED",
+            "status": "TRIGGERED",
+            "evidence": "Active OIG exclusion, type 1128(a)(3), effective 20230720; any Medicare billing on or after that date is program-ineligible by statute"
+          },
           {
             "rule_id": "HIGH_INTENSITY",
             "status": "TRIGGERED",
-            "evidence": "srvcs_per_bene = 63.83 at P100 (national P95 = 3.99); partially mitigated by 95165 unit-billing convention but not fully explained given panel size and HCC acuity"
-          },
-          {
-            "rule_id": "VOLUME_SPIKE",
-            "status": "TRIGGERED",
-            "evidence": "contextual) — the automated rule evaluated 2020→2021 YoY and did not trigger; however, the 2019→2020 surge of +5,884% on ≥1,000 services is a material spike requiring explanation"
-          },
-          {
-            "rule_id": "CHARGE_INFLATION",
-            "status": "NOT_TRIGGERED",
-            "evidence": "charge-to-allowed ratio of 2.48 is at P52; no concern"
+            "evidence": "srvcs_per_bene = 63.83 at P100 (national P95 = 3.99); partially explained by 95165 per-dose billing convention but not fully justified given low HCC and small beneficiary count"
           },
           {
             "rule_id": "PROCEDURE_CONCENTRATION",
             "status": "TRIGGERED",
-            "evidence": "Herfindahl = 1.00 at P100; single code (95165) accounts for 100% of services; partially explained by allergy sub-specialization but notable given practice volatility"
+            "evidence": "Herfindahl = 1.00 (P100); single-code billing is atypical for otolaryngology (specialty P95 = 0.54) though explainable if provider operates a pure allergy sub-practice"
+          },
+          {
+            "rule_id": "VOLUME_SPIKE",
+            "status": "NOT_TRIGGERED",
+            "evidence": "The YoY flag evaluates 2019→2020 on the basis of trailing-year volume; however, the 2018–2019 dormancy followed by 2020 reactivation is contextually significant even if the formal rule did not trigger on the look-back window used"
+          },
+          {
+            "rule_id": "REVENUE_DEVIATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "Expected allowed below $50K gate; ratio of 1.15 is directionally elevated but not formally actionable"
+          },
+          {
+            "rule_id": "CHARGE_INFLATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "Charge-to-allowed ratio of 2.48 is at specialty median (P52)"
+          },
+          {
+            "rule_id": "UPCODING",
+            "status": "NOT_TRIGGERED",
+            "evidence": "No E&M visit volume present"
+          },
+          {
+            "rule_id": "OUT_OF_SPECIALTY",
+            "status": "NOT_TRIGGERED",
+            "evidence": "95165 is within otolaryngology scope (allergy sub-specialization)"
+          },
+          {
+            "rule_id": "IMPOSSIBLE_DAY",
+            "status": "NOT_EVALUABLE",
+            "evidence": "Annual aggregate data; no date-of-service field available"
+          },
+          {
+            "rule_id": "UNBUNDLING",
+            "status": "NOT_EVALUABLE",
+            "evidence": "Requires per-encounter claim grouping not present in public dataset"
+          },
+          {
+            "rule_id": "BENEFICIARY_SHARING",
+            "status": "NOT_EVALUABLE",
+            "evidence": "Requires beneficiary-level cross-provider linkage not available in public data"
+          }
+        ]
+      }
+    },
+    {
+      "npi": "1083xxxx74",
+      "year": 2023,
+      "specialty": "Ophthalmology",
+      "state": "WI",
+      "risk_classification": "HIGH",
+      "risk_score": 78,
+      "generated_at": "2026-06-15T18:48:21.334872",
+      "model_version": "claude-sonnet-4-6",
+      "rule_summary": {
+        "triggered": 4,
+        "not_triggered": 4,
+        "not_evaluable": 3,
+        "rules": [
+          {
+            "rule_id": "LEIE_EXCLUDED",
+            "status": "NOT_TRIGGERED",
+            "evidence": "NPI not found on OIG exclusion list at time of screening"
+          },
+          {
+            "rule_id": "REVENUE_DEVIATION",
+            "status": "TRIGGERED",
+            "evidence": "Revenue ratio 1.34 ($+983K excess) exceeds the 1.30 threshold across 16 scored HCPCS-POS rows; model already conditions on J2777, making the residual harder to dismiss"
+          },
+          {
+            "rule_id": "HIGH_INTENSITY",
+            "status": "TRIGGERED",
+            "evidence": "srvcs_per_bene of 30.18 is at national P100; partially explained by J-code per-unit billing convention but not fully resolved given the scale"
+          },
+          {
+            "rule_id": "VOLUME_SPIKE",
+            "status": "TRIGGERED",
+            "evidence": "+318% YoY on 92,849 services meets the threshold; this is the third consecutive high-growth year with no documented practice change in the data"
+          },
+          {
+            "rule_id": "CHARGE_INFLATION",
+            "status": "TRIGGERED",
+            "evidence": "Charge-to-allowed ratio 7.78 exceeds specialty P95×1.5 trigger (7.58); attenuated by Wisconsin state context where P50 is already 4.66"
+          },
+          {
+            "rule_id": "PROCEDURE_CONCENTRATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "Herfindahl 0.80 is at P97 but rule threshold is P99; J-code dominance in a retinal injection practice is specialty-consistent"
+          },
+          {
+            "rule_id": "UPCODING",
+            "status": "NOT_TRIGGERED",
+            "evidence": "Specialty P95 for high-tier established visits is already 100%, making percentile discrimination non-operative; provider's 82.8% rate is below the saturated ceiling"
+          },
+          {
+            "rule_id": "OUT_OF_SPECIALTY",
+            "status": "NOT_TRIGGERED",
+            "evidence": "0% of services outside ophthalmology scope"
+          },
+          {
+            "rule_id": "IMPOSSIBLE_DAY",
+            "status": "NOT_EVALUABLE",
+            "evidence": "Annual aggregate CMS data lacks date-of-service granularity"
+          },
+          {
+            "rule_id": "UNBUNDLING",
+            "status": "NOT_EVALUABLE",
+            "evidence": "Per-encounter claim grouping required; not available in public data"
+          },
+          {
+            "rule_id": "BENEFICIARY_SHARING",
+            "status": "NOT_EVALUABLE",
+            "evidence": "Requires cross-provider beneficiary-level linkage not present in public data"
+          }
+        ]
+      }
+    },
+    {
+      "npi": "1497xxxx09",
+      "year": 2017,
+      "specialty": "Infectious Disease",
+      "state": "OK",
+      "risk_classification": "HIGH",
+      "risk_score": 78,
+      "generated_at": "2026-06-15T18:42:18.708154",
+      "model_version": "claude-sonnet-4-6",
+      "rule_summary": {
+        "triggered": 1,
+        "not_triggered": 7,
+        "not_evaluable": 3,
+        "rules": [
+          {
+            "rule_id": "HIGH_INTENSITY",
+            "status": "TRIGGERED",
+            "evidence": "srvcs_per_bene = 300.41 at P100; top HCPCS is a J-code (per-mg billing), which materially explains the ratio, but the absolute scale (53x the P95) and the multi-year trajectory preclude full dismissal"
+          },
+          {
+            "rule_id": "VOLUME_SPIKE",
+            "status": "NOT_TRIGGERED",
+            "evidence": "rule evaluated 2016→2017 as the YoY window for 2017; the system flagged the YoY from the prior year as the comparison) — note: the 2016→2017 spike of +12,109% is analytically material even if the rule references a different comparison window; this anomaly is real and should be weighted"
+          },
+          {
+            "rule_id": "CHARGE_INFLATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "charge-to-allowed ratio of 1.92 at P32; consistent with low per-unit J-code pricing relative to submitted charges"
+          },
+          {
+            "rule_id": "PROCEDURE_CONCENTRATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "at borderline P95 threshold) — Herfindahl of 0.958 is at the specialty P95 boundary; J-code dominance is a standard explanation, but the single-code concentration at this scale warrants monitoring"
+          },
+          {
+            "rule_id": "UPCODING",
+            "status": "NOT_TRIGGERED",
+            "evidence": "high-tier E&M share of 92.3% is within the saturated specialty norm (P75–P95 = 100%); not a discriminating signal for this specialty"
+          },
+          {
+            "rule_id": "REVENUE_DEVIATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "revenue ratio of 1.18 is below the 1.30 trigger; the model residual does not independently flag this provider"
+          },
+          {
+            "rule_id": "OUT_OF_SPECIALTY",
+            "status": "NOT_TRIGGERED",
+            "evidence": "0.0% out-of-scope services; all billing is within ID scope"
+          },
+          {
+            "rule_id": "LEIE_EXCLUDED",
+            "status": "NOT_TRIGGERED",
+            "evidence": "NPI not found on OIG LEIE"
           },
           {
             "rule_id": "IMPOSSIBLE_DAY",
@@ -475,9 +277,575 @@
             "evidence": "annual aggregate data; no date-of-service field available"
           },
           {
-            "rule_id": "UPCODING",
+            "rule_id": "UNBUNDLING",
             "status": "NOT_EVALUABLE",
-            "evidence": "no E&M code-level distribution available; not applicable to 95165"
+            "evidence": "requires per-encounter claim grouping not available in public data"
+          },
+          {
+            "rule_id": "BENEFICIARY_SHARING",
+            "status": "NOT_EVALUABLE",
+            "evidence": "requires cross-provider beneficiary-level linkage not available in public data"
+          }
+        ]
+      }
+    },
+    {
+      "npi": "1780xxxx08",
+      "year": 2016,
+      "specialty": "Gastroenterology",
+      "state": "CA",
+      "risk_classification": "HIGH",
+      "risk_score": 78,
+      "generated_at": "2026-06-15T18:59:23.697774",
+      "model_version": "claude-sonnet-4-6",
+      "rule_summary": {
+        "triggered": 1,
+        "not_triggered": 7,
+        "not_evaluable": 3,
+        "rules": [
+          {
+            "rule_id": "HIGH_INTENSITY",
+            "status": "TRIGGERED",
+            "evidence": "srvcs_per_bene of 77.19 at P100; partially explained by J-code unit billing but not fully defensible given code-specialty mismatch"
+          },
+          {
+            "rule_id": "VOLUME_SPIKE",
+            "status": "NOT_TRIGGERED",
+            "evidence": "2016 YoY rule evaluates the analysis year as −7% from the prior-year check; however, the 2015→2016 spike of +2,660% is documented in the trajectory and is a material qualitative finding)"
+          },
+          {
+            "rule_id": "REVENUE_DEVIATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "revenue_ratio of 1.01 is well below the 1.30 threshold; no model-unexplained excess revenue"
+          },
+          {
+            "rule_id": "CHARGE_INFLATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "charge-to-allowed ratio of 2.03 at P8; below-median ratio consistent with regulated drug-unit pricing"
+          },
+          {
+            "rule_id": "PROCEDURE_CONCENTRATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "Herfindahl of 0.486 just below P95 threshold of 0.499; 22 unique codes"
+          },
+          {
+            "rule_id": "UPCODING",
+            "status": "NOT_TRIGGERED",
+            "evidence": "high-tier E&M share of 69.4% is below specialty P50 benchmark context; not a concern given low E&M volume relative to total"
+          },
+          {
+            "rule_id": "OUT_OF_SPECIALTY",
+            "status": "NOT_TRIGGERED",
+            "evidence": "formal rule threshold not crossed (0.2%), but the dominant J-codes (J1459, J1071) representing 96.5% of volume are clinically outside GI scope and not captured by the rule's empirical construction"
+          },
+          {
+            "rule_id": "LEIE_EXCLUDED",
+            "status": "NOT_TRIGGERED",
+            "evidence": "NPI not found on OIG LEIE"
+          },
+          {
+            "rule_id": "IMPOSSIBLE_DAY",
+            "status": "NOT_EVALUABLE",
+            "evidence": "annual aggregate data; no date-of-service field available"
+          },
+          {
+            "rule_id": "UNBUNDLING",
+            "status": "NOT_EVALUABLE",
+            "evidence": "requires per-encounter claim grouping not available in public data"
+          },
+          {
+            "rule_id": "BENEFICIARY_SHARING",
+            "status": "NOT_EVALUABLE",
+            "evidence": "requires beneficiary-level cross-provider linkage not available in public data"
+          }
+        ]
+      }
+    },
+    {
+      "npi": "1134xxxx36",
+      "year": 2017,
+      "specialty": "Gastroenterology",
+      "state": "CA",
+      "risk_classification": "HIGH",
+      "risk_score": 74,
+      "generated_at": "2026-06-15T18:43:54.260943",
+      "model_version": "claude-sonnet-4-6",
+      "rule_summary": {
+        "triggered": 2,
+        "not_triggered": 6,
+        "not_evaluable": 3,
+        "rules": [
+          {
+            "rule_id": "HIGH_INTENSITY",
+            "status": "TRIGGERED",
+            "evidence": "srvcs_per_bene = 32.09 at P100 (national P95 = 1.85); partially explained by J-code per-mg unit billing conventions but warrants drug quantity verification."
+          },
+          {
+            "rule_id": "PROCEDURE_CONCENTRATION",
+            "status": "TRIGGERED",
+            "evidence": "Herfindahl = 0.76 at P98; explainable by single-drug infusion practice dominance (J2323 = 86.6%), but unusual concentration for a gastroenterologist versus a dedicated infusion-only specialist."
+          },
+          {
+            "rule_id": "VOLUME_SPIKE",
+            "status": "NOT_TRIGGERED",
+            "evidence": "The rule evaluates the 2017→2018 transition (YoY = +22% in 2018); however, the 2016→2017 spike (+2,756%) is contextually notable and reviewed narratively above."
+          },
+          {
+            "rule_id": "REVENUE_DEVIATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "revenue_ratio = 1.12, below the 1.30 threshold."
+          },
+          {
+            "rule_id": "CHARGE_INFLATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "charge-to-allowed ratio = 4.06 at P55, well within specialty norms."
+          },
+          {
+            "rule_id": "UPCODING",
+            "status": "NOT_TRIGGERED",
+            "evidence": "Specialty P95 for high-tier E&M share is already 100%; the provider's 100% rate on 84 established visits is within specialty norms and not discriminating."
+          },
+          {
+            "rule_id": "OUT_OF_SPECIALTY",
+            "status": "NOT_TRIGGERED",
+            "evidence": "0% of services fall outside Gastroenterology scope; infliximab and natalizumab administration are within GI specialty billing."
+          },
+          {
+            "rule_id": "LEIE_EXCLUDED",
+            "status": "NOT_TRIGGERED",
+            "evidence": "NPI not found on OIG LEIE."
+          },
+          {
+            "rule_id": "IMPOSSIBLE_DAY",
+            "status": "NOT_EVALUABLE",
+            "evidence": "Annual aggregate data; no date-of-service field available."
+          },
+          {
+            "rule_id": "UNBUNDLING",
+            "status": "NOT_EVALUABLE",
+            "evidence": "Requires per-encounter claim grouping not present in public data."
+          },
+          {
+            "rule_id": "BENEFICIARY_SHARING",
+            "status": "NOT_EVALUABLE",
+            "evidence": "Requires beneficiary-level cross-provider linkage not present in public data."
+          }
+        ]
+      }
+    },
+    {
+      "npi": "1326xxxx10",
+      "year": 2023,
+      "specialty": "Mass Immunizer Roster Biller",
+      "state": "OH",
+      "risk_classification": "HIGH",
+      "risk_score": 74,
+      "generated_at": "2026-06-15T18:46:46.633361",
+      "model_version": "claude-sonnet-4-6",
+      "rule_summary": {
+        "triggered": 3,
+        "not_triggered": 5,
+        "not_evaluable": 3,
+        "rules": [
+          {
+            "rule_id": "HIGH_INTENSITY",
+            "status": "TRIGGERED",
+            "evidence": "srvcs_per_bene of 21.43 at national P100 (P95 = 3.64); K-code unit billing partially explains elevation but does not fully account for the magnitude"
+          },
+          {
+            "rule_id": "VOLUME_SPIKE",
+            "status": "TRIGGERED",
+            "evidence": "+393% YoY on 5,035 services in 2023, following a +1,826% spike in 2022; two consecutive anomalous growth years"
+          },
+          {
+            "rule_id": "PROCEDURE_CONCENTRATION",
+            "status": "TRIGGERED",
+            "evidence": "Herfindahl = 1.000 at national P100; single code K1034 accounts for 100% of services; contextually normal for mass immunizers but reinforces the need to validate that single code's legitimacy"
+          },
+          {
+            "rule_id": "CHARGE_INFLATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "charge-to-allowed ratio of 1.77 at P97 but below the 2.25 formal threshold"
+          },
+          {
+            "rule_id": "REVENUE_DEVIATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "revenue_ratio of 1.12 is below threshold and model was not applied due to insufficient row coverage (n=1)"
+          },
+          {
+            "rule_id": "UPCODING",
+            "status": "NOT_TRIGGERED",
+            "evidence": "no E&M visit codes billed"
+          },
+          {
+            "rule_id": "OUT_OF_SPECIALTY",
+            "status": "NOT_TRIGGERED",
+            "evidence": "100% of services are within Mass Immunizer scope"
+          },
+          {
+            "rule_id": "LEIE_EXCLUDED",
+            "status": "NOT_TRIGGERED",
+            "evidence": "NPI not found on OIG exclusion list"
+          },
+          {
+            "rule_id": "IMPOSSIBLE_DAY",
+            "status": "NOT_EVALUABLE",
+            "evidence": "annual aggregate data; no date-of-service available"
+          },
+          {
+            "rule_id": "UNBUNDLING",
+            "status": "NOT_EVALUABLE",
+            "evidence": "requires per-encounter claim grouping not available in public data"
+          },
+          {
+            "rule_id": "BENEFICIARY_SHARING",
+            "status": "NOT_EVALUABLE",
+            "evidence": "requires cross-provider beneficiary linkage not available in public data"
+          }
+        ]
+      }
+    },
+    {
+      "npi": "1134xxxx70",
+      "year": 2015,
+      "specialty": "Diagnostic Radiology",
+      "state": "IL",
+      "risk_classification": "HIGH",
+      "risk_score": 72,
+      "generated_at": "2026-06-15T18:43:04.382986",
+      "model_version": "claude-sonnet-4-6",
+      "rule_summary": {
+        "triggered": 1,
+        "not_triggered": 7,
+        "not_evaluable": 3,
+        "rules": [
+          {
+            "rule_id": "HIGH_INTENSITY",
+            "status": "TRIGGERED",
+            "evidence": "srvcs_per_bene at P100 nationally; partially explained by Q9967 per-mL unit billing and high-acuity panel (HCC 8.06), but non-facility POS anomaly is unresolved"
+          },
+          {
+            "rule_id": "VOLUME_SPIKE",
+            "status": "NOT_TRIGGERED",
+            "evidence": "2015 evaluation window looks backward; rule assessed −44% YoY) — *Note: the 2014→2015 surge of +1,685% is visible in trajectory data and would have triggered in a prior-year evaluation*"
+          },
+          {
+            "rule_id": "PROCEDURE_CONCENTRATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "Herfindahl 0.94 at P98, but rule did not formally trigger) — Concentration is extreme; benign under unit-of-measure billing convention for contrast agents"
+          },
+          {
+            "rule_id": "CHARGE_INFLATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "Charge-to-allowed ratio 2.55 at P8; below specialty norms"
+          },
+          {
+            "rule_id": "REVENUE_DEVIATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "revenue_ratio 1.15, below 1.30 threshold"
+          },
+          {
+            "rule_id": "UPCODING",
+            "status": "NOT_TRIGGERED",
+            "evidence": "Insufficient E&M volume (13 established, 15 new visits); not evaluable for upcoding"
+          },
+          {
+            "rule_id": "OUT_OF_SPECIALTY",
+            "status": "NOT_TRIGGERED",
+            "evidence": "Only 0.01% of services outside scope; no concern"
+          },
+          {
+            "rule_id": "LEIE_EXCLUDED",
+            "status": "NOT_TRIGGERED",
+            "evidence": "NPI not on OIG LEIE at time of screening"
+          },
+          {
+            "rule_id": "IMPOSSIBLE_DAY",
+            "status": "NOT_EVALUABLE",
+            "evidence": "Annual aggregate data; no date-of-service available"
+          },
+          {
+            "rule_id": "UNBUNDLING",
+            "status": "NOT_EVALUABLE",
+            "evidence": "Requires per-encounter claim grouping not available in public data"
+          },
+          {
+            "rule_id": "BENEFICIARY_SHARING",
+            "status": "NOT_EVALUABLE",
+            "evidence": "Requires beneficiary-level cross-provider linkage not available in public data"
+          }
+        ]
+      }
+    },
+    {
+      "npi": "1265xxxx98",
+      "year": 2023,
+      "specialty": "Interventional Cardiology",
+      "state": "FL",
+      "risk_classification": "HIGH",
+      "risk_score": 72,
+      "generated_at": "2026-06-15T18:54:09.433582",
+      "model_version": "claude-sonnet-4-6",
+      "rule_summary": {
+        "triggered": 2,
+        "not_triggered": 6,
+        "not_evaluable": 3,
+        "rules": [
+          {
+            "rule_id": "HIGH_INTENSITY",
+            "status": "TRIGGERED",
+            "evidence": "srvcs_per_bene = 9.39 at P100; substantially attenuated by Q9967 per-ml billing convention and above-median HCC score, but residual concern remains given scale"
+          },
+          {
+            "rule_id": "VOLUME_SPIKE",
+            "status": "TRIGGERED",
+            "evidence": "+637% YoY to 19,440 services; partially explained by per-unit contrast billing expansion; billing growth of only +22% is consistent with a supply-code-driven spike rather than high-margin upcoding"
+          },
+          {
+            "rule_id": "PROCEDURE_CONCENTRATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "formally) — Herfindahl 0.67 at P98 exceeds P95 but rule threshold not triggered; monoculture driven by Q9967, which is a recognized per-unit supply code; not independently actionable"
+          },
+          {
+            "rule_id": "CHARGE_INFLATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "ratio 2.80 at P34; well below threshold"
+          },
+          {
+            "rule_id": "UPCODING",
+            "status": "NOT_TRIGGERED",
+            "evidence": "specialty E&M high-tier share is saturated at P95 = 100%; provider's 100% share is not discriminating; volume of 286 established visits is modest"
+          },
+          {
+            "rule_id": "REVENUE_DEVIATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "revenue_ratio = 0.94; actual allowed is below model expectation; no payment excess"
+          },
+          {
+            "rule_id": "OUT_OF_SPECIALTY",
+            "status": "NOT_TRIGGERED",
+            "evidence": "0.4% out-of-scope services (36248, 75726 are vascular procedural codes consistent with an interventional cardiologist's scope)"
+          },
+          {
+            "rule_id": "LEIE_EXCLUDED",
+            "status": "NOT_TRIGGERED",
+            "evidence": "NPI not found on OIG LEIE"
+          },
+          {
+            "rule_id": "IMPOSSIBLE_DAY",
+            "status": "NOT_EVALUABLE",
+            "evidence": "annual aggregate data; no date-of-service field available"
+          },
+          {
+            "rule_id": "UNBUNDLING",
+            "status": "NOT_EVALUABLE",
+            "evidence": "requires per-encounter claim grouping not available in public CMS data"
+          },
+          {
+            "rule_id": "BENEFICIARY_SHARING",
+            "status": "NOT_EVALUABLE",
+            "evidence": "requires beneficiary-level cross-provider linkage not available in public data"
+          }
+        ]
+      }
+    },
+    {
+      "npi": "1558xxxx50",
+      "year": 2014,
+      "specialty": "Physical Therapist",
+      "state": "FL",
+      "risk_classification": "HIGH",
+      "risk_score": 72,
+      "generated_at": "2026-06-15T18:47:29.732169",
+      "model_version": "claude-sonnet-4-6",
+      "rule_summary": {
+        "triggered": 2,
+        "not_triggered": 5,
+        "not_evaluable": 3,
+        "rules": [
+          {
+            "rule_id": "HIGH_INTENSITY",
+            "status": "TRIGGERED",
+            "evidence": "srvcs_per_bene of 84.25 is at national P100, more than 5× the P95 benchmark of 16.57, against only 12 beneficiaries."
+          },
+          {
+            "rule_id": "PROCEDURE_CONCENTRATION",
+            "status": "TRIGGERED",
+            "evidence": "HHI of 1.000 at national P100 with only one unique HCPCS code; atypical for physical therapy, which normally uses a multi-code mix."
+          },
+          {
+            "rule_id": "REVENUE_DEVIATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "expected total allowed below the $50,000 model gate; ratio of 0.96 shows no excess reimbursement residual."
+          },
+          {
+            "rule_id": "LEIE_EXCLUDED",
+            "status": "NOT_TRIGGERED",
+            "evidence": "NPI not found on OIG exclusion list."
+          },
+          {
+            "rule_id": "CHARGE_INFLATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "charge-to-allowed ratio of 1.56 is at P24, well below threshold."
+          },
+          {
+            "rule_id": "UPCODING",
+            "status": "NOT_TRIGGERED",
+            "evidence": "no E&M codes billed."
+          },
+          {
+            "rule_id": "OUT_OF_SPECIALTY",
+            "status": "NOT_TRIGGERED",
+            "evidence": "100% of services are within PT scope."
+          },
+          {
+            "rule_id": "IMPOSSIBLE_DAY",
+            "status": "NOT_EVALUABLE",
+            "evidence": "annual aggregate data; no date-of-service available."
+          },
+          {
+            "rule_id": "UNBUNDLING",
+            "status": "NOT_EVALUABLE",
+            "evidence": "requires per-encounter claim grouping unavailable in public data."
+          },
+          {
+            "rule_id": "BENEFICIARY_SHARING",
+            "status": "NOT_EVALUABLE",
+            "evidence": "requires cross-provider beneficiary linkage unavailable in public data."
+          }
+        ]
+      }
+    },
+    {
+      "npi": "1578xxxx66",
+      "year": 2016,
+      "specialty": "Gastroenterology",
+      "state": "TX",
+      "risk_classification": "HIGH",
+      "risk_score": 72,
+      "generated_at": "2026-06-15T19:00:09.549612",
+      "model_version": "claude-sonnet-4-6",
+      "rule_summary": {
+        "triggered": 3,
+        "not_triggered": 5,
+        "not_evaluable": 3,
+        "rules": [
+          {
+            "rule_id": "HIGH_INTENSITY",
+            "status": "TRIGGERED",
+            "evidence": "srvcs_per_bene of 36.80 is at P100 (national P95 = 1.87); partially explained by J-code per-unit billing, but the ratio magnitude and trend remain anomalous"
+          },
+          {
+            "rule_id": "VOLUME_SPIKE",
+            "status": "TRIGGERED",
+            "evidence": "contextual) — the formal rule did not trigger on the 2016 analysis year's YoY metric, but the 2013–2016 trajectory represents a +4,450% structural break; this is a material finding regardless of rule threshold"
+          },
+          {
+            "rule_id": "PROCEDURE_CONCENTRATION",
+            "status": "TRIGGERED",
+            "evidence": "marginal) — Herfindahl 0.52 at P96, driven by J3380 dominance; partially explainable by dedicated infusion practice focus"
+          },
+          {
+            "rule_id": "REVENUE_DEVIATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "revenue_ratio of 1.19 is below the 1.30 threshold; modest unexplained residual of ~$101K"
+          },
+          {
+            "rule_id": "CHARGE_INFLATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "charge-to-allowed ratio of 4.95 at P78, well below the trigger threshold"
+          },
+          {
+            "rule_id": "UPCODING",
+            "status": "NOT_TRIGGERED",
+            "evidence": "high-tier E&M share of 100% is at specialty P95 norm; E&M volume (80 established visits) is small relative to infusion volume and clinically defensible given complex IBD panel"
+          },
+          {
+            "rule_id": "OUT_OF_SPECIALTY",
+            "status": "NOT_TRIGGERED",
+            "evidence": "0% out-of-specialty billing"
+          },
+          {
+            "rule_id": "LEIE_EXCLUDED",
+            "status": "NOT_TRIGGERED",
+            "evidence": "no OIG exclusion match"
+          },
+          {
+            "rule_id": "IMPOSSIBLE_DAY",
+            "status": "NOT_EVALUABLE",
+            "evidence": "annual aggregate data; no date-of-service field available"
+          },
+          {
+            "rule_id": "UNBUNDLING",
+            "status": "NOT_EVALUABLE",
+            "evidence": "requires per-encounter claim grouping not available in public data"
+          },
+          {
+            "rule_id": "BENEFICIARY_SHARING",
+            "status": "NOT_EVALUABLE",
+            "evidence": "requires beneficiary-level cross-provider linkage not available in public data"
+          }
+        ]
+      }
+    },
+    {
+      "npi": "1669xxxx81",
+      "year": 2017,
+      "specialty": "Emergency Medicine",
+      "state": "UT",
+      "risk_classification": "HIGH",
+      "risk_score": 72,
+      "generated_at": "2026-06-15T18:57:48.871057",
+      "model_version": "claude-sonnet-4-6",
+      "rule_summary": {
+        "triggered": 1,
+        "not_triggered": 7,
+        "not_evaluable": 3,
+        "rules": [
+          {
+            "rule_id": "HIGH_INTENSITY",
+            "status": "TRIGGERED",
+            "evidence": "srvcs_per_bene of 43.42 at P100; partially explained by J7328 per-unit billing, but volume scale remains anomalous even under that explanation"
+          },
+          {
+            "rule_id": "VOLUME_SPIKE",
+            "status": "NOT_TRIGGERED",
+            "evidence": "the 2017 YoY change is flagged as +3% by the rule (comparing 2016→2017 per the rule's threshold framing), though the absolute jump of ~47,000 services is a de facto spike visible in trajectory; rule threshold logic focuses on year-over-year percentage from the immediately prior year"
+          },
+          {
+            "rule_id": "CHARGE_INFLATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "ratio of 2.43 is at P10, well below trigger"
+          },
+          {
+            "rule_id": "PROCEDURE_CONCENTRATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "formally) — Herfindahl at P97 exceeds P95 threshold but the rule was not triggered; regardless, single-code dominance by a J-code is a known billing-convention artifact"
+          },
+          {
+            "rule_id": "OUT_OF_SPECIALTY",
+            "status": "NOT_TRIGGERED",
+            "evidence": "0% out-of-scope by the empirical scope definition; however, this finding itself is a concern, suggesting J7328/20611 joint injection billing has leaked into the EM scope definition"
+          },
+          {
+            "rule_id": "UPCODING",
+            "status": "NOT_TRIGGERED",
+            "evidence": "high-tier established E&M share (47.2%) is below the specialty P50 of 57%; no upcoding signal"
+          },
+          {
+            "rule_id": "REVENUE_DEVIATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "revenue_ratio of 0.95; actual allowed is below model expectation"
+          },
+          {
+            "rule_id": "LEIE_EXCLUDED",
+            "status": "NOT_TRIGGERED",
+            "evidence": "no OIG LEIE match found"
+          },
+          {
+            "rule_id": "IMPOSSIBLE_DAY",
+            "status": "NOT_EVALUABLE",
+            "evidence": "annual aggregate data; no date-of-service available"
           },
           {
             "rule_id": "UNBUNDLING",
@@ -485,51 +853,920 @@
             "evidence": "requires per-encounter claim grouping not present in public data"
           },
           {
-            "rule_id": "OUT_OF_SPECIALTY",
-            "status": "NOT_TRIGGERED",
-            "evidence": "0% out-of-scope billing; 95165 is within otolaryngology scope"
-          },
-          {
             "rule_id": "BENEFICIARY_SHARING",
             "status": "NOT_EVALUABLE",
-            "evidence": "requires beneficiary-level cross-provider linkage"
+            "evidence": "requires beneficiary-level cross-provider linkage not present in public data"
           }
         ]
       }
     },
     {
-      "npi": "1033xxxx74",
-      "year": 2018,
-      "specialty": "Cardiology",
-      "state": "NY",
+      "npi": "1740xxxx39",
+      "year": 2022,
+      "specialty": "Mass Immunizer Roster Biller",
+      "state": "TX",
       "risk_classification": "HIGH",
       "risk_score": 72,
-      "generated_at": "2026-04-24T03:10:59.678121",
+      "generated_at": "2026-06-15T18:45:21.441787",
       "model_version": "claude-sonnet-4-6",
       "rule_summary": {
-        "triggered": 2,
-        "not_triggered": 3,
+        "triggered": 1,
+        "not_triggered": 6,
         "not_evaluable": 4,
         "rules": [
           {
             "rule_id": "HIGH_INTENSITY",
             "status": "TRIGGERED",
-            "evidence": "srvcs_per_bene of 112.73 is P100 nationally; partially explained by per-unit A-code billing but scale remains anomalous relative to peer practices"
+            "evidence": "srvcs_per_bene of 25.24 is at national P100, far exceeding the P95 of 4.15; K1034 unit billing partially explains but does not fully account for the magnitude"
           },
           {
             "rule_id": "VOLUME_SPIKE",
             "status": "NOT_TRIGGERED",
-            "evidence": "2018→2019 YoY change is +0%; the historical +5,067% spike occurred in the 2016→2018 window and is not the current trigger year"
+            "evidence": "the rule evaluates YoY 2022→2023 change (-52%), which is within normal variation; the 2021→2022 spike (+2,781%) is noted contextually but occurred in the prior window"
           },
           {
             "rule_id": "CHARGE_INFLATION",
             "status": "NOT_TRIGGERED",
-            "evidence": "charge-to-allowed ratio of 1.15 is well below any threshold"
+            "evidence": "charge-to-allowed ratio of 1.70 is at the national P95 but below the 1.5× trigger threshold (2.54); elevated vs. state peers (state P95 = 1.30) but not actionable alone"
+          },
+          {
+            "rule_id": "PROCEDURE_CONCENTRATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "Herfindahl of 1.00 is at P98, but single-code dominance is structurally normal for mass immunizer/test-kit billers; not triggered given specialty context"
+          },
+          {
+            "rule_id": "UPCODING",
+            "status": "NOT_TRIGGERED",
+            "evidence": "no E&M office visit volume present"
+          },
+          {
+            "rule_id": "OUT_OF_SPECIALTY",
+            "status": "NOT_TRIGGERED",
+            "evidence": "0% of services are outside declared specialty scope"
+          },
+          {
+            "rule_id": "REVENUE_DEVIATION",
+            "status": "NOT_EVALUABLE",
+            "evidence": "insufficient scored rows (n=3, minimum 10 required); reference ratio of 1.08 noted but not actionable"
+          },
+          {
+            "rule_id": "LEIE_EXCLUDED",
+            "status": "NOT_TRIGGERED",
+            "evidence": "NPI not found on OIG exclusion list"
+          },
+          {
+            "rule_id": "IMPOSSIBLE_DAY",
+            "status": "NOT_EVALUABLE",
+            "evidence": "annual aggregate data; no date-of-service available"
+          },
+          {
+            "rule_id": "UNBUNDLING",
+            "status": "NOT_EVALUABLE",
+            "evidence": "requires per-encounter claim grouping not available in public data"
+          },
+          {
+            "rule_id": "BENEFICIARY_SHARING",
+            "status": "NOT_EVALUABLE",
+            "evidence": "requires cross-provider beneficiary linkage not available in public data"
+          }
+        ]
+      }
+    },
+    {
+      "npi": "1750xxxx88",
+      "year": 2014,
+      "specialty": "Ophthalmology",
+      "state": "NY",
+      "risk_classification": "HIGH",
+      "risk_score": 72,
+      "generated_at": "2026-06-15T18:55:29.494790",
+      "model_version": "claude-sonnet-4-6",
+      "rule_summary": {
+        "triggered": 1,
+        "not_triggered": 7,
+        "not_evaluable": 3,
+        "rules": [
+          {
+            "rule_id": "LEIE_EXCLUDED",
+            "status": "NOT_TRIGGERED",
+            "evidence": "NPI not found on OIG exclusion list at time of review"
+          },
+          {
+            "rule_id": "VOLUME_SPIKE",
+            "status": "TRIGGERED",
+            "evidence": "2013→2014 increase of +28,026% (19→5,344 services) is extreme; note the rule evidence references 2023 data (+211%), which also triggers independently"
+          },
+          {
+            "rule_id": "HIGH_INTENSITY",
+            "status": "NOT_TRIGGERED",
+            "evidence": "srvcs/bene of 2.44 at P92 is elevated but within the specialty's normal upper range, and HCC score supports a complex retinal panel"
+          },
+          {
+            "rule_id": "CHARGE_INFLATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "charge-to-allowed ratio of 3.48 is below the P95×1.5 trigger threshold of 6.06"
+          },
+          {
+            "rule_id": "PROCEDURE_CONCENTRATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "Herfindahl of 0.20 at specialty P50 is unremarkable; code mix is coherent for retina subspecialty"
+          },
+          {
+            "rule_id": "OUT_OF_SPECIALTY",
+            "status": "NOT_TRIGGERED",
+            "evidence": "0% of services outside ophthalmology scope"
+          },
+          {
+            "rule_id": "UPCODING",
+            "status": "NOT_TRIGGERED",
+            "evidence": "established visit volume (n=30) is below the 50-visit minimum for stable evaluation; the 100% high-tier rate is noted as a weak secondary signal only"
+          },
+          {
+            "rule_id": "REVENUE_DEVIATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "revenue ratio of 0.96 indicates actual payments are slightly *below* model expectations"
+          },
+          {
+            "rule_id": "IMPOSSIBLE_DAY",
+            "status": "NOT_EVALUABLE",
+            "evidence": "annual aggregate data; no date-of-service field available"
+          },
+          {
+            "rule_id": "UNBUNDLING",
+            "status": "NOT_EVALUABLE",
+            "evidence": "requires per-encounter claim grouping not available in public data"
+          },
+          {
+            "rule_id": "BENEFICIARY_SHARING",
+            "status": "NOT_EVALUABLE",
+            "evidence": "requires beneficiary-level cross-provider linkage not available in public data"
+          }
+        ]
+      }
+    },
+    {
+      "npi": "1790xxxx32",
+      "year": 2018,
+      "specialty": "Dermatology",
+      "state": "LA",
+      "risk_classification": "HIGH",
+      "risk_score": 72,
+      "generated_at": "2026-06-15T18:50:31.517370",
+      "model_version": "claude-sonnet-4-6",
+      "rule_summary": {
+        "triggered": 1,
+        "not_triggered": 7,
+        "not_evaluable": 3,
+        "rules": [
+          {
+            "rule_id": "HIGH_INTENSITY",
+            "status": "TRIGGERED",
+            "evidence": "srvcs_per_bene = 12.77 at P100; partially explained by J7345 per-unit drug billing but the 300:1 J7345-to-96567 ratio is anomalous"
+          },
+          {
+            "rule_id": "VOLUME_SPIKE",
+            "status": "NOT_TRIGGERED",
+            "evidence": "rule evaluated YoY for the last recorded change (−100% in 2022); the 2018 +338% spike was not the trigger year evaluated, though it is material context"
+          },
+          {
+            "rule_id": "REVENUE_DEVIATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "revenue_ratio = 0.89; actual allowed below model expectation"
+          },
+          {
+            "rule_id": "CHARGE_INFLATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "charge-to-allowed ratio = 1.64 at P25, well below threshold"
+          },
+          {
+            "rule_id": "PROCEDURE_CONCENTRATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "Herfindahl = 0.74 at P98; below the formal trigger threshold but a near-miss requiring interpretation given drug-code context"
+          },
+          {
+            "rule_id": "UPCODING",
+            "status": "NOT_TRIGGERED",
+            "evidence": "99214+99215 share = 4.4%, far below specialty P95"
+          },
+          {
+            "rule_id": "OUT_OF_SPECIALTY",
+            "status": "NOT_TRIGGERED",
+            "evidence": "0% out-of-scope services"
+          },
+          {
+            "rule_id": "LEIE_EXCLUDED",
+            "status": "NOT_TRIGGERED",
+            "evidence": "no OIG exclusion match"
+          },
+          {
+            "rule_id": "IMPOSSIBLE_DAY",
+            "status": "NOT_EVALUABLE",
+            "evidence": "annual aggregate data; no date-of-service field available"
+          },
+          {
+            "rule_id": "UNBUNDLING",
+            "status": "NOT_EVALUABLE",
+            "evidence": "requires per-encounter claim grouping not available in public data"
+          },
+          {
+            "rule_id": "BENEFICIARY_SHARING",
+            "status": "NOT_EVALUABLE",
+            "evidence": "requires beneficiary-level cross-provider linkage not available in public data"
+          }
+        ]
+      }
+    },
+    {
+      "npi": "1841xxxx88",
+      "year": 2019,
+      "specialty": "Diagnostic Radiology",
+      "state": "NY",
+      "risk_classification": "HIGH",
+      "risk_score": 72,
+      "generated_at": "2026-06-15T18:46:06.210037",
+      "model_version": "claude-sonnet-4-6",
+      "rule_summary": {
+        "triggered": 2,
+        "not_triggered": 6,
+        "not_evaluable": 3,
+        "rules": [
+          {
+            "rule_id": "HIGH_INTENSITY",
+            "status": "TRIGGERED",
+            "evidence": "srvcs_per_bene = 66.70 at P100; partially explained by per-unit drug billing conventions for A9585 but not fully reconciled given zero facility billing and below-median HCC score"
           },
           {
             "rule_id": "PROCEDURE_CONCENTRATION",
             "status": "TRIGGERED",
-            "evidence": "Herfindahl of 1.00 at P100; single-code billing (A9585 only) is atypical even for imaging-adjacent cardiologists"
+            "evidence": "Herfindahl = 0.98 at P98; only 2 HCPCS codes; while subspecialty concentration can be normal in radiology, near-total dependence on a single injectable drug code in a declared Diagnostic Radiology practice is atypical"
+          },
+          {
+            "rule_id": "VOLUME_SPIKE",
+            "status": "NOT_TRIGGERED",
+            "evidence": "2019 YoY change evaluated as +4,553% from 43 services in 2018, but the rule assessed the trailing year as within normal variation; the multi-year erratic pattern is noted as contextual concern outside the rule's formal threshold"
+          },
+          {
+            "rule_id": "REVENUE_DEVIATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "Did not meet $50,000 expected-revenue volume gate; ratio unreliable at this scale"
+          },
+          {
+            "rule_id": "CHARGE_INFLATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "charge-to-allowed ratio of 2.48 is well below the trigger threshold"
+          },
+          {
+            "rule_id": "OUT_OF_SPECIALTY",
+            "status": "NOT_TRIGGERED",
+            "evidence": "0% out-of-specialty services"
+          },
+          {
+            "rule_id": "UPCODING",
+            "status": "NOT_TRIGGERED",
+            "evidence": "No E&M office-visit volume present"
+          },
+          {
+            "rule_id": "LEIE_EXCLUDED",
+            "status": "NOT_TRIGGERED",
+            "evidence": "No OIG exclusion match found"
+          },
+          {
+            "rule_id": "IMPOSSIBLE_DAY",
+            "status": "NOT_EVALUABLE",
+            "evidence": "Annual aggregate data; no date-of-service field available"
+          },
+          {
+            "rule_id": "UNBUNDLING",
+            "status": "NOT_EVALUABLE",
+            "evidence": "Requires per-encounter claim grouping not available in public data"
+          },
+          {
+            "rule_id": "BENEFICIARY_SHARING",
+            "status": "NOT_EVALUABLE",
+            "evidence": "Requires beneficiary-level cross-provider linkage not available in public data"
+          }
+        ]
+      }
+    },
+    {
+      "npi": "1861xxxx64",
+      "year": 2019,
+      "specialty": "Ophthalmology",
+      "state": "WI",
+      "risk_classification": "HIGH",
+      "risk_score": 72,
+      "generated_at": "2026-06-15T18:57:03.932522",
+      "model_version": "claude-sonnet-4-6",
+      "rule_summary": {
+        "triggered": 0,
+        "not_triggered": 8,
+        "not_evaluable": 3,
+        "rules": [
+          {
+            "rule_id": "LEIE_EXCLUDED",
+            "status": "NOT_TRIGGERED",
+            "evidence": "NPI not found on OIG LEIE"
+          },
+          {
+            "rule_id": "REVENUE_DEVIATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "revenue_ratio = 0.80; actual is below model expectation, suggesting no systematic over-allowance"
+          },
+          {
+            "rule_id": "HIGH_INTENSITY",
+            "status": "NOT_TRIGGERED",
+            "evidence": "per rule threshold — srvcs_per_bene = 4.27 at P98; however, the ratio is clinically implausible for cataract surgery specifically and warrants manual scrutiny despite the formal non-trigger"
+          },
+          {
+            "rule_id": "VOLUME_SPIKE",
+            "status": "NOT_TRIGGERED",
+            "evidence": "for analysis year 2019 YoY — the rule evaluates the most recent year; however, the 2018→2019 spike (+316%) on >1,000 services would have triggered in prior-year analysis and the 2019→2020 collapse (−91%) is a severe anomalous pattern visible in the trajectory"
+          },
+          {
+            "rule_id": "CHARGE_INFLATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "ratio of 6.15 is below the 7.22 threshold (P95 × 1.5), though at P98 in-state"
+          },
+          {
+            "rule_id": "PROCEDURE_CONCENTRATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "Herfindahl of 0.553 is at specialty P95 boundary (0.556); ophthalmology subspecialists focused on anterior segment surgery legitimately show high cataract code concentration"
+          },
+          {
+            "rule_id": "UPCODING",
+            "status": "NOT_TRIGGERED",
+            "evidence": "specialty P95 is saturated at 100%; established-visit high-tier share of 79.4% is above median but not anomalous for a surgical specialist seeing complex pre/post-op patients"
+          },
+          {
+            "rule_id": "IMPOSSIBLE_DAY",
+            "status": "NOT_EVALUABLE",
+            "evidence": "CMS public data is annual aggregate with no date-of-service field"
+          },
+          {
+            "rule_id": "UNBUNDLING",
+            "status": "NOT_EVALUABLE",
+            "evidence": "requires per-encounter claim grouping unavailable in this dataset"
+          },
+          {
+            "rule_id": "OUT_OF_SPECIALTY",
+            "status": "NOT_TRIGGERED",
+            "evidence": "0.0% of services outside ophthalmology scope"
+          },
+          {
+            "rule_id": "BENEFICIARY_SHARING",
+            "status": "NOT_EVALUABLE",
+            "evidence": "requires beneficiary-level cross-provider linkage unavailable in this dataset"
+          }
+        ]
+      }
+    },
+    {
+      "npi": "1942xxxx79",
+      "year": 2023,
+      "specialty": "Diagnostic Radiology",
+      "state": "IL",
+      "risk_classification": "HIGH",
+      "risk_score": 72,
+      "generated_at": "2026-06-15T18:49:48.033142",
+      "model_version": "claude-sonnet-4-6",
+      "rule_summary": {
+        "triggered": 1,
+        "not_triggered": 7,
+        "not_evaluable": 3,
+        "rules": [
+          {
+            "rule_id": "LEIE_EXCLUDED",
+            "status": "NOT_TRIGGERED",
+            "evidence": "NPI not found on OIG exclusion list at time of analysis"
+          },
+          {
+            "rule_id": "VOLUME_SPIKE",
+            "status": "TRIGGERED",
+            "evidence": "331% YoY increase to 232,042 services; part of a sustained multi-year escalation concentrated in a single supply code (K1034)"
+          },
+          {
+            "rule_id": "HIGH_INTENSITY",
+            "status": "NOT_TRIGGERED",
+            "evidence": "srvcs_per_bene of 17.0 at P97 is consistent with K1034 per-unit billing conventions and does not independently indicate ghost billing"
+          },
+          {
+            "rule_id": "PROCEDURE_CONCENTRATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "formally) — Herfindahl of 0.97 at P98 is extreme relative to diagnostic radiology peers but is structurally expected for a single-code supply biller; however, the mismatch between the dominant code and the provider's declared specialty is substantively anomalous"
+          },
+          {
+            "rule_id": "CHARGE_INFLATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "charge-to-allowed ratio of 3.87 is at P33; no markup concern"
+          },
+          {
+            "rule_id": "REVENUE_DEVIATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "revenue ratio of 1.06 is well below the 1.30 trigger"
+          },
+          {
+            "rule_id": "UPCODING",
+            "status": "NOT_TRIGGERED",
+            "evidence": "no E&M office-visit billing present"
+          },
+          {
+            "rule_id": "OUT_OF_SPECIALTY",
+            "status": "NOT_TRIGGERED",
+            "evidence": "K1034 and ultrasound codes fall within the empirically defined scope of what diagnostic radiology NPIs bill in CMS data"
+          },
+          {
+            "rule_id": "IMPOSSIBLE_DAY",
+            "status": "NOT_EVALUABLE",
+            "evidence": "annual aggregate data; no date-of-service available"
+          },
+          {
+            "rule_id": "UNBUNDLING",
+            "status": "NOT_EVALUABLE",
+            "evidence": "requires per-encounter claim grouping not available in public data"
+          },
+          {
+            "rule_id": "BENEFICIARY_SHARING",
+            "status": "NOT_EVALUABLE",
+            "evidence": "requires beneficiary-level cross-provider linkage not available in public data"
+          }
+        ]
+      }
+    },
+    {
+      "npi": "1962xxxx71",
+      "year": 2022,
+      "specialty": "Diagnostic Radiology",
+      "state": "FL",
+      "risk_classification": "HIGH",
+      "risk_score": 72,
+      "generated_at": "2026-06-15T18:52:06.049784",
+      "model_version": "claude-sonnet-4-6",
+      "rule_summary": {
+        "triggered": 2,
+        "not_triggered": 6,
+        "not_evaluable": 3,
+        "rules": [
+          {
+            "rule_id": "HIGH_INTENSITY",
+            "status": "TRIGGERED",
+            "evidence": "srvcs_per_bene = 28.28 at P99; partially mitigated by Q9967 per-unit billing convention and elevated HCC score, but magnitude and non-facility context reduce the explanatory weight of those mitigants"
+          },
+          {
+            "rule_id": "VOLUME_SPIKE",
+            "status": "TRIGGERED",
+            "evidence": "2022 YoY = +1,362%; 2023 YoY = +715%; spike is sustained across two consecutive years with no baseline practice scale suggesting organic growth"
+          },
+          {
+            "rule_id": "PROCEDURE_CONCENTRATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "Herfindahl of 0.95 is at P98 but the formal trigger threshold (P99) was not met; noted as a near-miss; single-code concentration in a supply code is not inherently suspicious but reinforces the narrowness of this practice profile"
+          },
+          {
+            "rule_id": "CHARGE_INFLATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "charge-to-allowed ratio of 7.09 is P82, well below the P95×1.5 trigger threshold of 18.03"
+          },
+          {
+            "rule_id": "REVENUE_DEVIATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "expected allowed ($14,991) is below the $50K volume gate; ratio of 1.12 is directionally above model expectation but not formally evaluated"
+          },
+          {
+            "rule_id": "LEIE_EXCLUDED",
+            "status": "NOT_TRIGGERED",
+            "evidence": "NPI not found on OIG exclusion list"
+          },
+          {
+            "rule_id": "UPCODING",
+            "status": "NOT_TRIGGERED",
+            "evidence": "no E&M visit volume"
+          },
+          {
+            "rule_id": "OUT_OF_SPECIALTY",
+            "status": "NOT_TRIGGERED",
+            "evidence": "0% out-of-specialty services"
+          },
+          {
+            "rule_id": "IMPOSSIBLE_DAY",
+            "status": "NOT_EVALUABLE",
+            "evidence": "annual aggregate data; no date-of-service field available"
+          },
+          {
+            "rule_id": "UNBUNDLING",
+            "status": "NOT_EVALUABLE",
+            "evidence": "requires per-encounter claim grouping not present in public data"
+          },
+          {
+            "rule_id": "BENEFICIARY_SHARING",
+            "status": "NOT_EVALUABLE",
+            "evidence": "requires beneficiary-level cross-provider linkage not available in public data"
+          }
+        ]
+      }
+    },
+    {
+      "npi": "1982xxxx55",
+      "year": 2019,
+      "specialty": "Dermatology",
+      "state": "PA",
+      "risk_classification": "HIGH",
+      "risk_score": 72,
+      "generated_at": "2026-06-15T18:56:15.333128",
+      "model_version": "claude-sonnet-4-6",
+      "rule_summary": {
+        "triggered": 1,
+        "not_triggered": 7,
+        "not_evaluable": 3,
+        "rules": [
+          {
+            "rule_id": "HIGH_INTENSITY",
+            "status": "TRIGGERED",
+            "evidence": "srvcs_per_bene = 10.37 at P99; partially explained by J7345 per-unit billing convention, but magnitude and transience are not fully accounted for by convention alone"
+          },
+          {
+            "rule_id": "PROCEDURE_CONCENTRATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "P98 but below formal trigger threshold) — Herfindahl of 0.71 is extreme; however, single-drug PDT dominance in a dermatology practice is a recognized billing pattern; evaluated as context rather than independent flag"
+          },
+          {
+            "rule_id": "VOLUME_SPIKE",
+            "status": "NOT_TRIGGERED",
+            "evidence": "by rule (evaluated on most recent YoY); the 2018→2019 +395% surge on >1,000 services is a material historical anomaly not captured by the current-year rule check"
+          },
+          {
+            "rule_id": "REVENUE_DEVIATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "revenue_ratio = 1.06, well below 1.30 threshold"
+          },
+          {
+            "rule_id": "CHARGE_INFLATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "charge-to-allowed ratio 2.95 at P78, far below P95×1.5 threshold"
+          },
+          {
+            "rule_id": "UPCODING",
+            "status": "NOT_TRIGGERED",
+            "evidence": "30.5% high-tier established visits is below specialty median concern level"
+          },
+          {
+            "rule_id": "OUT_OF_SPECIALTY",
+            "status": "NOT_TRIGGERED",
+            "evidence": "0% out-of-scope services"
+          },
+          {
+            "rule_id": "LEIE_EXCLUDED",
+            "status": "NOT_TRIGGERED",
+            "evidence": "NPI not found on OIG LEIE"
+          },
+          {
+            "rule_id": "IMPOSSIBLE_DAY",
+            "status": "NOT_EVALUABLE",
+            "evidence": "annual aggregate data; no date-of-service field available"
+          },
+          {
+            "rule_id": "UNBUNDLING",
+            "status": "NOT_EVALUABLE",
+            "evidence": "requires per-encounter claim grouping not present in public data"
+          },
+          {
+            "rule_id": "BENEFICIARY_SHARING",
+            "status": "NOT_EVALUABLE",
+            "evidence": "requires cross-provider beneficiary linkage not available in public data"
+          }
+        ]
+      }
+    },
+    {
+      "npi": "1023xxxx89",
+      "year": 2014,
+      "specialty": "Internal Medicine",
+      "state": "FL",
+      "risk_classification": "MEDIUM",
+      "risk_score": 42,
+      "generated_at": "2026-06-15T18:58:37.124939",
+      "model_version": "claude-sonnet-4-6",
+      "rule_summary": {
+        "triggered": 1,
+        "not_triggered": 7,
+        "not_evaluable": 3,
+        "rules": [
+          {
+            "rule_id": "HIGH_INTENSITY",
+            "status": "TRIGGERED",
+            "evidence": "srvcs_per_bene = 48.66 at P100; substantially explained by J-code per-unit billing convention (top 10 codes are all injectable drugs billed by microgram/milligram) and high-acuity panel (HCC 2.45); residual concern is moderate, not critical"
+          },
+          {
+            "rule_id": "VOLUME_SPIKE",
+            "status": "NOT_TRIGGERED",
+            "evidence": "current rule evaluates YoY as −23%; the 2013→2014 spike is notable contextually but does not meet the formal trigger criteria in the analysis year"
+          },
+          {
+            "rule_id": "CHARGE_INFLATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "charge-to-allowed ratio 2.88 at P85, well below the 5.48 trigger threshold"
+          },
+          {
+            "rule_id": "PROCEDURE_CONCENTRATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "Herfindahl 0.29 at P56, 85 unique HCPCS codes; not concentrated"
+          },
+          {
+            "rule_id": "UPCODING",
+            "status": "NOT_TRIGGERED",
+            "evidence": "high-tier E&M share (68.2%) is below specialty median; E&M volume (1,615 established visits) is a small fraction of total activity"
+          },
+          {
+            "rule_id": "OUT_OF_SPECIALTY",
+            "status": "NOT_TRIGGERED",
+            "evidence": "0.5% out-of-scope services; well below 20% threshold"
+          },
+          {
+            "rule_id": "REVENUE_DEVIATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "revenue_ratio = 1.06, below 1.30 trigger"
+          },
+          {
+            "rule_id": "LEIE_EXCLUDED",
+            "status": "NOT_TRIGGERED",
+            "evidence": "NPI not found on OIG LEIE"
+          },
+          {
+            "rule_id": "IMPOSSIBLE_DAY",
+            "status": "NOT_EVALUABLE",
+            "evidence": "annual aggregate data; no date-of-service field available"
+          },
+          {
+            "rule_id": "UNBUNDLING",
+            "status": "NOT_EVALUABLE",
+            "evidence": "requires per-encounter claim grouping not present in public CMS data"
+          },
+          {
+            "rule_id": "BENEFICIARY_SHARING",
+            "status": "NOT_EVALUABLE",
+            "evidence": "requires beneficiary-level cross-provider linkage not present in public data"
+          }
+        ]
+      }
+    },
+    {
+      "npi": "1386xxxx69",
+      "year": 2017,
+      "specialty": "Ophthalmology",
+      "state": "OH",
+      "risk_classification": "MEDIUM",
+      "risk_score": 42,
+      "generated_at": "2026-06-15T18:53:24.181508",
+      "model_version": "claude-sonnet-4-6",
+      "rule_summary": {
+        "triggered": 1,
+        "not_triggered": 7,
+        "not_evaluable": 3,
+        "rules": [
+          {
+            "rule_id": "LEIE_EXCLUDED",
+            "status": "NOT_TRIGGERED",
+            "evidence": "NPI not found on OIG exclusion list"
+          },
+          {
+            "rule_id": "REVENUE_DEVIATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "revenue_ratio = 1.00; $420 residual is immaterial"
+          },
+          {
+            "rule_id": "HIGH_INTENSITY",
+            "status": "NOT_TRIGGERED",
+            "evidence": "srvcs_per_bene = 1.33 at P61, within normal range for ophthalmology"
+          },
+          {
+            "rule_id": "VOLUME_SPIKE",
+            "status": "TRIGGERED",
+            "evidence": "+6,672% YoY in 2017 (16→1,693 services); the abrupt emergence from near-dormancy is the primary signal, and the spike continues through 2023 (20,230 services, srvcs/bene = 17.78)"
+          },
+          {
+            "rule_id": "CHARGE_INFLATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "charge-to-allowed ratio of 3.50 is P87, well below the 6.83 trigger threshold"
+          },
+          {
+            "rule_id": "PROCEDURE_CONCENTRATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "Herfindahl of 0.18 is P40, representing a normally diverse ophthalmology code mix"
+          },
+          {
+            "rule_id": "OUT_OF_SPECIALTY",
+            "status": "NOT_TRIGGERED",
+            "evidence": "0% of services outside ophthalmology scope"
+          },
+          {
+            "rule_id": "UPCODING",
+            "status": "NOT_TRIGGERED",
+            "evidence": "established-visit high-tier share (47.7%) is below specialty median (25.6% at P50 is misread; at P75 = 61.9%), and volume (132 visits) is modest; no upcoding signal"
+          },
+          {
+            "rule_id": "IMPOSSIBLE_DAY",
+            "status": "NOT_EVALUABLE",
+            "evidence": "annual aggregate data; no date-of-service field available"
+          },
+          {
+            "rule_id": "UNBUNDLING",
+            "status": "NOT_EVALUABLE",
+            "evidence": "requires per-encounter claim grouping not available in public data"
+          },
+          {
+            "rule_id": "BENEFICIARY_SHARING",
+            "status": "NOT_EVALUABLE",
+            "evidence": "requires beneficiary-level cross-provider linkage not available in public data"
+          }
+        ]
+      }
+    },
+    {
+      "npi": "1730xxxx62",
+      "year": 2022,
+      "specialty": "Mass Immunizer Roster Biller",
+      "state": "FL",
+      "risk_classification": "MEDIUM",
+      "risk_score": 42,
+      "generated_at": "2026-06-15T18:52:40.648861",
+      "model_version": "claude-sonnet-4-6",
+      "rule_summary": {
+        "triggered": 1,
+        "not_triggered": 7,
+        "not_evaluable": 3,
+        "rules": [
+          {
+            "rule_id": "LEIE_EXCLUDED",
+            "status": "NOT_TRIGGERED",
+            "evidence": "NPI not found on OIG exclusion list at time of screening"
+          },
+          {
+            "rule_id": "HIGH_INTENSITY",
+            "status": "TRIGGERED",
+            "evidence": "srvcs_per_bene of 13.85 at P100; partially explained by K1034 unit-of-measure billing convention, but elevated HCC score for this specialty warrants noting"
+          },
+          {
+            "rule_id": "VOLUME_SPIKE",
+            "status": "NOT_TRIGGERED",
+            "evidence": "rule evaluated against 2022→2023 trajectory (−87%); the 2021→2022 spike (+1,755%) does not meet the forward-looking trigger criteria but is noted in historical context"
+          },
+          {
+            "rule_id": "CHARGE_INFLATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "charge-to-allowed ratio of 1.02 is at P4, well below threshold"
+          },
+          {
+            "rule_id": "PROCEDURE_CONCENTRATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "Herfindahl of 0.984 at P98, but single-code dominance is a norm for mass immunizer/COVID test kit programs, not an outlier concern"
+          },
+          {
+            "rule_id": "REVENUE_DEVIATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "revenue ratio of 0.92 (below expected); not evaluable at full confidence due to only 3 scored rows (minimum 10 required)"
+          },
+          {
+            "rule_id": "UPCODING",
+            "status": "NOT_TRIGGERED",
+            "evidence": "no E&M office visit volume present"
+          },
+          {
+            "rule_id": "OUT_OF_SPECIALTY",
+            "status": "NOT_TRIGGERED",
+            "evidence": "0% out-of-specialty services"
+          },
+          {
+            "rule_id": "IMPOSSIBLE_DAY",
+            "status": "NOT_EVALUABLE",
+            "evidence": "annual aggregate data; no date-of-service detail available"
+          },
+          {
+            "rule_id": "UNBUNDLING",
+            "status": "NOT_EVALUABLE",
+            "evidence": "requires per-encounter claim grouping not present in public data"
+          },
+          {
+            "rule_id": "BENEFICIARY_SHARING",
+            "status": "NOT_EVALUABLE",
+            "evidence": "requires cross-provider beneficiary linkage not available in public data"
+          }
+        ]
+      }
+    },
+    {
+      "npi": "1568xxxx92",
+      "year": 2023,
+      "specialty": "Physical Therapist In Private Practice",
+      "state": "NE",
+      "risk_classification": "MEDIUM",
+      "risk_score": 38,
+      "generated_at": "2026-06-15T18:54:45.674847",
+      "model_version": "claude-sonnet-4-6",
+      "rule_summary": {
+        "triggered": 1,
+        "not_triggered": 7,
+        "not_evaluable": 3,
+        "rules": [
+          {
+            "rule_id": "LEIE_EXCLUDED",
+            "status": "NOT_TRIGGERED",
+            "evidence": "NPI not found on OIG exclusion list"
+          },
+          {
+            "rule_id": "REVENUE_DEVIATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "Expected allowed below $50K gate; ratio of 0.90 shows no excess revenue"
+          },
+          {
+            "rule_id": "HIGH_INTENSITY",
+            "status": "NOT_TRIGGERED",
+            "evidence": "srvcs_per_bene of 12.29 at P79; within normal specialty range"
+          },
+          {
+            "rule_id": "VOLUME_SPIKE",
+            "status": "TRIGGERED",
+            "evidence": "917% YoY increase (139 → 1,413 services); contextually explained by recovery from near-zero 2022 baseline, but operational basis unverified"
+          },
+          {
+            "rule_id": "CHARGE_INFLATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "Charge-to-allowed ratio 2.33 at P59; no markup anomaly"
+          },
+          {
+            "rule_id": "PROCEDURE_CONCENTRATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "Herfindahl 0.41 at P71; not extreme for a focused therapy practice"
+          },
+          {
+            "rule_id": "IMPOSSIBLE_DAY",
+            "status": "NOT_EVALUABLE",
+            "evidence": "Annual aggregate data; no date-of-service field available"
+          },
+          {
+            "rule_id": "UPCODING",
+            "status": "NOT_TRIGGERED",
+            "evidence": "No E&M visit codes billed"
+          },
+          {
+            "rule_id": "UNBUNDLING",
+            "status": "NOT_EVALUABLE",
+            "evidence": "Requires per-encounter claim grouping not available in public data"
+          },
+          {
+            "rule_id": "OUT_OF_SPECIALTY",
+            "status": "NOT_TRIGGERED",
+            "evidence": "0% of services outside Physical Therapist scope"
+          },
+          {
+            "rule_id": "BENEFICIARY_SHARING",
+            "status": "NOT_EVALUABLE",
+            "evidence": "Requires beneficiary-level cross-provider linkage not available in public data"
+          }
+        ]
+      }
+    },
+    {
+      "npi": "1811xxxx66",
+      "year": 2017,
+      "specialty": "Ophthalmology",
+      "state": "CT",
+      "risk_classification": "MEDIUM",
+      "risk_score": 38,
+      "generated_at": "2026-06-15T18:49:05.518208",
+      "model_version": "claude-sonnet-4-6",
+      "rule_summary": {
+        "triggered": 3,
+        "not_triggered": 5,
+        "not_evaluable": 3,
+        "rules": [
+          {
+            "rule_id": "LEIE_EXCLUDED",
+            "status": "NOT_TRIGGERED",
+            "evidence": "NPI not on OIG exclusion list"
+          },
+          {
+            "rule_id": "REVENUE_DEVIATION",
+            "status": "NOT_TRIGGERED",
+            "evidence": "expected allowed below $50K volume gate; ratio of 1.05 is immaterial"
+          },
+          {
+            "rule_id": "HIGH_INTENSITY",
+            "status": "NOT_TRIGGERED",
+            "evidence": "srvcs_per_bene = 1.00 at P1; well within normal range for 2017"
+          },
+          {
+            "rule_id": "VOLUME_SPIKE",
+            "status": "TRIGGERED",
+            "evidence": "driven by 2023 data (+303% on 38,052 services); 2017 baseline itself is stable at 12 services but the long-run trajectory is the source of the signal"
+          },
+          {
+            "rule_id": "CHARGE_INFLATION",
+            "status": "TRIGGERED",
+            "evidence": "charge-to-allowed ratio of 8.20 exceeds the P95 × 1.5 threshold (6.83); likely reflects facility-setting charge master pricing for intravitreal injections, but the magnitude warrants documentation"
+          },
+          {
+            "rule_id": "PROCEDURE_CONCENTRATION",
+            "status": "TRIGGERED",
+            "evidence": "HHI = 1.0 with a single code (67028); consistent with a retinal subspecialist, but extreme relative to general ophthalmology peers"
           },
           {
             "rule_id": "IMPOSSIBLE_DAY",
@@ -538,8 +1775,8 @@
           },
           {
             "rule_id": "UPCODING",
-            "status": "NOT_EVALUABLE",
-            "evidence": "no E&M code distribution; not applicable to this code anyway"
+            "status": "NOT_TRIGGERED",
+            "evidence": "no E&M visit volume present"
           },
           {
             "rule_id": "UNBUNDLING",
@@ -549,74 +1786,12 @@
           {
             "rule_id": "OUT_OF_SPECIALTY",
             "status": "NOT_TRIGGERED",
-            "evidence": "0% out-of-scope billing; A9585 is used in cardiac MRI contexts"
+            "evidence": "0% out-of-scope billing"
           },
           {
             "rule_id": "BENEFICIARY_SHARING",
             "status": "NOT_EVALUABLE",
-            "evidence": "requires beneficiary-level cross-provider linkage unavailable in public data"
-          }
-        ]
-      }
-    },
-    {
-      "npi": "1386xxxx77",
-      "year": 2013,
-      "specialty": "Multispecialty Clinic/Group Practice",
-      "state": "MI",
-      "risk_classification": "LOW",
-      "risk_score": 18,
-      "generated_at": "2026-04-24T03:10:13.599388",
-      "model_version": "claude-sonnet-4-6",
-      "rule_summary": {
-        "triggered": 1,
-        "not_triggered": 4,
-        "not_evaluable": 4,
-        "rules": [
-          {
-            "rule_id": "HIGH_INTENSITY",
-            "status": "NOT_TRIGGERED",
-            "evidence": "srvcs_per_bene of 1.42 is at P24, well within range"
-          },
-          {
-            "rule_id": "VOLUME_SPIKE",
-            "status": "NOT_TRIGGERED",
-            "evidence": "single year in dataset; no prior baseline to assess"
-          },
-          {
-            "rule_id": "CHARGE_INFLATION",
-            "status": "NOT_TRIGGERED",
-            "evidence": "charge-to-allowed ratio of 2.26 is below the P95×1.5 trigger of 4.99"
-          },
-          {
-            "rule_id": "PROCEDURE_CONCENTRATION",
-            "status": "NOT_TRIGGERED",
-            "evidence": "Herfindahl of 0.65 is at P31; two-code oncology billing is unremarkable"
-          },
-          {
-            "rule_id": "OUT_OF_SPECIALTY",
-            "status": "TRIGGERED",
-            "evidence": "100% of services coded outside multispecialty scope, but fully explained by radiation oncology sub-specialty operating under a group NPI umbrella"
-          },
-          {
-            "rule_id": "IMPOSSIBLE_DAY",
-            "status": "NOT_EVALUABLE",
-            "evidence": "annual aggregate data; no date-of-service field available"
-          },
-          {
-            "rule_id": "UPCODING",
-            "status": "NOT_EVALUABLE",
-            "evidence": "requires per-code E&M distribution; not available in public dataset"
-          },
-          {
-            "rule_id": "UNBUNDLING",
-            "status": "NOT_EVALUABLE",
-            "evidence": "requires per-encounter claim grouping; not available in public dataset"
-          },
-          {
-            "rule_id": "BENEFICIARY_SHARING",
-            "status": "NOT_EVALUABLE",
-            "evidence": "requires beneficiary-level cross-provider linkage; not available in public dataset"
+            "evidence": "requires beneficiary-level cross-provider linkage not available"
           }
         ]
       }
