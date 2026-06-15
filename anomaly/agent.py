@@ -33,29 +33,91 @@ _PROJECT_ROOT    = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_ANOMALY  = os.path.join(_PROJECT_ROOT, "local_pipeline", "anomaly")
 DEFAULT_BRIEFS   = os.path.join(DEFAULT_ANOMALY, "briefs")
 
+# Fee-schedule-derived flag metrics. The Phase 4 backtest against government
+# ground truth (anomaly/validation/) found these are NEGATIVELY predictive of a
+# later LEIE/CMS sanction (charge_to_allowed_ratio 0.63x, avg_allowed 0.68x) --
+# they largely re-derive the CMS fee schedule (see the falsification finding)
+# rather than capturing aberrant behavior. They are excluded from the suspicion
+# score by default so the ranking is not dominated by PFS artifacts.
+FEE_SCHEDULE_METRICS = {"charge_to_allowed_ratio", "avg_allowed"}
 
-def rank_flags(flags_path: str, top_n: int, year: int | None = None) -> list[tuple[str, int]]:
-    """Rank flagged NPI-years by composite severity (sum of severity across flags)."""
+
+def rank_flags(flags_path: str, top_n: int, year: int | None = None,
+               legacy: bool = False, include_fee_schedule: bool = False,
+               per_year: bool = False) -> list[tuple[str, int]]:
+    """Rank providers (leads) for investigation.
+
+    The lead unit is the PROVIDER (NPI), not the NPI-year. The Phase 4 backtest
+    (anomaly/validation/) showed that ranking unique providers by BREADTH of
+    distinct anomaly signals -- the count of distinct (non-fee-schedule) flag
+    metrics they trip across years, tiebroken by total severity mass -- gives
+    ~4x lift at the top against later LEIE/CMS sanctions, whereas the old
+    severity-sum ranking gave ~0x lift (it just surfaced chronically
+    high-volume providers and let one provider flood many top slots). Each top
+    provider is investigated at its single most-anomalous year.
+
+    Flags:
+      legacy=True               restore the old severity-sum ranking
+      include_fee_schedule=True count the PFS-derived (negatively predictive)
+                                metrics in the score
+      per_year=True             rank NPI-years independently (legacy grain);
+                                forced on when a single --year is requested
+    """
     flags = pd.read_parquet(flags_path)
     if year is not None:
         before = len(flags)
         flags = flags[flags["year"] == year]
+        per_year = True  # a single-year run is inherently per-year
         print(f"Filtered flags to year={year}: {before:,} -> {len(flags):,}")
-    comp = (
-        flags.groupby(["Rndrng_NPI", "year"])
-             .agg(composite_severity=("severity", "sum"),
-                  n_flags=("severity", "size"),
-                  methods=("flag_type", lambda x: ",".join(sorted(set(x)))))
-             .reset_index()
-             .sort_values(["composite_severity", "n_flags"], ascending=[False, False])
-             .head(top_n)
-    )
-    print(f"Top {len(comp)} flagged NPI-years by composite severity:")
-    for _, row in comp.iterrows():
-        print(f"  NPI {row['Rndrng_NPI']} year={row['year']}: "
-              f"severity={row['composite_severity']:.2f}, n_flags={row['n_flags']}, "
-              f"methods=[{row['methods']}]")
-    return [(str(r["Rndrng_NPI"]), int(r["year"])) for _, r in comp.iterrows()]
+
+    scored = flags if include_fee_schedule else flags[~flags["flag_metric"].isin(FEE_SCHEDULE_METRICS)]
+
+    def _score(df, score_col):
+        if legacy:
+            df["rank_score"] = df["composite_severity"]
+        else:  # breadth-first: distinct-signal count dominates, severity breaks ties
+            df["rank_score"] = df["n_metrics"] * 1000.0 + df["composite_severity"]
+        return df.sort_values(["rank_score", "n_flags"], ascending=[False, False]).head(top_n)
+
+    rank_desc = ("severity-sum (legacy)" if legacy else "distinct-signal breadth")
+    fee_desc = ("included" if include_fee_schedule else "excluded")
+
+    if per_year:
+        comp = (scored.groupby(["Rndrng_NPI", "year"])
+                .agg(n_metrics=("flag_metric", "nunique"), n_methods=("flag_type", "nunique"),
+                     composite_severity=("severity", "sum"), n_flags=("severity", "size"),
+                     methods=("flag_type", lambda x: ",".join(sorted(set(x)))))
+                .reset_index())
+        comp = _score(comp, "composite_severity")
+        print(f"Top {len(comp)} flagged NPI-years by {rank_desc} (fee-schedule {fee_desc}):")
+        for _, r in comp.iterrows():
+            print(f"  NPI {r['Rndrng_NPI']} year={r['year']}: n_metrics={int(r['n_metrics'])}, "
+                  f"severity={r['composite_severity']:.2f}, n_flags={int(r['n_flags'])}, methods=[{r['methods']}]")
+        return [(str(r["Rndrng_NPI"]), int(r["year"])) for _, r in comp.iterrows()]
+
+    # NPI-level leads (one lead per provider), aggregated across years.
+    comp = (scored.groupby("Rndrng_NPI")
+            .agg(n_metrics=("flag_metric", "nunique"), n_methods=("flag_type", "nunique"),
+                 composite_severity=("severity", "sum"), n_flags=("severity", "size"),
+                 n_years=("year", "nunique"),
+                 methods=("flag_type", lambda x: ",".join(sorted(set(x)))))
+            .reset_index())
+    comp = _score(comp, "composite_severity")
+
+    # Attach each top provider's single most-anomalous year (max within-year severity).
+    top_npis = set(comp["Rndrng_NPI"])
+    peak = (scored[scored["Rndrng_NPI"].isin(top_npis)]
+            .groupby(["Rndrng_NPI", "year"])["severity"].sum().reset_index()
+            .sort_values("severity", ascending=False).drop_duplicates("Rndrng_NPI"))
+    peak_year = dict(zip(peak["Rndrng_NPI"], peak["year"]))
+
+    print(f"Top {len(comp)} flagged providers (NPI-level leads) by {rank_desc} (fee-schedule {fee_desc}):")
+    for _, r in comp.iterrows():
+        py = int(peak_year[r["Rndrng_NPI"]])
+        print(f"  NPI {r['Rndrng_NPI']} peak_year={py}: n_metrics={int(r['n_metrics'])}, "
+              f"severity={r['composite_severity']:.2f}, n_flags={int(r['n_flags'])}, "
+              f"n_years={int(r['n_years'])}, methods=[{r['methods']}]")
+    return [(str(r["Rndrng_NPI"]), int(peak_year[r["Rndrng_NPI"]])) for _, r in comp.iterrows()]
 
 
 def parse_targets(arg: str) -> list[tuple[str, int]]:
@@ -79,6 +141,13 @@ def main():
                     help="Restrict ranking to a single year (e.g. 2023)")
     ap.add_argument("--targets",      type=str, default=None,
                     help="Override ranking with explicit NPI:year pairs, comma-separated")
+    ap.add_argument("--legacy-rank",  action="store_true",
+                    help="Use the old severity-sum ranking instead of distinct-signal breadth")
+    ap.add_argument("--include-fee-schedule", action="store_true",
+                    help="Count fee-schedule-derived metrics in the score (off by default; "
+                         "they are negatively predictive per the Phase 4 backtest)")
+    ap.add_argument("--per-year", action="store_true",
+                    help="Rank NPI-years independently (legacy grain) instead of one lead per provider")
     ap.add_argument("--live",         action="store_true",
                     help="Call Claude API (costs money). Default is dry-run.")
     ap.add_argument("--model",        default=DEFAULT_MODEL)
@@ -95,7 +164,10 @@ def main():
         targets = parse_targets(args.targets)
         print(f"Targets from CLI: {len(targets)}")
     else:
-        targets = rank_flags(args.flags, args.top_n, year=args.year)
+        targets = rank_flags(args.flags, args.top_n, year=args.year,
+                             legacy=args.legacy_rank,
+                             include_fee_schedule=args.include_fee_schedule,
+                             per_year=args.per_year)
 
     # 2. Load retriever once (profiles + benchmarks amortized across all briefs)
     retriever = ContextRetriever()
