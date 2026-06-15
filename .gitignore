@@ -30,6 +30,10 @@ web/node_modules/
 web/.next/
 web/.env.local
 
+# NOTE: deploy/railway-pipeline/seed/ (43 MB static parquet) is intentionally NOT
+# gitignored so `railway up` includes it in the build context. It is also not
+# committed — leave it untracked and regenerate with deploy/railway-pipeline/make_seed.py.
+
 # OS
 .DS_Store
 Thumbs.db
