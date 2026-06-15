@@ -8,6 +8,7 @@ Runs the full deterministic pipeline a scheduler can fire on a cadence:
     3. rebuild unified labels    (+ dated snapshot)      [anomaly.groundtruth.build_labels]
     4. rebuild analyst lead queue                        [anomaly.validation.build_lead_queue]
     5. re-run the temporal backtest                      [anomaly.validation.run_validation]
+   5b. agent scorecard + leakage-corrected eval          [anomaly.validation.scorecard, .point_in_time]
     6. record self-eval + dashboard (lift / lead-time)   [anomaly.validation.self_eval]
 
 Steps 1-2 pull fresh government ground truth; 3-6 re-score the existing detector
@@ -84,10 +85,15 @@ def main():
     # 4. Rebuild the operational analyst lead queue.
     results.append(("build lead queue", run_step("Build lead queue", "anomaly.validation.build_lead_queue", [], critical=False)))
 
-    # 5. Re-run the temporal backtest. Critical (feeds self-eval).
+    # 5. Re-run the (retrospective) temporal backtest. Critical (feeds self-eval).
     if not run_step("Run validation backtest", "anomaly.validation.run_validation", []):
         sys.exit(1)
     results.append(("backtest", True))
+
+    # 5b. Operational scorecard + the leakage-corrected point-in-time evaluation
+    #     (point-in-time ranking, dev/test holdout, volume stratification, BH-FDR).
+    results.append(("scorecard", run_step("Agent scorecard", "anomaly.validation.scorecard", [], critical=False)))
+    results.append(("point-in-time", run_step("Point-in-time validation (honest)", "anomaly.validation.point_in_time", [], critical=False)))
 
     # 6. Record self-eval + dashboard.
     results.append(("self-eval", run_step("Self-evaluation", "anomaly.validation.self_eval", [])))

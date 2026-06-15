@@ -58,6 +58,10 @@ SNAPSHOT_DIR  = os.path.join(OUT_DIR, "groundtruth_snapshots")
 
 # Field-standard fraud-indicative LEIE exclusion types (Herland 2018 / Hancock 2023).
 LEIE_FRAUD_TYPES = {"1128A1", "1128A2", "1128A3", "1128B4", "1128B7"}
+# Conviction-grade: mandatory exclusions from a CRIMINAL CONVICTION (1128A1/A2/A3).
+# The strict headline label -- excludes permissive/administrative actions. (1128A4
+# controlled-substance is omitted per Herland/Hancock fraud-code convention.)
+LEIE_CONVICTION_TYPES = {"1128A1", "1128A2", "1128A3"}
 # Billing-fraud-grade CMS revocation authorities.
 CMS_FRAUD_AUTH   = {"A3", "A8"}
 
@@ -84,6 +88,7 @@ def load_leie() -> pd.DataFrame:
         "event_date":     event_date,
         "authority":      excltype,
         "fraud_relevant": excltype.isin(LEIE_FRAUD_TYPES),
+        "conviction":     excltype.isin(LEIE_CONVICTION_TYPES),
         "tier":           excltype.str.startswith("1128A").map({True: "leie_conviction", False: "leie_permissive"}),
         "reinstated":     reindate.ne("") & reindate.ne("00000000") & reindate.notna(),
         "name":           name,
@@ -109,6 +114,7 @@ def load_cms() -> pd.DataFrame:
         "event_date":     pd.to_datetime(df["REVOCATION_EFCTV_DT"], errors="coerce"),
         "authority":      auth,
         "fraud_relevant": fraud,
+        "conviction":     False,  # CMS revocation is an administrative action, not a criminal conviction
         "tier":           fraud.map({True: "cms_billing_fraud", False: "cms_enrollment_integrity"}),
         "reinstated":     False,
         "name":           name,
@@ -136,7 +142,7 @@ def main():
     labels["event_year"] = labels["event_date"].dt.year.astype("int32")
     labels = labels[[
         "npi", "source", "event_date", "event_year", "authority",
-        "tier", "fraud_relevant", "reinstated", "name", "state",
+        "tier", "fraud_relevant", "conviction", "reinstated", "name", "state",
     ]].sort_values(["npi", "event_date"]).reset_index(drop=True)
 
     labels.to_parquet(args.output, index=False, compression="snappy")
@@ -154,6 +160,7 @@ def main():
         "n_label_rows":      int(len(labels)),
         "n_unique_npi":      int(labels["npi"].nunique()),
         "n_fraud_relevant":  int(labels["fraud_relevant"].sum()),
+        "n_conviction":      int(labels["conviction"].sum()),
         "by_source":         labels["source"].value_counts().to_dict(),
         "by_tier":           labels["tier"].value_counts().to_dict(),
         "event_year_range":  [int(labels["event_year"].min()), int(labels["event_year"].max())],

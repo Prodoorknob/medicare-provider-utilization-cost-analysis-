@@ -135,7 +135,12 @@ def main():
     df = parse_csv(raw)
     total = len(df)
 
-    npi_matched = df[df["NPI"].str.len().ge(10) & df["NPI"].ne("0")]
+    # An NPI of "0" OR all-zeros ("0000000000") means "no NPI reported". The
+    # all-zero form has length 10 and != "0", so a naive len>=10 & !="0" filter
+    # wrongly counts it as a usable NPI and overstated coverage ~10x in the
+    # metadata. Exclude all-zero NPIs so the reported count reflects reality
+    # (~10% of LEIE rows carry a real NPI).
+    npi_matched = df[df["NPI"].str.len().ge(10) & ~df["NPI"].str.fullmatch(r"0+")]
 
     df.to_parquet(args.output, index=False, compression="snappy")
 
