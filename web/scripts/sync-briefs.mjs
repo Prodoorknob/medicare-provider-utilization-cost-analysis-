@@ -23,7 +23,20 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
-const BRIEFS_SRC = path.join(REPO_ROOT, 'local_pipeline', 'anomaly', 'briefs');
+
+// --src <dir> overrides the brief source (e.g. a regenerated breadth-ranked
+// batch); defaults to local_pipeline/anomaly/briefs. --clean removes existing
+// briefs from the destination first so a regenerated set leaves no orphans.
+function argVal(flag) {
+  const i = process.argv.indexOf(flag);
+  return i >= 0 && process.argv[i + 1] ? process.argv[i + 1] : null;
+}
+const SRC_OVERRIDE = argVal('--src') || process.env.BRIEFS_SRC || null;
+const CLEAN = process.argv.includes('--clean');
+
+const BRIEFS_SRC = SRC_OVERRIDE
+  ? path.resolve(SRC_OVERRIDE)
+  : path.join(REPO_ROOT, 'local_pipeline', 'anomaly', 'briefs');
 const BRIEFS_DST = path.join(REPO_ROOT, 'web', 'public', 'data', 'investigations');
 
 // --- NPI redaction helpers (mirror web/src/lib/investigations.ts) ----------
@@ -92,6 +105,12 @@ function main() {
     process.exit(1);
   }
   fs.mkdirSync(BRIEFS_DST, { recursive: true });
+
+  if (CLEAN) {
+    const removed = fs.readdirSync(BRIEFS_DST).filter(f => f.endsWith('.json'));
+    for (const f of removed) fs.rmSync(path.join(BRIEFS_DST, f));
+    console.log(`[sync-briefs] --clean: removed ${removed.length} existing brief(s) from destination`);
+  }
 
   const files = fs.readdirSync(BRIEFS_SRC).filter(f => f.endsWith('.json') && f !== 'summary.json');
   const index = [];
