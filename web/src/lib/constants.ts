@@ -54,5 +54,6 @@ export const NAV_LINKS = [
   { label: 'Estimator', href: '/' },
   { label: 'Forecast', href: '/forecast' },
   { label: 'Investigations', href: '/investigations' },
+  { label: 'Demo', href: '/demo' },
   { label: 'About', href: '/about' },
 ];
