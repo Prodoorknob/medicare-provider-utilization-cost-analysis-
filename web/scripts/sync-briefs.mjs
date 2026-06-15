@@ -29,14 +29,17 @@ const BRIEFS_DST = path.join(REPO_ROOT, 'web', 'public', 'data', 'investigations
 // --- NPI redaction helpers (mirror web/src/lib/investigations.ts) ----------
 // When --mask-npis is set, rewrite every NPI-shaped token in the synced JSONs
 // so deployed builds never expose real identifiers, even via devtools.
+// Use a filesystem- and URL-safe mask token ('xxxx', not '****') because the
+// masked NPI becomes both the brief filename and the /investigations/[id] route
+// key. '*' is invalid in Windows filenames and ugly in URLs.
 const NPI_RE = /\b(\d{4})(\d{4})(\d{2})\b/g;
 const maskNpi = (npi) => {
   const d = String(npi || '').trim();
   if (!/^\d{10}$/.test(d)) return d;
-  return `${d.slice(0, 4)}****${d.slice(8)}`;
+  return `${d.slice(0, 4)}xxxx${d.slice(8)}`;
 };
 const maskText = (t) =>
-  typeof t === 'string' ? t.replace(NPI_RE, (_, p1, _p2, p3) => `${p1}****${p3}`) : t;
+  typeof t === 'string' ? t.replace(NPI_RE, (_, p1, _p2, p3) => `${p1}xxxx${p3}`) : t;
 
 function deepMask(value) {
   if (value == null) return value;
@@ -50,8 +53,11 @@ function deepMask(value) {
   return value;
 }
 
-const MASK = process.argv.includes('--mask-npis')
-          || process.env.MASK_NPIS === '1';
+// Mask by DEFAULT so deployed/public builds never expose real NPIs (even via
+// devtools / direct JSON fetch). Opt out only for internal analyst builds with
+// --no-mask-npis or UNMASK_NPIS=1. --mask-npis / MASK_NPIS=1 are still accepted
+// (no-ops now) for backward compatibility.
+const MASK = !(process.argv.includes('--no-mask-npis') || process.env.UNMASK_NPIS === '1');
 
 function extractRuleSummary(brief) {
   // Parse the rule_check_results markdown block into structured flags. Claude
@@ -112,7 +118,10 @@ function main() {
       copy = deepMask(copy);
       copy.npi = maskNpi(brief.npi); // top-level exact mask
     }
-    const dstJsonPath = path.join(BRIEFS_DST, f);
+    // When masking, the file is also named by the masked key so the route/fetch
+    // key (index npi) and the on-disk filename stay consistent (nav intact).
+    const dstName = MASK ? `${maskNpi(brief.npi)}_${brief.year}.json` : f;
+    const dstJsonPath = path.join(BRIEFS_DST, dstName);
     fs.writeFileSync(dstJsonPath, JSON.stringify(copy, null, 2));
 
     const ruleSummary = extractRuleSummary(brief);

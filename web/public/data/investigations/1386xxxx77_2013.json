@@ -1,5 +1,5 @@
 {
-  "npi": "1386678977",
+  "npi": "1386xxxx77",
   "year": 2013,
   "specialty": "Multispecialty Clinic/Group Practice",
   "state": "MI",
@@ -11,7 +11,7 @@
   "rule_check_results": "- **HIGH_INTENSITY**: NOT TRIGGERED — srvcs_per_bene of 1.42 is at P24, well within range\n- **VOLUME_SPIKE**: NOT TRIGGERED — single year in dataset; no prior baseline to assess\n- **CHARGE_INFLATION**: NOT TRIGGERED — charge-to-allowed ratio of 2.26 is below the P95×1.5 trigger of 4.99\n- **PROCEDURE_CONCENTRATION**: NOT TRIGGERED — Herfindahl of 0.65 is at P31; two-code oncology billing is unremarkable\n- **OUT_OF_SPECIALTY**: TRIGGERED — 100% of services coded outside multispecialty scope, but fully explained by radiation oncology sub-specialty operating under a group NPI umbrella\n- **IMPOSSIBLE_DAY**: NOT EVALUABLE — annual aggregate data; no date-of-service field available\n- **UPCODING**: NOT EVALUABLE — requires per-code E&M distribution; not available in public dataset\n- **UNBUNDLING**: NOT EVALUABLE — requires per-encounter claim grouping; not available in public dataset\n- **BENEFICIARY_SHARING**: NOT EVALUABLE — requires beneficiary-level cross-provider linkage; not available in public dataset",
   "data_limitations": "- **Rural/geographic context**: Distance-to-facility data not available; cannot assess whether freestanding non-facility billing is geographically plausible\n- **Date-of-service detail**: Cannot confirm treatment fractionation schedule is consistent with 77414 episode norms\n- **Diagnosis codes**: Cannot verify active malignancy diagnoses supporting radiation treatment codes\n- **Beneficiary linkage**: Cannot confirm beneficiaries also appear under a referring oncologist or surgeon, which would be expected in a legitimate radiation oncology workflow\n- **Group affiliation history**: Cannot determine whether this NPI is a newly credentialed group or a reassignment; single-year presence limits trajectory analysis",
   "recommended_actions": [
-    "**Confirm specialty taxonomy**: Verify in NPPES that NPI 1386678977 is accurately registered as a multispecialty group containing radiation oncology; if so, reclassify future screenings against a radiation oncology peer group to eliminate spurious OUT_OF_SPECIALTY triggers.",
+    "**Confirm specialty taxonomy**: Verify in NPPES that NPI 1386xxxx77 is accurately registered as a multispecialty group containing radiation oncology; if so, reclassify future screenings against a radiation oncology peer group to eliminate spurious OUT_OF_SPECIALTY triggers.",
     "**Note for passive monitoring**: Retain in the monitoring queue solely to observe whether billing volume, code mix, or charge ratios change materially in subsequent years (2014+), given the single-year data limitation."
   ],
   "evidence_summary": {
