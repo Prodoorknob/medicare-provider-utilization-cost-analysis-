@@ -112,15 +112,20 @@ export function maskNpisInText(text: string): string {
 
 const REDACT_KEY = 'inv:redactNpis';
 
-/** Raw read of the redaction pref from localStorage. SSR-safe. */
+/** Raw read of the redaction pref from localStorage. SSR-safe.
+ *
+ * Default is ON: anything leaving the analyst's screen is masked unless the
+ * user has explicitly opted out locally (localStorage '0'). NEXT_PUBLIC_REDACT_NPIS=1
+ * locks it on (see REDACT_LOCKED). This is intentional for the investigations
+ * surface, which names real providers beside fraud-suspicion language.
+ */
 export function getRedactPref(): boolean {
-  if (typeof window === 'undefined') return false;
-  // Allow an env-baked default for public deploys: NEXT_PUBLIC_REDACT_NPIS=1
   if (process.env.NEXT_PUBLIC_REDACT_NPIS === '1') return true;
+  if (typeof window === 'undefined') return true; // SSR / static render: mask
   try {
-    return window.localStorage.getItem(REDACT_KEY) === '1';
+    return window.localStorage.getItem(REDACT_KEY) !== '0';
   } catch {
-    return false;
+    return true;
   }
 }
 
@@ -150,7 +155,7 @@ export function displayText(text: string, redact: boolean): string {
  * cross-component change events, exposes a setter that persists.
  */
 export function useRedactNpis(): [boolean, (v: boolean) => void] {
-  const [redact, setRedact] = useState(false);
+  const [redact, setRedact] = useState(true); // default ON; corrected from localStorage on mount
 
   useEffect(() => {
     setRedact(getRedactPref());
