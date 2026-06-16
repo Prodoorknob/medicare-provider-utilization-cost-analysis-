@@ -1,0 +1,25 @@
+# Limits what `railway up` uploads as build context for the fraud-validation
+# cron service (deploy/railway-pipeline/Dockerfile). When present this REPLACES
+# .gitignore for uploads, so the gitignored seed/ parquet IS uploaded while the
+# heavy local data and unrelated app dirs are excluded.
+.git/
+local_pipeline/
+data/
+partitioned_data/
+web/
+colab/
+notebooks/
+modeling/
+design_handoff/
+falsification_test/
+falsification_test_v2/
+report_build/
+docs/
+mlruns/
+mlartifacts/
+__pycache__/
+*.mp4
+*.docx
+*.pptx
+*.html
+*.ipynb

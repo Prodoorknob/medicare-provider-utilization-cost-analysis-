@@ -251,6 +251,14 @@ def main():
 
 _Generated {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}._
 
+> ⚠️ **RETROSPECTIVE ENRICHMENT — not a leakage-free predictive estimate.**
+> This ranking aggregates each provider's entire 2013–2023 panel (look-ahead),
+> and the score / fee-schedule exclusion were selected against these same labels
+> (no holdout). Use `anomaly/validation/point_in_time.py` (point-in-time + dev/test
+> holdout + volume stratification + BH-FDR) for honest numbers. Headline small-k
+> lift here rests on 1–2 hits; only k≥1000 is defensible. This doc ranks on ALL
+> metrics (cohort ~391,411); the agent/scorecard use the fee-excluded ranking (~313,391).
+
 **What this is.** Each flagged provider (NPI) is ranked by composite statistical
 suspicion, then checked against two periodically-released government label
 sources — OIG **LEIE** exclusions (monthly) and CMS **Revoked Providers**
