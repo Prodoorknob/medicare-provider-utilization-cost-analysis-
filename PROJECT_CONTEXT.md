@@ -2,8 +2,8 @@
 project: Medicare Provider Utilization & Cost Analysis
 codename: AllowanceMap
 owner: Raj Vedire (Cobbles & Currents Studios)
-status: Production — V2 deployed, Phase 9 shipped
-last_updated: 2026-04-27
+status: Complete — in maintenance mode
+last_updated: 2026-06-15 (v2.0 — fraud-agent reorientation, leakage-corrected validation, Railway-deployed)
 tags: [medicare, ml, fraud-detection, time-series, fastapi, nextjs, railway, vercel]
 related: [[CoverDrive Pred 11]], [[DataSkrive Cohort]]
 ---
@@ -20,14 +20,29 @@ related: [[CoverDrive Pred 11]], [[DataSkrive Cohort]]
 End-to-end Medicare cost-analysis platform built on CMS Physician & Practitioners data 2013-2023 (~126.8M rows). Three production tracks running:
 
 1. **Stage 1 — Allowed-amount prediction.** LightGBM V2 no-charge, R² 0.943, MAE ~$7. Live on Railway.
-2. **Stage 2 — Patient OOP quantile prediction.** CatBoost monotonic P10/P50/P90 on synthetic-MCBS Track B. Live on Railway.
+2. **Stage 2 — Patient OOP quantile prediction.** CatBoost monotonic P10/P50/P90 on synthetic-MCBS Track B + asymmetric CQR calibration sidecar. Live on Railway. Raw P90 marginal coverage was 67.5% (target 90%) until calibration shipped 2026-04-27 (commit c389a02); now hits nominal 90%.
 3. **Forecast — 2024-2026 specialty rates.** LightGBM Stacker V2_12, R² 0.8852. Signal ceiling at annual resolution confirmed via Multivariate TFT (R² 0.8691).
 
 Plus **Phase 9 Provider Anomaly Investigation Agent** — 10-rule fraud-detection layer with Claude Sonnet 4.6 brief generation, surfaced via `/investigations` UI.
 
 Frontend: Next.js + MUI on Vercel. Backend: FastAPI on Railway. Reference data: Supabase (proxied server-side).
 
-Today's status: **complete and a bit more than spec'd.** Only outstanding work is medical-necessity Dx-linkage (Rule #3), blocked on paid LDS/RIF data subscription.
+**Current status (2026-06-15): COMPLETE — in maintenance mode.** Since the April production milestone the project was **reoriented around the fraud agent** (the ML/forecast tracks now feed it as inputs), the validation was redone honestly after an independent leakage review, the data layer moved to **Railway Postgres**, and the monthly validation loop was **deployed as a Railway cron service**. The only outstanding item is medical-necessity Dx-linkage (Rule #3), blocked on paid LDS/RIF.
+
+---
+
+## 0. June 2026 update — reorientation, honest validation, deployment, maintenance
+
+This pack was written at the April production milestone (§§1–18 are that snapshot). The substantive changes since:
+
+- **Reoriented around the fraud agent.** The Provider Anomaly Investigation Agent (§8) is now the product's center of gravity; Stage 1 / Stage 2 / forecast are repositioned as *inputs/enhancements*. The agent now has **11 rules, 8 evaluable** — the new `REVENUE_DEVIATION` rule scores every provider with the production Stage 1 LightGBM and flags actual-vs-expected allowed-dollar deviation. (Anywhere below that says "10 rules, 7 evaluable" predates this.)
+- **Data layer migrated Supabase → Railway Postgres** (commit da4ce1e). The API now uses asyncpg against `DATABASE_URL`; §9's Supabase references are superseded (the old `public.exec_sql` anon-callable footgun was retired with the Supabase project).
+- **Validation against government ground truth — done honestly.** Built `anomaly/groundtruth/` (OIG LEIE + the new **CMS Revoked Providers** quarterly list) and `anomaly/validation/`. An independent review caught two leaks in the first backtest: **look-ahead** (the ranking aggregated each provider's full 2013–2023 panel, incl. post-sanction years) and **selection-on-test** (the score/exclusions were tuned on the same labels reported), with a headline that rested on a single hit. The corrected `anomaly/validation/point_in_time.py` (point-in-time as-of-T ranking, **dev/test holdout**, **volume stratification**, BH-FDR) gives the honest verdict: a **modest ~2–4× lift at deep review depth on held-out years (BH-significant) with a ~3.5-year median lead time, but largely a VOLUME CONFOUND** — sanction base rate rises ~6.5× from lowest to highest volume quintile while within-band lift is only ~1–1.6×. **It is a useful screening prioritizer, not a validated fraud detector**, and is framed as analyst leads, never accusations.
+- **Falsification (internal red-team):** Stage 1 largely re-derives the CMS fee schedule (implicit modifier inference), and the annual forecast is uncorrelated with PFS policy direction (r≈0.07). The headline R² figures below stand as *fit* metrics but should carry these caveats.
+- **Security hardening:** the `/investigations` route is gated + `noindex`, NPI redaction defaults **on**, and published briefs are masked. Committed secrets (Databricks PAT in tracked notebooks/history, Supabase keys in `.claude/settings.local.json`) were flagged for rotation/scrub.
+- **Deployed autonomous:** the monthly loop (`anomaly/run_pipeline.py`: refresh LEIE/CMS → labels → lead queue → backtest → scorecard → point-in-time → self-eval) runs as a **Railway cron service** `medicare-fraud-validation` in project `sparkling-compassion` (`0 3 1 * *`, 03:00 UTC), independent of any local machine (~cents/month; cron bills only during execution). See `deploy/railway-pipeline/`.
+
+Everything below (§§1–18) is the April snapshot, lightly corrected inline where a fact is now wrong.
 
 ---
 
@@ -153,23 +168,26 @@ V2 trained on Colab Pro (A100 / T4) on 2026-04-11. Full spec: [`V2_MODEL_SPEC.md
 
 ---
 
-## 6. Stage 2 — Patient OOP quantile (PRODUCTION: CatBoost monotonic)
+## 6. Stage 2 — Patient OOP quantile (PRODUCTION: CatBoost monotonic + asymmetric CQR)
 
 Synthetic-MCBS Track B used for training (real MCBS PUF doesn't go per-service).
 
-| Model | R² | Status |
-|---|---|---|
-| XGB Quantile V1 | 0.400 | Best raw R² |
-| **CatBoost Mono V2 (P10/P50/P90)** | **0.173** | **PRODUCTION** — monotonicity valued for product safety |
-| CatBoost ZI V2 | -0.054 | Gate+regression compounded errors |
+| Model | P50 R² | P50 cov | P90 marg | Status |
+|---|---|---|---|---|
+| XGB Quantile V1 | 0.400 | 50.0% | 90.0% | Higher point R²; lacks monotonicity |
+| **CatBoost Mono V2 + CQR** | **0.173** | **41.7%** | **90.0%** | **PRODUCTION** — monotonicity + calibration |
+| CatBoost Mono V2 (raw, no CQR) | 0.173 | 41.7% | 67.5% | What the API served before 2026-04-27 |
+| CatBoost ZI V2 | -0.054 | — | — | Gate+regression compounded errors |
 
-**Why CatBoost Mono wins production despite lower R²:** product safety. Monotone constraints (e.g., higher allowed → higher OOP) prevent the API from returning paradoxical answers under user input variation.
+**Why CatBoost Mono + CQR wins production despite lower point R²:** product safety + honest calibration. Monotone constraints (higher allowed → higher OOP, dual-eligible → lower OOP, etc.) prevent the API from returning paradoxical answers under input variation. CQR sidecar fixes the under-covering upper tail without retraining. The R² gap to V1 is the cost of those guarantees.
 
 **Constraint quirk:** CatBoost GPU does **not** support `monotone_constraints` — must train on CPU.
 
-**Calibration sidecar (`oop_calibration.json`):** Raw CatBoost quantile output is asymmetrically miscalibrated — P10 marginal coverage 14.5% (target 10%, slightly conservative), P90 marginal coverage 67.5% (target 90%, materially under-covering). Asymmetric CQR per [`modeling/calibrate_oop.py`](modeling/calibrate_oop.py) computes `q_lo = $0.0004` (essentially zero — leaves P10 alone) and `q_hi = $14.47` (added to P90). Held-out test coverage post-calibration: 80.1% interval, 90.0% P90 marginal. Symmetric q_hat = $3.6884 reproduces V2_04's MLflow log exactly. Loader auto-applies on startup; no calibration sidecar = bands served raw with WARNING logged.
+**Calibration sidecar (`oop_calibration.json`):** Raw CatBoost quantile output is asymmetrically miscalibrated — P10 marginal coverage 14.5% (target 10%, slightly conservative), P90 marginal coverage 67.5% (target 90%, materially under-covering), P10-P90 interval 54.4% (target 80%). Asymmetric CQR per [`modeling/calibrate_oop.py`](modeling/calibrate_oop.py) computes `q_lo = $0.0004` (essentially zero — leaves P10 alone) and `q_hi = $14.47` (added to P90). Held-out test coverage post-calibration: 80.1% interval, 90.0% P90 marginal. Symmetric q_hat = $3.6884 reproduces V2_04's MLflow log to 4.6e-5. Loader auto-applies on startup; no calibration sidecar = bands served raw with WARNING logged.
 
-**Artifacts:** `api/models/artifacts/oop_mono_{p10,p50,p90}.cbm` + `oop_calibration.json`. Categorical indices: `OOP_CAT_IDX = [2,3,4,5]`.
+**Why this took two weeks to discover:** V2_04 logged the q_hat to MLflow at training time but never exported it as an inference artifact. The API loader only knew about `.cbm` files, so production CatBoost served raw quantiles. The miss surfaced only when we computed pinball loss retroactively (commit c389a02, 2026-04-27). Lesson recorded in §12.
+
+**Artifacts:** `api/models/artifacts/oop_mono_{p10,p50,p90}.cbm` + `oop_calibration.json`. Categorical indices: `OOP_CAT_IDX = [2,3,4,5]`. Reproduce calibration: `python modeling/calibrate_oop.py`. Sweep specialties: `python modeling/sanity_check_oop_calibration.py`.
 
 ---
 
@@ -204,6 +222,8 @@ Three-track investigation through V2_09 → V2_13. Production: `stacker_forecast
 ## 8. Phase 9 — Provider Anomaly Investigation Agent (SHIPPED)
 
 Fraud-detection layer on top of silver. Spec designed 2026-04-08, built 2026-04-23 → 2026-04-24 (Phases A-E). Phases A-D shipped via PRs #2-4 (tag `phase-9d-complete`); Phase 9E shipped direct to main 2026-04-24 (commit 423a26f).
+
+> **Updated (June 2026) — see §0.** Now **11 rules, 8 evaluable** (added `REVENUE_DEVIATION`, the Stage-1-model residual rule). The agent is now the project's headline, with a government-ground-truth validation harness (`anomaly/groundtruth/` + `anomaly/validation/`) whose honest, leakage-corrected read is a **modest, largely volume-confounded** prioritization signal — analyst leads, not a validated detector. The 10-rule list and n=100 validation run below are the April state.
 
 ### Pipeline (`anomaly/`)
 - `compute_npi_profiles.py` — silver → 11.52M NPI-year profiles × 22 metrics (volume, intensity, charge ratios, Herfindahl, bucket distribution, YoY changes, risk score)
@@ -258,6 +278,8 @@ URL: `medicare-provider-utilization-cost-analysis-production.up.railway.app`
 
 Replaces a pre-computed Supabase 33K-row group-average table. Real-time inference lets users plug in custom inputs and get actual model predictions.
 
+> **Updated (June 2026):** the reference data layer migrated **Supabase → Railway Postgres** (commit da4ce1e; `api/services/database.py` via asyncpg on `DATABASE_URL`). The `services/supabase.py` references below are superseded. A separate **Railway cron service** (`medicare-fraud-validation`) now runs the monthly anomaly-validation loop in the same project.
+
 ### Layout
 ```
 api/
@@ -296,7 +318,7 @@ api/
 | `/forecast` | Specialty-level 2024-2026 forecast viewer |
 | `/investigations` | Phase 9 brief list with severity filter, NPI redaction toggle |
 | `/investigations/[id]` | Brief detail + Approve/Escalate/Dismiss + analyst notes (localStorage) |
-| `/demo` | Product demo page (`AllowanceMap_ProductDemo.mp4`) — UNTRACKED, not committed yet |
+| `/demo` | Product demo page (`AllowanceMap_ProductDemo.mp4`) — committed (commit 99325f2) |
 | `/about` | Project info |
 
 ### Conventions
@@ -332,9 +354,15 @@ api/
 
 ### Modeling
 - **CatBoost GPU does not support `monotone_constraints`** — must use CPU.
-- **Monotonicity hurts when the assumed relationship doesn't hold** in the data (Stage 2 OOP V2: R² dropped from 0.40 to 0.17).
+- **Monotonicity costs point-R² when the assumed relationship doesn't hold** (Stage 2 OOP V2: R² dropped from 0.40 to 0.17 vs unconstrained V1). The trade is point accuracy for product safety + coverage calibration. With CQR layered on top, V2 hits nominal 80% interval / 90% P90 marginal coverage; V1's higher R² doesn't translate to better band calibration.
 - **TFT needs long sequences** (100+ steps) to outperform LSTM. With 11 annual points, attention has nothing to attend to.
 - **Teacher-forcing in `evaluate()` inflates reported metrics** by ~0.017 R² and 17 RMSE points. Always evaluate autoregressively for forecast comparison.
+- **Training-time validation is not a serving-time guarantee.** V2_04 logged `cqr_q_hat=$3.6884` to MLflow at training time and validated 80% coverage on the held-out test set, but never exported the constant as an inference artifact. The production API served raw quantiles for two weeks (raw P90 marginal 67.5%, raw P10-P90 interval 54.4%) before the calibration sidecar shipped 2026-04-27. The lesson: any post-hoc correction (CQR, isotonic, Platt scaling, threshold tuning) must be persisted as an artifact the loader actually reads — not just logged to the experiment tracker.
+
+### Quantile model evaluation
+- **R² for tail quantiles (P10, P90) is meaningless against actuals.** A P10 model isn't trying to predict the mean — it's predicting the 10th percentile. Negative R² for the tails is *expected*, not a defect. Only P50 R² is comparable to point-prediction R²; for tails, use **pinball loss** (per-quantile accuracy) and **marginal coverage** (% of actuals ≤ predicted quantile).
+- **Pinball loss alone is not enough.** A model can have low pinball loss but bad calibration if its quantile spread is too narrow. Always check empirical coverage against nominal target. For 80% intervals: P10 coverage should be ~10%, P90 coverage ~90%, P10-P90 interval ~80%.
+- **Asymmetric CQR is preferred over symmetric** when the raw model's tail biases are asymmetric (which they almost always are — over-cover one side, under-cover the other). Symmetric CQR widens both sides equally; asymmetric per-tail leaves the well-calibrated side alone.
 
 ### Engineering / Colab
 - **Drive FUSE timeouts on Colab.** Always copy artifacts to `/content/` local SSD before training.
@@ -347,20 +375,26 @@ api/
 - **OIG LEIE TLS chain** fails Python's default CA validation locally — `--insecure` flag required.
 
 ### General preference
-- **Real production models > marginal R² wins.** Ensemble V2 was +0.0004 over LightGBM; not deployed. CatBoost Mono is lower R² than XGB Quantile but won production for monotonicity safety.
+- **Real production models > marginal R² wins.** Ensemble V2 was +0.0004 over LightGBM; not deployed. CatBoost Mono is lower R² than XGB Quantile but won production for monotonicity + calibration safety.
+- **For probabilistic outputs labeled with quantile names in the UI ("P10 / P50 / P90", "best case / typical / high end"), calibration matters more than point R².** Users see the band labels as a coverage claim. Shipping uncalibrated bands under quantile labels is a misrepresentation, even if technically the underlying model is the "best one trained."
 
 ---
 
 ## 13. Backlog
 
+> **Maintenance mode (June 2026).** The core build is done; remaining items are blocked, optional, or hygiene.
+
 | Item | Status | Effort |
 |---|---|---|
 | Rule #3 — medical-necessity Dx linkage (UPCODING/UNBUNDLING extension) | BLOCKED on paid LDS/RIF data | unknown |
+| **Rotate/scrub committed secrets** (Databricks PAT in tracked notebooks + history; Supabase keys in `.claude/settings.local.json`) | OPEN — security | rotate + history purge |
+| Beat the volume confound (volume-residualized ranking, then re-run `point_in_time.py`) | OPTIONAL — research | ~1 day |
 | Quarterly data ingestion (forecast ceiling break) | BACKLOG, not pursued | 2-4 weeks |
 | Fix `train_lstm_local.py` `evaluate()` teacher-forcing bug | KNOWN, cosmetic | 1 hr |
-| Train 3-head quantile stacker (real P10/P50/P90 forecast bounds) | NICE-TO-HAVE | 20-line patch to V2_12 Cell 10 |
-| Switch Supabase from anon → service-role key | HARDENING | 30 min + redeploy |
-| Commit untracked deliverables (`/demo`, `docs/knowledge/`, `design_handoff/`) | PENDING USER DECISION | 5 min |
+| Phase D — DOJ enforcement NER→NPPES (secondary fraud label) | DEFERRED | ~1 week |
+| ~~Switch Supabase anon → service-role key~~ | DONE — migrated fully to Railway Postgres | — |
+| ~~Commit `/demo` product page~~ | DONE (commit 99325f2) | — |
+| Commit `docs/knowledge/` + `design_handoff/` (still untracked) | OPTIONAL — docs updated to maintenance state | 1 min |
 
 ---
 

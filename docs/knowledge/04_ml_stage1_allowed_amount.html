@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>04 Stage 1: Allowed Amount &mdash; AllowanceMap</title>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Geist:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--white:#fff;--off:#fafafa;--light:#f4f4f4;--mid:#e8e8e8;--border:#d4d4d4;--text:#1a1a1a;--text-mid:#555;--text-light:#999;--accent:#1a3a5c;--accent-mid:#2a5a8c;--accent-light:#e8f0f8;--red:#c0392b;--green:#27ae60;--serif:'Libre Baskerville',Georgia,serif;--sans:'Geist','Helvetica Neue',sans-serif;--mono:'JetBrains Mono',Menlo,Consolas,monospace;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:#fff;color:var(--text);font-family:var(--sans);font-weight:300;line-height:1.65;font-size:0.92rem;}
+  .letterhead{background:var(--accent);color:#fff;padding:2.5rem 4rem;display:grid;grid-template-columns:1fr auto;align-items:end;gap:2rem;}
+  .lh-org{font-size:0.65rem;letter-spacing:0.15em;text-transform:uppercase;font-weight:500;opacity:0.7;margin-bottom:0.4rem;}
+  .lh-title{font-family:var(--serif);font-size:clamp(1.4rem,2.5vw,2.2rem);font-weight:700;line-height:1.2;}
+  .lh-subtitle{font-size:0.85rem;opacity:0.7;margin-top:0.4rem;}
+  .lh-meta{text-align:right;font-size:0.72rem;opacity:0.65;line-height:1.9;}
+  .lh-meta strong{opacity:1;font-weight:500;}
+  .status-strip{background:var(--accent-mid);padding:0.6rem 4rem;display:flex;gap:2.5rem;align-items:center;flex-wrap:wrap;}
+  .ss-item{font-size:0.65rem;letter-spacing:0.08em;color:rgba(255,255,255,0.7);text-transform:uppercase;}
+  .ss-item span{color:#fff;font-weight:500;margin-left:0.4rem;}
+  .report-body{max-width:980px;margin:0 auto;padding:3rem 4rem;}
+  .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:1.2rem;margin-bottom:2.6rem;}
+  @media (max-width:780px){.kpi-row{grid-template-columns:repeat(2,1fr);}}
+  .kpi-box{border:1px solid var(--border);padding:1.1rem 1.2rem;background:#fff;border-top:3px solid var(--accent);}
+  .kpi-label{font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-light);margin-bottom:0.45rem;font-weight:500;}
+  .kpi-value{font-family:var(--serif);font-size:1.6rem;color:var(--accent);line-height:1.1;}
+  .kpi-sub{font-size:0.66rem;margin-top:0.35rem;color:var(--text-light);}
+  .section{margin-bottom:2.6rem;}
+  .section h2{font-family:var(--serif);font-size:1.2rem;font-weight:400;color:var(--accent);padding-bottom:0.55rem;border-bottom:2px solid var(--accent);margin-bottom:1.2rem;}
+  .section h3{font-size:0.75rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-mid);margin:1.2rem 0 0.6rem;}
+  .prose p{margin-bottom:0.9rem;}
+  .highlight-box{background:var(--accent-light);border-left:4px solid var(--accent);padding:1.1rem 1.4rem;margin:1.4rem 0;}
+  .highlight-box p{font-size:0.86rem;color:var(--accent);margin:0;}
+  .exec-table{width:100%;border-collapse:collapse;font-size:0.83rem;margin:0.4rem 0 0.8rem;}
+  .exec-table thead th{background:var(--accent);color:#fff;padding:0.6rem 0.9rem;text-align:left;font-size:0.62rem;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;}
+  .exec-table tbody td{padding:0.6rem 0.9rem;border-bottom:1px solid var(--mid);vertical-align:top;}
+  .exec-table tbody tr:nth-child(even) td{background:var(--off);}
+  .exec-table .num{text-align:right;font-feature-settings:'tnum';}
+  .winner{background:#fff4dc !important;font-weight:500;}
+  .code-block{font-family:var(--mono);font-size:0.78rem;background:#0f1d2c;color:#d8e4f1;padding:1rem 1.2rem;border-radius:3px;overflow-x:auto;margin:0.6rem 0 1rem;line-height:1.55;white-space:pre;}
+  .file-ref{font-family:var(--mono);font-size:0.82rem;background:var(--accent-light);color:var(--accent);padding:1px 6px;border-radius:2px;border:1px solid #cfdfee;}
+  .rec-list{list-style:none;}
+  .rec-list li{display:flex;gap:0.8rem;padding:0.65rem 0;border-bottom:1px solid var(--mid);font-size:0.86rem;line-height:1.6;}
+  .rec-list li:last-child{border-bottom:none;}
+  .rec-num{width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font-size:0.6rem;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;}
+  .pitch-box{border:2px solid var(--accent);background:var(--off);padding:1.2rem 1.4rem;margin:1.6rem 0;}
+  .pitch-box h4{font-family:var(--serif);color:var(--accent);font-size:0.95rem;font-weight:700;margin-bottom:0.5rem;}
+  .pitch-box p{font-size:0.86rem;line-height:1.7;}
+  .role-bullets h4{font-size:0.72rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);margin:0.8rem 0 0.4rem;}
+  .role-bullets ul{list-style:disc;padding-left:1.3rem;font-size:0.84rem;line-height:1.6;}
+  .role-bullets ul li{margin-bottom:0.35rem;}
+  .report-footer{background:var(--light);border-top:1px solid var(--mid);padding:1.2rem 4rem;display:flex;justify-content:space-between;font-size:0.65rem;color:var(--text-light);margin-top:3rem;}
+</style>
+</head>
+<body>
+<div style="background:#0e4d3a;color:#eafaf3;padding:0.5rem 4rem;font-family:'Geist','Helvetica Neue',sans-serif;font-size:0.66rem;letter-spacing:0.07em;text-transform:uppercase;">&#10003; Project complete &middot; In maintenance mode (June&nbsp;2026) &middot; latest state &amp; corrections in the <a href="index.html" style="color:#9fe0c8;">index</a></div>
+
+<div class="letterhead">
+  <div>
+    <div class="lh-org">AllowanceMap Knowledge Series &middot; Report 04</div>
+    <div class="lh-title">Stage 1: Allowed Amount Prediction</div>
+    <div class="lh-subtitle">Six model families, two training regimes, and the no-charge ablation that picked the production model</div>
+  </div>
+  <div class="lh-meta">
+    <div><strong>2026-04-23</strong></div>
+    <div>Prepared by Raj Vedire</div>
+    <div>Version 1.0</div>
+  </div>
+</div>
+
+<div class="status-strip">
+  <div class="ss-item">Target<span>Avg_Mdcr_Alowd_Amt</span></div>
+  <div class="ss-item">Train rows (V2)<span>126.8M</span></div>
+  <div class="ss-item">Production<span>LightGBM V2 no-charge</span></div>
+  <div class="ss-item">R² (test)<span>0.9428</span></div>
+</div>
+
+<div class="report-body">
+
+  <div class="kpi-row">
+    <div class="kpi-box"><div class="kpi-label">Production R²</div><div class="kpi-value">0.9428</div><div class="kpi-sub">LightGBM V2 no-charge, 80/20 split, seed 42</div></div>
+    <div class="kpi-box"><div class="kpi-label">Production MAE</div><div class="kpi-value">$7.70</div><div class="kpi-sub">Per individual HCPCS row, dollar scale</div></div>
+    <div class="kpi-box"><div class="kpi-label">Charge ablation cost</div><div class="kpi-value">-0.015 R²</div><div class="kpi-sub">Predicted to be -0.25 to -0.30; was not</div></div>
+    <div class="kpi-box"><div class="kpi-label">Ensemble lift</div><div class="kpi-value">+0.0004</div><div class="kpi-sub">5-fold stacking over 13.3 hrs of A100; not deployed</div></div>
+  </div>
+
+  <div class="section">
+    <h2>What Stage 1 actually predicts</h2>
+    <div class="prose">
+      <p>Target is <span class="file-ref">Avg_Mdcr_Alowd_Amt</span>, the dollar amount Medicare allows for a given (specialty, state, HCPCS code, place of service) combination. Each row in the gold parquet is one such combination for a specific NPI in a specific year. The model predicts the per-service allowed amount on a log1p scale and inverts at predict time.</p>
+      <p>This is not a small-data problem. V2 trains on 126.8 million rows with a 13-feature input. The original V1 used a 30 percent sample plus regional batching to fit under a 24 GB WSL2 memory budget; full data in V2 was the single biggest unlock and added +0.07 R² on its own.</p>
+    </div>
+    <div class="highlight-box">
+      <p>The previous spec target was <span class="file-ref">Avg_Mdcr_Pymt_Amt</span> (payment). It got swapped to allowed amount on 2026-04-04 because Stage 2 needs to take what Medicare allows and predict what the patient pays from there. Allowed is the upstream of the cost-sharing calculation, payment is the downstream.</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Final V2 leaderboard (full 126.8M rows, Colab Pro A100)</h2>
+    <table class="exec-table">
+      <thead><tr><th>Model</th><th class="num">MAE</th><th class="num">RMSE</th><th class="num">R²</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>LightGBM V2 (with charge)</td><td class="num">$6.73</td><td class="num">$13.59</td><td class="num">0.9575</td><td>Best single model, GOSS + leaf-wise</td></tr>
+        <tr><td>Ensemble V2 (Ridge stack on 3)</td><td class="num">$6.68</td><td class="num">$13.50</td><td class="num">0.9580</td><td>+0.0005 over LGB &mdash; not deployed</td></tr>
+        <tr><td>XGBoost V2</td><td class="num">$7.73</td><td class="num">$15.43</td><td class="num">0.9452</td><td>Fallback, 1000 rounds</td></tr>
+        <tr><td>CatBoost V2</td><td class="num">$10.88</td><td class="num">$20.10</td><td class="num">0.9070</td><td>Slowest convergence (3000 iters), kept for diversity</td></tr>
+        <tr class="winner"><td>LightGBM V2 no-charge 🏆</td><td class="num">$7.70</td><td class="num">$15.77</td><td class="num">0.9428</td><td><strong>PRODUCTION</strong> &mdash; charge unknown at API time</td></tr>
+        <tr><td>XGBoost V2 no-charge</td><td class="num">$8.66</td><td class="num">$17.19</td><td class="num">0.9319</td><td></td></tr>
+        <tr><td>CatBoost V2 no-charge</td><td class="num">$12.10</td><td class="num">$22.34</td><td class="num">0.8849</td><td></td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:0.84rem;color:var(--text-light);">V1 archived: RF 0.884, XGB 0.833, GLM diverged. V2 dominated V1 by +0.07 R² across the board.</p>
+  </div>
+
+  <div class="section">
+    <h2>The non-obvious choices</h2>
+
+    <h3>Why LightGBM not XGBoost</h3>
+    <p style="font-size:0.86rem;">At full national scale on 126.8M rows, LightGBM beat XGBoost by +0.012 R² with 50 percent of XGBoost's wall-clock time, and beat CatBoost by +0.05 R² with one third of its training time. The credit goes to GOSS (gradient-based one-side sampling: keeps every large-gradient instance plus a random sample of small-gradient ones, which converges faster on heterogeneous data) and leaf-wise tree growth (best-first, deeper effective trees per iteration than XGBoost's level-wise). LightGBM's native categorical support also avoided one-hot blowup for <span class="file-ref">HCPCS_Cd_idx</span> (~6K unique codes). Hyperparameters in <span class="file-ref">modeling/train_lgbm_local.py:97-111</span>.</p>
+
+    <h3>Why we serve the no-charge variant despite -0.015 R²</h3>
+    <p style="font-size:0.86rem;">In V1, <span class="file-ref">Avg_Sbmtd_Chrg</span> had RF feature importance 0.618, dominating the model. The hypothesis going into V2_02 was that this was near-leakage; predicted ablation cost was -0.25 to -0.30 R². Actual cost was -0.015. Two features (<span class="file-ref">hcpcs_target_enc</span> and <span class="file-ref">HCPCS_Cd_idx</span>) capture the same pricing signal via procedure identity, so removing the charge column barely hurts. The no-charge variant is what gets served in <span class="file-ref">api/models/loader.py:77</span> because the API user does not know the billed charge at request time. Production accepts the small accuracy hit for the realistic input contract.</p>
+
+    <h3>Why the ensemble was not deployed</h3>
+    <p style="font-size:0.86rem;">5-fold OOF stacking with a Ridge meta-learner over XGB, CatBoost, LightGBM produced R² 0.9580, which is +0.0005 over LightGBM alone. Ridge weights came back as LGB=1.120, XGB=-0.097, CB=-0.023, meaning the meta-learner essentially picked LightGBM. Total cost was 13.3 hours of A100 (~149 CU). The base models had near-identical error patterns on the same feature set, so blending bought no diversity. This is one of the cleanest "ensembles do not always help" datapoints in the project.</p>
+
+    <h3>Why log1p target transform</h3>
+    <p style="font-size:0.86rem;">Allowed amounts span four orders of magnitude (an E&amp;M visit is ~$80, a specialized procedure can be $5,000+). Without log1p, RMSE on raw dollars makes the loss surface dominated by the high-cost outliers and the model under-predicts everything else. Inverse via <span class="file-ref">np.expm1</span> at predict time, with a max(0, .) clip in the API at <span class="file-ref">api/services/prediction.py:167</span> because the model can produce small negative values on hard cases.</p>
+
+    <h3>Why a single 80/20 random split, not k-fold</h3>
+    <p style="font-size:0.86rem;">Honest answer: time and compute. The V2 ensemble already cost 13.3 hours per fold-set. A proper 5-fold CV on the 80/20 data would have multiplied that. The cost was metric-variance opacity: I do not know the standard deviation on R²=0.9428. This is acknowledged in the critique report and listed as a backlog item.</p>
+  </div>
+
+  <div class="section">
+    <h2>Feature inventory and importances</h2>
+    <table class="exec-table">
+      <thead><tr><th>#</th><th>Feature</th><th>Source</th><th>RF V1 importance</th><th>LGB V2 role</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td><span class="file-ref">Rndrng_Prvdr_Type_idx</span></td><td>Label encoded specialty</td><td class="num">0.044</td><td>Categorical, native split</td></tr>
+        <tr><td>2</td><td><span class="file-ref">Rndrng_Prvdr_State_Abrvtn_idx</span></td><td>Label encoded state</td><td class="num">0.018</td><td>Categorical, native split</td></tr>
+        <tr><td>3</td><td><span class="file-ref">HCPCS_Cd_idx</span></td><td>Label encoded HCPCS (~6K unique)</td><td class="num">0.202</td><td>High-cardinality categorical, key for pricing identity</td></tr>
+        <tr><td>4</td><td><span class="file-ref">hcpcs_bucket</span></td><td>Coarse clinical bucket 0-5</td><td class="num">0.064</td><td>Cheap top-level split</td></tr>
+        <tr><td>5</td><td><span class="file-ref">place_of_srvc_flag</span></td><td>Binary facility/office</td><td class="num">0.012</td><td>Bucketed via <span class="file-ref">pos_bucket</span></td></tr>
+        <tr><td>6</td><td><span class="file-ref">Bene_Avg_Risk_Scre</span></td><td>HCC from CMS Provider Summary</td><td class="num">0.014</td><td>Patient acuity proxy</td></tr>
+        <tr><td>7</td><td><span class="file-ref">log_srvcs</span></td><td>log1p(Tot_Srvcs)</td><td class="num">0.024</td><td>Volume scale</td></tr>
+        <tr><td>8</td><td><span class="file-ref">log_benes</span></td><td>log1p(Tot_Benes)</td><td class="num">0.016</td><td>Population scale</td></tr>
+        <tr><td>9</td><td><span class="file-ref">Avg_Sbmtd_Chrg</span></td><td>Submitted charge (raw)</td><td class="num">0.618</td><td><strong>DROPPED in production no-charge</strong></td></tr>
+        <tr><td>10</td><td><span class="file-ref">srvcs_per_bene</span></td><td>log_srvcs / log_benes</td><td class="num">0.032</td><td>Utilization intensity</td></tr>
+        <tr><td>11</td><td><span class="file-ref">specialty_bucket</span></td><td>specialty_idx * 6 + bucket</td><td class="num">added V2</td><td>Explicit interaction</td></tr>
+        <tr><td>12</td><td><span class="file-ref">pos_bucket</span></td><td>POS * 6 + bucket</td><td class="num">added V2</td><td>Explicit interaction</td></tr>
+        <tr><td>13</td><td><span class="file-ref">hcpcs_target_enc</span></td><td>Mean target per HCPCS</td><td class="num">added V2</td><td>Continuous version of HCPCS_Cd_idx</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>Training regime breakdown</h2>
+    <table class="exec-table">
+      <thead><tr><th>Mode</th><th>How</th><th>When</th></tr></thead>
+      <tbody>
+        <tr><td><span class="file-ref">--mode batch</span> (V1 default)</td><td>Train incrementally by Census region (Northeast, South, Midwest, West, Territories), 125 rounds per region. XGBoost passes booster forward via <span class="file-ref">xgb_model</span>; LightGBM via <span class="file-ref">init_model</span>; RF uses <span class="file-ref">warm_start</span>; CatBoost uses <span class="file-ref">init_model</span>.</td><td>Local 24 GB WSL2 budget, before V2</td></tr>
+        <tr><td><span class="file-ref">--mode full</span></td><td>Single Dataset/DMatrix on all gold rows with early stopping, 500-1000 rounds. Higher RAM/VRAM.</td><td>Local with --sample 0.5, or Colab A100 V2</td></tr>
+        <tr><td>V2 Colab notebooks</td><td>Direct full-data load to A100 high-RAM, no batching, no sampling. <span class="file-ref">colab/V2_01_stage1_full_training.ipynb</span></td><td>Production training</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:0.84rem;">Census region lists in <span class="file-ref">modeling/train_lgbm_local.py:71-80</span>. Same five-region partition lives in three other trainers (RF, XGB, CatBoost) &mdash; copy-pasted, not shared. Acknowledged in the critique.</p>
+  </div>
+
+  <div class="section">
+    <h2>How Stage 1 gets to inference</h2>
+    <div class="code-block">User request (Next.js form)
+  ▼
+POST /predict/full  (FastAPI, api/routers/predict.py:99)
+  ▼
+build_stage1_features() at api/services/prediction.py:64
+  - Encode categoricals via specialty_to_idx, state_to_idx, hcpcs_to_idx
+  - Apply default charge / risk / volume if missing
+  - Auto-detect if loaded model uses Avg_Sbmtd_Chrg via booster.feature_name()
+  ▼
+LightGBM Booster.predict()  (artifacts.lgbm_booster)
+  ▼
+np.expm1(log_pred)  +  max(0, .)  +  round(2)
+  ▼
+Stage1Response.predicted_allowed_amount</div>
+    <p style="font-size:0.84rem;">The booster file <span class="file-ref">api/models/artifacts/lgbm_v2_no_charge.txt</span> ships with the API container. Loader prefers no-charge over full-charge over <span class="file-ref">lgbm_model.txt</span> (legacy) at <span class="file-ref">api/models/loader.py:77-82</span>.</p>
+  </div>
+
+  <div class="section">
+    <h2>Limitations and what I would do differently</h2>
+    <ul class="rec-list">
+      <li><span class="rec-num">1</span><span>Run k-fold CV (or at least a 5-seed retrain) to get metric variance. R² 0.9428 is a point estimate from a single split; I cannot defend the third decimal.</span></li>
+      <li><span class="rec-num">2</span><span>Random 80/20 split leaks across years &mdash; train rows can be 2023 and test rows can be 2013. A temporal split (train ≤ 2021, test 2022-2023) would test whether models generalize to future years; this is what the LSTM does already.</span></li>
+      <li><span class="rec-num">3</span><span>Replace <span class="file-ref">Avg_Sbmtd_Chrg</span> with the actual MPFS RVU components (Work, PE, MP) plus GPCI. This converts the model from "learn the fee schedule" to "learn deviations from the fee schedule" which is a more publishable framing.</span></li>
+      <li><span class="rec-num">4</span><span>Specialty rename canonicalization &mdash; the Cardiology / Colorectal / Oral Surgery split is real and silently degrades model quality for those rows.</span></li>
+      <li><span class="rec-num">5</span><span>The CatBoost V2 result (0.9070) is suspiciously low; I think 3000 iterations was not enough convergence for the GPU build with <span class="file-ref">bootstrap_type='MVS'</span>. Worth a rerun before final claims.</span></li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>Interview framing</h2>
+    <div class="role-bullets">
+      <h4>Volunteer to a data engineer</h4>
+      <ul>
+        <li>The two training regimes (batch by region vs full) and which RAM constraints drove each</li>
+        <li>Why every trainer reads <span class="file-ref">label_encoders.json</span> from gold for cross-script consistency</li>
+        <li>The Colab Drive FUSE timeout I worked around with shutil.copy to local SSD</li>
+      </ul>
+      <h4>Volunteer to an ML engineer</h4>
+      <ul>
+        <li>The no-charge ablation as the central modeling decision &mdash; predicted -0.30 R², actual -0.015</li>
+        <li>Why GOSS plus leaf-wise made LightGBM win over XGBoost on this data shape</li>
+        <li>The negative ensemble result: 5-fold Ridge stack added +0.0004 R² for 13.3 hrs of A100, Ridge picked LightGBM with weight 1.12</li>
+        <li>Single-split risk: I do not have CV variance, so I quote R² to 4 decimals but only defend it to 2</li>
+      </ul>
+      <h4>Volunteer to a data scientist</h4>
+      <ul>
+        <li>Stage 1 R² is on individual HCPCS rows; do not compare it to forecast R² on group-year aggregates</li>
+        <li>The leakage cleanup (drop <span class="file-ref">Avg_Mdcr_Pymt_Amt</span>, <span class="file-ref">Avg_Mdcr_Stdzd_Amt</span>) that took the V0 toy R² from 0.9996 to where the real work could start</li>
+        <li>HCPCS target encoding alongside raw <span class="file-ref">HCPCS_Cd_idx</span>: continuous + categorical of the same field, lets the model split either way</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="pitch-box">
+    <h4>30-second pitch</h4>
+    <p>Stage 1 is a LightGBM regressor on 126.8 million CMS rows that predicts the Medicare allowed amount per service. I trained six model families across V1 and V2; LightGBM with GOSS and leaf-wise growth won on full data at R² 0.9575 with the billed charge included, R² 0.9428 without it. Production is the no-charge variant because the API user cannot know the submitted charge at request time, and the ablation cost is only 0.015 R² since procedure identity captures most of the pricing signal anyway. I tried a 5-fold OOF ensemble with a Ridge meta-learner and it bought +0.0004 R² for 13.3 hours of A100, which I document as a clean negative result rather than ship.</p>
+  </div>
+
+</div>
+
+<div class="report-footer">
+  <div>AllowanceMap &middot; Report 04 of 8 &middot; Raj Vedire</div>
+  <div>2026-04-23 &middot; Version 1.0</div>
+</div>
+
+</body>
+</html>

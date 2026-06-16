@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>02 Data Sources &amp; Ingestion &mdash; AllowanceMap</title>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Geist:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--white:#fff;--off:#fafafa;--light:#f4f4f4;--mid:#e8e8e8;--border:#d4d4d4;--text:#1a1a1a;--text-mid:#555;--text-light:#999;--accent:#1a3a5c;--accent-mid:#2a5a8c;--accent-light:#e8f0f8;--red:#c0392b;--green:#27ae60;--serif:'Libre Baskerville',Georgia,serif;--sans:'Geist','Helvetica Neue',sans-serif;--mono:'JetBrains Mono',Menlo,Consolas,monospace;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:#fff;color:var(--text);font-family:var(--sans);font-weight:300;line-height:1.65;font-size:0.92rem;}
+  .letterhead{background:var(--accent);color:#fff;padding:2.5rem 4rem;display:grid;grid-template-columns:1fr auto;align-items:end;gap:2rem;}
+  .lh-org{font-size:0.65rem;letter-spacing:0.15em;text-transform:uppercase;font-weight:500;opacity:0.7;margin-bottom:0.4rem;}
+  .lh-title{font-family:var(--serif);font-size:clamp(1.4rem,2.5vw,2.2rem);font-weight:700;line-height:1.2;}
+  .lh-subtitle{font-size:0.85rem;opacity:0.7;margin-top:0.4rem;}
+  .lh-meta{text-align:right;font-size:0.72rem;opacity:0.65;line-height:1.9;}
+  .lh-meta strong{opacity:1;font-weight:500;}
+  .status-strip{background:var(--accent-mid);padding:0.6rem 4rem;display:flex;gap:2.5rem;align-items:center;flex-wrap:wrap;}
+  .ss-item{font-size:0.65rem;letter-spacing:0.08em;color:rgba(255,255,255,0.7);text-transform:uppercase;}
+  .ss-item span{color:#fff;font-weight:500;margin-left:0.4rem;}
+  .report-body{max-width:980px;margin:0 auto;padding:3rem 4rem;}
+  .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:1.2rem;margin-bottom:2.6rem;}
+  @media (max-width:780px){.kpi-row{grid-template-columns:repeat(2,1fr);}}
+  .kpi-box{border:1px solid var(--border);padding:1.1rem 1.2rem;background:#fff;border-top:3px solid var(--accent);}
+  .kpi-label{font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-light);margin-bottom:0.45rem;font-weight:500;}
+  .kpi-value{font-family:var(--serif);font-size:1.6rem;color:var(--accent);line-height:1.1;}
+  .kpi-sub{font-size:0.66rem;margin-top:0.35rem;color:var(--text-light);}
+  .section{margin-bottom:2.6rem;}
+  .section h2{font-family:var(--serif);font-size:1.2rem;font-weight:400;color:var(--accent);padding-bottom:0.55rem;border-bottom:2px solid var(--accent);margin-bottom:1.2rem;}
+  .section h3{font-size:0.75rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-mid);margin:1.2rem 0 0.6rem;}
+  .prose p{margin-bottom:0.9rem;}
+  .highlight-box{background:var(--accent-light);border-left:4px solid var(--accent);padding:1.1rem 1.4rem;margin:1.4rem 0;}
+  .highlight-box p{font-size:0.86rem;color:var(--accent);margin:0;}
+  .exec-table{width:100%;border-collapse:collapse;font-size:0.83rem;margin:0.4rem 0 0.8rem;}
+  .exec-table thead th{background:var(--accent);color:#fff;padding:0.6rem 0.9rem;text-align:left;font-size:0.62rem;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;}
+  .exec-table tbody td{padding:0.6rem 0.9rem;border-bottom:1px solid var(--mid);vertical-align:top;}
+  .exec-table tbody tr:nth-child(even) td{background:var(--off);}
+  .exec-table .num{text-align:right;font-feature-settings:'tnum';}
+  .code-block{font-family:var(--mono);font-size:0.78rem;background:#0f1d2c;color:#d8e4f1;padding:1rem 1.2rem;border-radius:3px;overflow-x:auto;margin:0.6rem 0 1rem;line-height:1.55;white-space:pre;}
+  .file-ref{font-family:var(--mono);font-size:0.82rem;background:var(--accent-light);color:var(--accent);padding:1px 6px;border-radius:2px;border:1px solid #cfdfee;}
+  .rec-list{list-style:none;}
+  .rec-list li{display:flex;gap:0.8rem;padding:0.65rem 0;border-bottom:1px solid var(--mid);font-size:0.86rem;line-height:1.6;}
+  .rec-list li:last-child{border-bottom:none;}
+  .rec-num{width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font-size:0.6rem;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;}
+  .pitch-box{border:2px solid var(--accent);background:var(--off);padding:1.2rem 1.4rem;margin:1.6rem 0;}
+  .pitch-box h4{font-family:var(--serif);color:var(--accent);font-size:0.95rem;font-weight:700;margin-bottom:0.5rem;}
+  .pitch-box p{font-size:0.86rem;line-height:1.7;}
+  .report-footer{background:var(--light);border-top:1px solid var(--mid);padding:1.2rem 4rem;display:flex;justify-content:space-between;font-size:0.65rem;color:var(--text-light);margin-top:3rem;}
+  .role-bullets{margin-top:1rem;}
+  .role-bullets h4{font-size:0.72rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);margin:0.8rem 0 0.4rem;}
+  .role-bullets ul{list-style:disc;padding-left:1.3rem;font-size:0.84rem;line-height:1.6;}
+  .role-bullets ul li{margin-bottom:0.35rem;}
+</style>
+</head>
+<body>
+<div style="background:#0e4d3a;color:#eafaf3;padding:0.5rem 4rem;font-family:'Geist','Helvetica Neue',sans-serif;font-size:0.66rem;letter-spacing:0.07em;text-transform:uppercase;">&#10003; Project complete &middot; In maintenance mode (June&nbsp;2026) &middot; latest state &amp; corrections in the <a href="index.html" style="color:#9fe0c8;">index</a></div>
+
+<div class="letterhead">
+  <div>
+    <div class="lh-org">AllowanceMap Knowledge Series &middot; Report 02</div>
+    <div class="lh-title">Data Sources &amp; Ingestion</div>
+    <div class="lh-subtitle">Where the rows come from, what they cost, and what is wrong with them</div>
+  </div>
+  <div class="lh-meta">
+    <div><strong>2026-04-23</strong></div>
+    <div>Prepared by Raj Vedire</div>
+    <div>Version 1.0</div>
+  </div>
+</div>
+
+<div class="status-strip">
+  <div class="ss-item">Sources<span>4 integrated, 15 catalogued</span></div>
+  <div class="ss-item">Years<span>2013 to 2023</span></div>
+  <div class="ss-item">Records<span>~143M raw</span></div>
+  <div class="ss-item">Cost<span>$0 (all public)</span></div>
+</div>
+
+<div class="report-body">
+
+  <div class="kpi-row">
+    <div class="kpi-box"><div class="kpi-label">Primary dataset rows</div><div class="kpi-value">~103M</div><div class="kpi-sub">CMS Physician &amp; Other Practitioners (by Provider &amp; Service) 2013 to 2023</div></div>
+    <div class="kpi-box"><div class="kpi-label">Provider risk score join</div><div class="kpi-value">~10M</div><div class="kpi-sub">NPIs across 11 years from CMS Provider Summary</div></div>
+    <div class="kpi-box"><div class="kpi-label">MCBS PUF rows</div><div class="kpi-value">~150K</div><div class="kpi-sub">Cost Supplement 2018 to 2023, Survey File 2015 to 2023</div></div>
+    <div class="kpi-box"><div class="kpi-label">Synthetic OOP rows</div><div class="kpi-value">10.3M</div><div class="kpi-sub">Generated from real distributions, drop-in for real LDS</div></div>
+  </div>
+
+  <div class="section">
+    <h2>Source-by-source map</h2>
+    <table class="exec-table">
+      <thead><tr><th>Source</th><th>Used for</th><th>Pull script</th><th>Output landing</th></tr></thead>
+      <tbody>
+        <tr><td>CMS Physician &amp; Other Practitioners (by Provider &amp; Service)</td><td>Primary Stage 1 training data, target <span class="file-ref">Avg_Mdcr_Alowd_Amt</span></td><td><span class="file-ref">pull_medicare_data.py</span></td><td><span class="file-ref">data/*.csv</span> then <span class="file-ref">partitioned_data/{STATE}/{TYPE}/*.parquet</span></td></tr>
+        <tr><td>CMS Provider Summary (by Provider)</td><td><span class="file-ref">Bene_Avg_Risk_Scre</span> joined on NPI + year</td><td><span class="file-ref">pull_provider_data.py</span></td><td><span class="file-ref">data/provider_summary_{YEAR}.csv</span></td></tr>
+        <tr><td>MCBS Cost Supplement PUF</td><td>Stage 2 OOP distributions, demographic priors for synthetic generation</td><td><span class="file-ref">pull_mcbs_data.py --type cost</span></td><td><span class="file-ref">data/mcbs/cost/*.csv</span></td></tr>
+        <tr><td>MCBS Survey File PUF</td><td>Demographic distributions for synthetic generation</td><td><span class="file-ref">pull_mcbs_data.py --type survey</span></td><td><span class="file-ref">data/mcbs/survey/*.csv</span></td></tr>
+        <tr><td>BLS Medical CPI (CUUR0000SAM)</td><td>Forecast covariate, Chronos-Bolt deflation variants</td><td><span class="file-ref">pull_external_covariates.py</span> (BLS API + hardcoded fallback)</td><td><span class="file-ref">external/medical_cpi.csv</span></td></tr>
+        <tr><td>CMS Physician Fee Schedule conversion factor</td><td>V2_11 deflation experiment, V2_13 TFT known-future input</td><td>Hardcoded in pull script (annual values 2013 to 2026)</td><td><span class="file-ref">external/conversion_factors.csv</span></td></tr>
+        <tr><td>Sequestration, MACRA/MIPS, COVID indicators</td><td>V2_06 TFT covariates (mostly inert)</td><td>Hardcoded annual tables</td><td><span class="file-ref">external/{sequestration,macra_mips,covid_indicators}.csv</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>The CMS Physician dataset, in detail</h2>
+    <div class="prose">
+      <p>The "by Provider &amp; Service" dataset is a per-NPI per-HCPCS row for every Medicare-billing provider, broken out by place of service. Each year is a separate file from the CMS data API at <span class="file-ref">data.cms.gov/api/1/datastore/query/...</span>. The pull is paginated at 5000 rows; <span class="file-ref">pull_medicare_data.py</span> walks all pages and writes one CSV per year.</p>
+      <p>The raw file is geographically and clinically wide. To keep memory bounded for downstream pipelines, <span class="file-ref">partition_medicare_data.py</span> shards each annual CSV into <span class="file-ref">{STATE}/{PROVIDER_TYPE}/data.csv</span> and injects the year into the filename pattern. Then <span class="file-ref">csv_to_parquet.py</span> rewrites every shard as Parquet. After this step, the rest of the pipeline never reads CSVs.</p>
+    </div>
+    <div class="highlight-box">
+      <p>Year is not stored in the original CMS file. It is reconstructed from the source filename via regex during partitioning. If anyone re-downloads but forgets to re-partition, the year column silently disappears and any temporal model breaks. This is documented but the failure mode is quiet.</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Why a separate Provider Summary pull</h2>
+    <div class="prose">
+      <p>The Provider Summary dataset has one row per NPI per year and includes <span class="file-ref">Bene_Avg_Risk_Scre</span>, the NPI-level HCC risk score. This is the only way to get patient acuity into Stage 1 without claim-level data. The "by Provider &amp; Service" dataset does not carry it.</p>
+      <p>The pull is a direct CSV download from the CMS catalog (no API pagination needed). 11 years times ~470 MB equals ~5 GB of raw downloads. The join happens at the gold layer in <span class="file-ref">notebooks/03_gold_features_local.py:133-160</span> on (NPI, year). Missing scores are imputed with the global median, which lands at ~1.0 by construction (the HCC scale centers on 1.0).</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>MCBS PUF and the constraints that forced synthetic data</h2>
+    <div class="prose">
+      <p>The Medicare Current Beneficiary Survey is the only public source linking demographic context to OOP spending. <span class="file-ref">pull_mcbs_data.py</span> downloads the Survey File (2015 to 2022) and Cost Supplement (2018 to 2023) ZIPs, with <span class="file-ref">--url</span> overrides because CMS reorganizes their download URLs unpredictably.</p>
+      <p>Three constraints forced the dual-track architecture for Stage 2:</p>
+    </div>
+    <table class="exec-table">
+      <thead><tr><th>Constraint</th><th>Why it matters</th><th>Track A (PUF) handling</th><th>Track B (synthetic) handling</th></tr></thead>
+      <tbody>
+        <tr><td>No Census region in PUF</td><td>Region is suppressed for re-identification risk; we cannot model regional OOP variation from PUF alone</td><td>Crosswalk is national, joins on year only</td><td>Region assigned from state in the provider data, then OOP modulated by region</td></tr>
+        <tr><td>Survey File and Cost Supplement <span class="file-ref">PUF_ID</span>s do not overlap</td><td>Cannot link the same beneficiary across files; cannot join demographics to actual OOP at the person level</td><td>Cost Supplement is self-contained (has its own demographics: <span class="file-ref">CSP_AGE</span>, <span class="file-ref">CSP_SEX</span>, etc.)</td><td><span class="file-ref">generate_synthetic_mcbs.py</span> samples demographics from real distributions and pairs them with provider rows</td></tr>
+        <tr><td>OOP is annual, not per-service</td><td>Stage 2 wants per-service prediction</td><td>Aggregate national OOP-to-allowed ratio used as a calibration target</td><td>Per-service OOP synthesized with hardcoded modulation factors (-85% dual eligible, -35% supplemental, +3% per chronic condition, log-normal noise)</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:0.84rem;margin-top:0.8rem;">The MCBS LDS would solve all three constraints. It costs $600 per module + DUA + 6 to 8 weeks. Out of scope for this build.</p>
+  </div>
+
+  <div class="section">
+    <h2>Known data quality issues</h2>
+    <div class="prose">
+      <p>These are documented in <span class="file-ref">DATA_SOURCES.md</span> and <span class="file-ref">MODELING.md</span>. They are real and they show up in production.</p>
+    </div>
+
+    <h3>CMS specialty names rename across years</h3>
+    <table class="exec-table">
+      <thead><tr><th>Idx A</th><th>Name A</th><th>Years</th><th>Idx B</th><th>Name B</th><th>Years</th></tr></thead>
+      <tbody>
+        <tr><td>16</td><td>Cardiology</td><td>2013-2015, 2017-2023</td><td>17</td><td>Cardiovascular Disease (Cardiology)</td><td>2016 only</td></tr>
+        <tr><td>28</td><td>Colorectal Surgery (Formerly Proctology)</td><td>subset</td><td>29</td><td>Colorectal Surgery (Proctology)</td><td>subset</td></tr>
+        <tr><td>87</td><td>Oral Surgery (Dentist Only)</td><td>subset</td><td>88</td><td>Oral Surgery (Dentists Only)</td><td>subset</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:0.84rem;margin:0.6rem 0 0.4rem;">Discovered 2026-04-19 while debugging the Forecast Explorer trend chart. Root cause is that <span class="file-ref">LabelEncoder</span> is fit on the union of all year strings, so a single clinical specialty splits into two encoded indices with disjoint year coverage. The forecast model then has a 1-year sequence for one index and a 10-year sequence for the other.</p>
+    <p style="font-size:0.84rem;">Frontend interim fix: <span class="file-ref">TOP_SPECIALTY_IDXS</span> in <span class="file-ref">web/src/lib/v2-model-data.ts</span> points at the richer-history index. Proper fix (canonicalization in silver) is backlog item #5 in <span class="file-ref">MODELING.md</span>.</p>
+
+    <h3>gold versus gold_year on Drive</h3>
+    <p style="font-size:0.84rem;">The original <span class="file-ref">gold/</span> directory uploaded to Drive lacks the year column (it was stripped during an aggregation step). <span class="file-ref">gold_year/</span> has it. V2_13 hit an Arrow schema error pointing at <span class="file-ref">gold/</span>. Always use <span class="file-ref">gold_year/</span> for any temporal modeling.</p>
+
+    <h3>IQR outlier removal at silver is global</h3>
+    <p style="font-size:0.84rem;">In <span class="file-ref">notebooks/02_silver_clean_local.py:36-59</span>, IQR is computed once across every state and applied uniformly. This penalizes legitimately expensive surgical and DME procedures because the bound is dominated by E&amp;M codes. A within-bucket IQR would be cleaner.</p>
+  </div>
+
+  <div class="section">
+    <h2>Why I did not integrate other public sources (yet)</h2>
+    <table class="exec-table">
+      <thead><tr><th>Catalogued source</th><th>Would unlock</th><th>Why deferred</th></tr></thead>
+      <tbody>
+        <tr><td>Medicare Physician Fee Schedule (RVUs + GPCI)</td><td>Replace <span class="file-ref">Avg_Sbmtd_Chrg</span> with the actual pricing mechanism</td><td>Highest priority, but the no-charge ablation already showed R² only drops 0.015 without charge, so charge is not the leak it looks like</td></tr>
+        <tr><td>AHRF (county-level supply)</td><td>Within-state cost variation</td><td>Needs ZIP to FIPS crosswalk, NPI ZIP not preserved through the pipeline</td></tr>
+        <tr><td>NPPES NPI Registry</td><td>Provider experience, taxonomy granularity</td><td>~8 GB raw, would need NPI preservation through gold</td></tr>
+        <tr><td>Hospital Outpatient (APC)</td><td>Total episode cost (physician + facility)</td><td>Out of project scope (Stage 1 is physician/practitioner only)</td></tr>
+        <tr><td>FAIR Health benchmarks</td><td>Independent validation of Stage 1 predictions</td><td>Paid API</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>What I would do differently on the data layer</h2>
+    <ul class="rec-list">
+      <li><span class="rec-num">1</span><span>Canonicalize specialty names in silver before encoding. Strip parenthetical aliases, normalize pluralization, then fit <span class="file-ref">LabelEncoder</span>. Would fix the Cardiology / Colorectal / Oral Surgery split and any others I have not audited.</span></li>
+      <li><span class="rec-num">2</span><span>Preserve NPI through gold. Dropping it killed any chance of integrating NPPES, AHRF (via ZIP), or building the provider anomaly agent in <span class="file-ref">PROVIDER_ANOMALY_AGENT_SPEC.md</span>.</span></li>
+      <li><span class="rec-num">3</span><span>IQR per <span class="file-ref">hcpcs_bucket</span>, not global. Or Winsorize at P1/P99 instead of removing rows so the gold count stays predictable.</span></li>
+      <li><span class="rec-num">4</span><span>Compute year as a column at ingestion, not derive it from filename regex. Make the failure loud if it goes missing.</span></li>
+      <li><span class="rec-num">5</span><span>Add a Pandera schema check at each medallion boundary. Even <span class="file-ref">assert "Avg_Mdcr_Alowd_Amt" in df.columns</span> would catch the gold/gold_year mistake earlier.</span></li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>Interview framing</h2>
+    <div class="role-bullets">
+      <h4>Volunteer to a data engineer</h4>
+      <ul>
+        <li>The CMS API pagination quirk and why I shard by state immediately after pull</li>
+        <li>Year column reconstruction from filename and the silent failure mode it creates</li>
+        <li>Why I chose two separate ingest scripts (provider-service vs provider summary) instead of a single pipeline</li>
+        <li>The MCBS PUF_ID overlap constraint that made synthetic data necessary</li>
+      </ul>
+      <h4>Volunteer to an ML engineer</h4>
+      <ul>
+        <li>The CMS specialty rename bug and how it bites the time-series model harder than the tabular model</li>
+        <li>The dual-track Stage 2 architecture (Track A real PUF national, Track B synthetic regional) and the drop-in path to real LDS</li>
+        <li>Why <span class="file-ref">Avg_Sbmtd_Chrg</span> looks like a leak but isn't (the no-charge ablation drops only 0.015 R²)</li>
+      </ul>
+      <h4>Volunteer to a data scientist</h4>
+      <ul>
+        <li>The full data lineage from CMS API to a single LightGBM input row, in one breath</li>
+        <li>What real MCBS LDS would change about Stage 2 (per-beneficiary linkage, real Census region, real Medigap plan type)</li>
+        <li>The 15-source backlog in <span class="file-ref">DATA_SOURCES.md</span> and the priority matrix logic</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="pitch-box">
+    <h4>30-second pitch</h4>
+    <p>The training data is CMS Physician and Other Practitioners 2013 to 2023, about 103 million rows pulled through the CMS data API and partitioned by state. I separately pull the Provider Summary dataset to join in NPI-level HCC risk scores. For Stage 2 I use the public MCBS Cost Supplement PUF, but the PUF has three constraints (no Census region, non-overlapping IDs across files, annual not per-service OOP) so I built a synthetic per-service OOP generator that samples demographics from real PUF distributions and modulates OOP by dual eligibility and supplemental status. The synthetic file is a drop-in replacement for the real MCBS LDS if a researcher gets DUA access.</p>
+  </div>
+
+</div>
+
+<div class="report-footer">
+  <div>AllowanceMap &middot; Report 02 of 8 &middot; Raj Vedire</div>
+  <div>2026-04-23 &middot; Version 1.0</div>
+</div>
+
+</body>
+</html>

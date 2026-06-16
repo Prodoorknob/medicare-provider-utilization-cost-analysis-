@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>03 Medallion Pipeline &mdash; AllowanceMap</title>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Geist:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--white:#fff;--off:#fafafa;--light:#f4f4f4;--mid:#e8e8e8;--border:#d4d4d4;--text:#1a1a1a;--text-mid:#555;--text-light:#999;--accent:#1a3a5c;--accent-mid:#2a5a8c;--accent-light:#e8f0f8;--red:#c0392b;--green:#27ae60;--serif:'Libre Baskerville',Georgia,serif;--sans:'Geist','Helvetica Neue',sans-serif;--mono:'JetBrains Mono',Menlo,Consolas,monospace;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:#fff;color:var(--text);font-family:var(--sans);font-weight:300;line-height:1.65;font-size:0.92rem;}
+  .letterhead{background:var(--accent);color:#fff;padding:2.5rem 4rem;display:grid;grid-template-columns:1fr auto;align-items:end;gap:2rem;}
+  .lh-org{font-size:0.65rem;letter-spacing:0.15em;text-transform:uppercase;font-weight:500;opacity:0.7;margin-bottom:0.4rem;}
+  .lh-title{font-family:var(--serif);font-size:clamp(1.4rem,2.5vw,2.2rem);font-weight:700;line-height:1.2;}
+  .lh-subtitle{font-size:0.85rem;opacity:0.7;margin-top:0.4rem;}
+  .lh-meta{text-align:right;font-size:0.72rem;opacity:0.65;line-height:1.9;}
+  .lh-meta strong{opacity:1;font-weight:500;}
+  .status-strip{background:var(--accent-mid);padding:0.6rem 4rem;display:flex;gap:2.5rem;align-items:center;flex-wrap:wrap;}
+  .ss-item{font-size:0.65rem;letter-spacing:0.08em;color:rgba(255,255,255,0.7);text-transform:uppercase;}
+  .ss-item span{color:#fff;font-weight:500;margin-left:0.4rem;}
+  .report-body{max-width:980px;margin:0 auto;padding:3rem 4rem;}
+  .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:1.2rem;margin-bottom:2.6rem;}
+  @media (max-width:780px){.kpi-row{grid-template-columns:repeat(2,1fr);}}
+  .kpi-box{border:1px solid var(--border);padding:1.1rem 1.2rem;background:#fff;border-top:3px solid var(--accent);}
+  .kpi-label{font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-light);margin-bottom:0.45rem;font-weight:500;}
+  .kpi-value{font-family:var(--serif);font-size:1.6rem;color:var(--accent);line-height:1.1;}
+  .kpi-sub{font-size:0.66rem;margin-top:0.35rem;color:var(--text-light);}
+  .section{margin-bottom:2.6rem;}
+  .section h2{font-family:var(--serif);font-size:1.2rem;font-weight:400;color:var(--accent);padding-bottom:0.55rem;border-bottom:2px solid var(--accent);margin-bottom:1.2rem;}
+  .section h3{font-size:0.75rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-mid);margin:1.2rem 0 0.6rem;}
+  .prose p{margin-bottom:0.9rem;}
+  .highlight-box{background:var(--accent-light);border-left:4px solid var(--accent);padding:1.1rem 1.4rem;margin:1.4rem 0;}
+  .highlight-box p{font-size:0.86rem;color:var(--accent);margin:0;}
+  .exec-table{width:100%;border-collapse:collapse;font-size:0.83rem;margin:0.4rem 0 0.8rem;}
+  .exec-table thead th{background:var(--accent);color:#fff;padding:0.6rem 0.9rem;text-align:left;font-size:0.62rem;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;}
+  .exec-table tbody td{padding:0.6rem 0.9rem;border-bottom:1px solid var(--mid);vertical-align:top;}
+  .exec-table tbody tr:nth-child(even) td{background:var(--off);}
+  .exec-table .num{text-align:right;font-feature-settings:'tnum';}
+  .code-block{font-family:var(--mono);font-size:0.78rem;background:#0f1d2c;color:#d8e4f1;padding:1rem 1.2rem;border-radius:3px;overflow-x:auto;margin:0.6rem 0 1rem;line-height:1.55;white-space:pre;}
+  .file-ref{font-family:var(--mono);font-size:0.82rem;background:var(--accent-light);color:var(--accent);padding:1px 6px;border-radius:2px;border:1px solid #cfdfee;}
+  .rec-list{list-style:none;}
+  .rec-list li{display:flex;gap:0.8rem;padding:0.65rem 0;border-bottom:1px solid var(--mid);font-size:0.86rem;line-height:1.6;}
+  .rec-list li:last-child{border-bottom:none;}
+  .rec-num{width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font-size:0.6rem;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;}
+  .pitch-box{border:2px solid var(--accent);background:var(--off);padding:1.2rem 1.4rem;margin:1.6rem 0;}
+  .pitch-box h4{font-family:var(--serif);color:var(--accent);font-size:0.95rem;font-weight:700;margin-bottom:0.5rem;}
+  .pitch-box p{font-size:0.86rem;line-height:1.7;}
+  .role-bullets h4{font-size:0.72rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);margin:0.8rem 0 0.4rem;}
+  .role-bullets ul{list-style:disc;padding-left:1.3rem;font-size:0.84rem;line-height:1.6;}
+  .role-bullets ul li{margin-bottom:0.35rem;}
+  .report-footer{background:var(--light);border-top:1px solid var(--mid);padding:1.2rem 4rem;display:flex;justify-content:space-between;font-size:0.65rem;color:var(--text-light);margin-top:3rem;}
+</style>
+</head>
+<body>
+<div style="background:#0e4d3a;color:#eafaf3;padding:0.5rem 4rem;font-family:'Geist','Helvetica Neue',sans-serif;font-size:0.66rem;letter-spacing:0.07em;text-transform:uppercase;">&#10003; Project complete &middot; In maintenance mode (June&nbsp;2026) &middot; latest state &amp; corrections in the <a href="index.html" style="color:#9fe0c8;">index</a></div>
+
+<div class="letterhead">
+  <div>
+    <div class="lh-org">AllowanceMap Knowledge Series &middot; Report 03</div>
+    <div class="lh-title">Medallion Pipeline (Bronze, Silver, Gold)</div>
+    <div class="lh-subtitle">From per-state shards to a 13-feature LightGBM input row</div>
+  </div>
+  <div class="lh-meta">
+    <div><strong>2026-04-23</strong></div>
+    <div>Prepared by Raj Vedire</div>
+    <div>Version 1.0</div>
+  </div>
+</div>
+
+<div class="status-strip">
+  <div class="ss-item">Medallion stages<span>Bronze, Silver, Gold</span></div>
+  <div class="ss-item">Gold output<span>63 per-state parquets</span></div>
+  <div class="ss-item">Gold size<span>~1.9 GB</span></div>
+  <div class="ss-item">Runtimes<span>Local pandas + Databricks PySpark</span></div>
+</div>
+
+<div class="report-body">
+
+  <div class="kpi-row">
+    <div class="kpi-box"><div class="kpi-label">Bronze rows</div><div class="kpi-value">~143M</div><div class="kpi-sub">Raw CMS, post-partitioning</div></div>
+    <div class="kpi-box"><div class="kpi-label">Silver rows</div><div class="kpi-value">~126.8M</div><div class="kpi-sub">After IQR cleaning, type casting, null drops</div></div>
+    <div class="kpi-box"><div class="kpi-label">Gold rows</div><div class="kpi-value">~126.8M</div><div class="kpi-sub">12-column schema, per-state files</div></div>
+    <div class="kpi-box"><div class="kpi-label">LSTM groups</div><div class="kpi-value">23,672</div><div class="kpi-sub">specialty x bucket x state, year-ordered</div></div>
+  </div>
+
+  <div class="section">
+    <h2>Pipeline at a glance</h2>
+    <div class="code-block">                    Raw CMS CSV (annual)
+                            │
+              partition_medicare_data.py  (inject year, shard by STATE/TYPE)
+                            │
+                  csv_to_parquet.py
+                            │
+                            ▼
+       ┌──────────────────────────────────────────────────┐
+       │  partitioned_data/{STATE}/{PROVIDER_TYPE}/*.parquet │
+       └──────────────────────────────────────────────────┘
+                            │
+        01_bronze_ingest_local.py  (skipped on full data: OOM at 6,313 files;
+                            │       silver reads partitioned_data directly)
+                            ▼
+       ┌──────────────────────────────────────────────────┐
+       │  bronze/bronze.parquet  (sample data only)         │
+       └──────────────────────────────────────────────────┘
+                            │
+        02_silver_clean_local.py  (Pass 1: global IQR; Pass 2: per-state typing)
+                            │
+                            ▼
+       ┌──────────────────────────────────────────────────┐
+       │  silver/{STATE}.parquet                            │
+       └──────────────────────────────────────────────────┘
+                            │
+        03_gold_features_local.py  (HCPCS bucketing, log transforms,
+                            │       label encoders, risk score join)
+                            ▼
+       ┌──────────────────────────────────────────────────┐
+       │  gold/{STATE}.parquet  +  label_encoders.json      │
+       │  gold_year/{STATE}.parquet  (year-aware variant)   │
+       └──────────────────────────────────────────────────┘
+                            │
+        05_lstm_sequences_local.py  (group by ptype x bucket x state)
+                            ▼
+                  lstm/sequences.parquet</div>
+  </div>
+
+  <div class="section">
+    <h2>Why per-state, not a monolithic gold file</h2>
+    <div class="prose">
+      <p>The original V1 gold was a single <span class="file-ref">gold.parquet</span>. With 30% sampling on a 24 GB WSL2 instance this was workable. When Phase 2 went to full national scale, three things forced the per-state split:</p>
+    </div>
+    <table class="exec-table">
+      <thead><tr><th>Pressure</th><th>Symptom</th><th>Per-state fix</th></tr></thead>
+      <tbody>
+        <tr><td>RAM</td><td>Loading the monolithic gold OOMed during V1 Phase 2 retraining</td><td>Per-state files let regional batch trainers stream by Census region</td></tr>
+        <tr><td>Regional batching</td><td>XGBoost <span class="file-ref">--mode batch</span> wants to incrementally train by region via <span class="file-ref">xgb_model</span>; needs predictable file boundaries</td><td>Each region is the union of N state parquets, glob then concat</td></tr>
+        <tr><td>Iteration speed</td><td>Editing the silver step required reprocessing everything to test</td><td>Test on one state (CA) in seconds, then run the whole 63 in batch</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:0.84rem;">Census region batch lists live in <span class="file-ref">modeling/train_lgbm_local.py:71-80</span> and elsewhere &mdash; identical mapping copy-pasted across trainers (a code-smell that did not bite).</p>
+  </div>
+
+  <div class="section">
+    <h2>Bronze: the layer I ended up skipping</h2>
+    <div class="prose">
+      <p>The bronze script (<span class="file-ref">notebooks/01_bronze_ingest_local.py</span>) tries to load every partitioned file into a single DataFrame and write a consolidated <span class="file-ref">bronze.parquet</span>. With ~10M rows times 11 years times wide schema, the in-memory representation exceeded 32 GB.</p>
+      <p>The accepted workaround is that silver reads <span class="file-ref">partitioned_data/</span> directly. Bronze still runs on small samples for development. On Databricks, bronze runs to completion because Spark spills to disk; the local script does not. This is documented in <span class="file-ref">PROGRESS.md</span> Phase 2 notes.</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Silver: typing, IQR cleaning, per-state writes</h2>
+    <div class="prose">
+      <p><span class="file-ref">notebooks/02_silver_clean_local.py</span> runs in two passes. Pass 1 loads only the target column from every partition file and computes a global Q1, Q3, IQR. Pass 2 reads each state's partitions, casts numerics, drops nulls on required columns, and applies the global 3x IQR bound on <span class="file-ref">Avg_Mdcr_Alowd_Amt</span>.</p>
+    </div>
+    <table class="exec-table">
+      <thead><tr><th>Step</th><th>Code</th><th>Decision</th></tr></thead>
+      <tbody>
+        <tr><td>Numeric coercion</td><td><span class="file-ref">02_silver_clean_local.py</span> NUMERIC_COLS list</td><td>Reads <span class="file-ref">dtype=str</span> at bronze; explicit numeric cast at silver to control NaN behavior</td></tr>
+        <tr><td>Required column drop</td><td>REQUIRED_COLS = NPI, HCPCS_Cd, target</td><td>Rows missing any of these get dropped; logged per state</td></tr>
+        <tr><td>Outlier removal</td><td>3x IQR on target, global</td><td><strong>Known limitation:</strong> global IQR penalizes legitimately expensive surgical codes; should be per-bucket</td></tr>
+        <tr><td>Per-state output</td><td><span class="file-ref">silver/{STATE}.parquet</span></td><td>NPI is preserved here; gets dropped at gold</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>Gold: the 13-feature model input</h2>
+    <div class="prose">
+      <p><span class="file-ref">notebooks/03_gold_features_local.py</span> turns each silver parquet into a model-ready feature matrix. The HCPCS bucketing logic is at <span class="file-ref">03_gold_features_local.py:100-128</span>, identical to the API's reconstruction in <span class="file-ref">api/services/prediction.py:32-61</span> &mdash; the buckets must agree at training and serving time.</p>
+    </div>
+
+    <h3>Feature engineering done at gold</h3>
+    <table class="exec-table">
+      <thead><tr><th>Feature</th><th>Derived from</th><th>Why this transform</th></tr></thead>
+      <tbody>
+        <tr><td><span class="file-ref">hcpcs_bucket</span> (0-5)</td><td>HCPCS code numeric range or alpha prefix</td><td>Six clinical categories: Anesthesia, Surgery, Radiology, Lab, Medicine/E&amp;M, HCPCS Level II. Coarser than raw code (~6K unique), gives tree models a cheap split.</td></tr>
+        <tr><td><span class="file-ref">place_of_srvc_flag</span></td><td>Already present in raw, just extracted</td><td>Binary facility (1) vs office (0)</td></tr>
+        <tr><td><span class="file-ref">log_srvcs</span>, <span class="file-ref">log_benes</span></td><td><span class="file-ref">log1p(Tot_Srvcs)</span>, <span class="file-ref">log1p(Tot_Benes)</span></td><td>Volume distributions are right-skewed by orders of magnitude; raw counts dominate splits</td></tr>
+        <tr><td><span class="file-ref">srvcs_per_bene</span></td><td><span class="file-ref">log_srvcs / log_benes</span></td><td>Utilization intensity per beneficiary, more stable than raw ratio at low denominators</td></tr>
+        <tr><td><span class="file-ref">specialty_bucket</span>, <span class="file-ref">pos_bucket</span></td><td>Cross of categorical features</td><td>Explicit interaction term so shallow trees can split on it without combinatorial depth</td></tr>
+        <tr><td><span class="file-ref">hcpcs_target_enc</span></td><td>Mean target per HCPCS code, computed once and persisted</td><td>Continuous version of the 6K-cardinality categorical; tested in V2_01 and stayed</td></tr>
+        <tr><td><span class="file-ref">Bene_Avg_Risk_Scre</span></td><td>NPI + year join from <span class="file-ref">pull_provider_data.py</span></td><td>HCC risk score is the only patient-acuity proxy available without claims-level data</td></tr>
+        <tr><td>Label-encoded ints (provider type, state, HCPCS code)</td><td><span class="file-ref">sklearn.LabelEncoder</span> fit on union of all years</td><td><strong>Known bug:</strong> rename-across-years splits a single specialty into two indices &mdash; see Report 02</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:0.84rem;">Final gold schema (12 columns) lives in <span class="file-ref">PROGRESS.md</span> Phase 2 milestone 2.7. The encoder mappings persist to <span class="file-ref">gold/label_encoders.json</span>, used by every downstream trainer and the production API.</p>
+  </div>
+
+  <div class="section">
+    <h2>The two gold variants</h2>
+    <div class="highlight-box">
+      <p>Be careful: there are two gold directories on Drive. Use the year-aware one for any temporal model.</p>
+    </div>
+    <table class="exec-table">
+      <thead><tr><th>Directory</th><th>Has year column?</th><th>Used by</th></tr></thead>
+      <tbody>
+        <tr><td><span class="file-ref">gold/</span></td><td>No (year was stripped at an aggregation step)</td><td>V1 tabular trainers, Stage 1 LightGBM V2 (year not used as feature anyway)</td></tr>
+        <tr><td><span class="file-ref">gold_year/</span></td><td>Yes, int16 2013-2023</td><td>V2_13 multivariate TFT, anything that needs temporal granularity. V2_13 originally pointed at <span class="file-ref">gold/</span> and hit an Arrow schema error.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>LSTM sequence layer</h2>
+    <div class="prose">
+      <p><span class="file-ref">notebooks/05_lstm_sequences_local.py</span> aggregates gold rows by (provider_type, hcpcs_bucket, state) and emits year-ordered target vectors. Output is <span class="file-ref">lstm/sequences.parquet</span> with 23,672 groups. 10,540 of those have all 11 years; 2,771 have under 3 years and get filtered before training.</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Local versus Databricks parity</h2>
+    <table class="exec-table">
+      <thead><tr><th>Layer</th><th>Local script</th><th>Databricks notebook</th><th>Difference</th></tr></thead>
+      <tbody>
+        <tr><td>Bronze</td><td><span class="file-ref">01_bronze_ingest_local.py</span></td><td><span class="file-ref">01_bronze_ingest.py</span></td><td>Spark spills to disk; pandas OOMs at full scale (workaround: skip)</td></tr>
+        <tr><td>Silver</td><td><span class="file-ref">02_silver_clean_local.py</span></td><td><span class="file-ref">02_silver_clean.py</span></td><td>Pandas reads <span class="file-ref">partitioned_data/</span>; Spark reads bronze Delta table</td></tr>
+        <tr><td>Gold</td><td><span class="file-ref">03_gold_features_local.py</span></td><td><span class="file-ref">03_gold_features.py</span></td><td>Same bucketing logic, different writer (pandas <span class="file-ref">to_parquet</span> vs Spark Delta)</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:0.84rem;">All training scripts have <span class="file-ref">_local</span> variants but log to the same Databricks-hosted MLflow workspace via <span class="file-ref">DATABRICKS_HOST</span> + <span class="file-ref">DATABRICKS_TOKEN</span> env vars. The unified experiment is at <span class="file-ref">/Users/rvedire@iu.edu/medicare_models</span>.</p>
+  </div>
+
+  <div class="section">
+    <h2>What I would do differently</h2>
+    <ul class="rec-list">
+      <li><span class="rec-num">1</span><span>Stream-write bronze with <span class="file-ref">pyarrow.ParquetWriter</span> instead of holding all files in memory. Or accept bronze is a Spark-only layer and document that explicitly.</span></li>
+      <li><span class="rec-num">2</span><span>Per-bucket IQR at silver, not global. Or Winsorize at P1/P99 to preserve row count.</span></li>
+      <li><span class="rec-num">3</span><span>Add Pandera schema validation at each medallion boundary. The <span class="file-ref">gold/</span> vs <span class="file-ref">gold_year/</span> mistake would have surfaced as a schema assertion failure rather than a downstream Arrow error.</span></li>
+      <li><span class="rec-num">4</span><span>Preserve NPI through gold. Killed the anomaly agent and any NPPES/AHRF integration path.</span></li>
+      <li><span class="rec-num">5</span><span>Unify the local/Databricks scripts into a single Python module with a backend toggle. Right now they drift &mdash; updates to one occasionally do not land in the other.</span></li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>Interview framing</h2>
+    <div class="role-bullets">
+      <h4>Volunteer to a data engineer</h4>
+      <ul>
+        <li>The two-pass IQR strategy at silver: target-only first pass keeps memory low</li>
+        <li>Per-state sharding rationale and how it powers regional batch training</li>
+        <li>The bronze-OOM workaround and why I accepted skipping it locally</li>
+        <li>Train/serve feature parity: gold script and <span class="file-ref">api/services/prediction.py</span> reproduce the exact same HCPCS bucketing</li>
+      </ul>
+      <h4>Volunteer to an ML engineer</h4>
+      <ul>
+        <li>Why <span class="file-ref">log1p</span> on volume features and on the target (right-skew, orders-of-magnitude span)</li>
+        <li>Explicit interaction features (<span class="file-ref">specialty_bucket</span>, <span class="file-ref">pos_bucket</span>) for shallow tree splitting</li>
+        <li>Persisted <span class="file-ref">label_encoders.json</span> so training, batch inference, and the API all encode the same way</li>
+      </ul>
+      <h4>Volunteer to a data scientist</h4>
+      <ul>
+        <li>The gold vs gold_year split, why it exists, and what it cost the V2_13 TFT debugging session</li>
+        <li>Risk score imputation strategy (global median, ~1.0 by HCC convention) and why it understates patient acuity variation</li>
+        <li>The LSTM sequence count (23,672 groups) and the filter that drops short-history groups</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="pitch-box">
+    <h4>30-second pitch</h4>
+    <p>The pipeline is medallion in shape but pragmatic in execution. Bronze is a Spark layer on Databricks; locally I skip it and silver reads the partitioned CSVs directly because pandas OOMs trying to consolidate 6,313 files. Silver runs a two-pass IQR: load only the target column to compute global bounds, then per-state cleaning and typing in Pass 2. Gold is the model-ready feature layer with HCPCS bucketing into six clinical categories, log-transformed volume features, label-encoded categoricals with a persisted JSON for cross-script consistency, and an NPI-plus-year join with the Provider Summary risk score. Output is 63 per-state parquets, about 1.9 GB, that every trainer and the production API reads from.</p>
+  </div>
+
+</div>
+
+<div class="report-footer">
+  <div>AllowanceMap &middot; Report 03 of 8 &middot; Raj Vedire</div>
+  <div>2026-04-23 &middot; Version 1.0</div>
+</div>
+
+</body>
+</html>
