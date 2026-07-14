@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>V2 Model Selection &amp; Performance Analysis</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #080c08;
+  --bg-surface: #0e140e;
+  --bg-card: #121a12;
+  --green: #22cc55;
+  --green-dim: #1a9944;
+  --amber: #ccaa22;
+  --cyan: #22cccc;
+  --red: #cc3322;
+  --text: #b8c8b8;
+  --text-bright: #e0f0e0;
+  --text-dim: #607060;
+  --border: #1a2a1a;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'JetBrains Mono', monospace;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  font-size: 13px;
+  padding: 2rem;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+h1 { color: var(--green); font-size: 1.4rem; font-weight: 700; margin-bottom: 0.3rem; }
+h2 { color: var(--green); font-size: 1.1rem; font-weight: 500; margin: 2.5rem 0 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
+h3 { color: var(--amber); font-size: 0.95rem; font-weight: 500; margin: 1.5rem 0 0.5rem; }
+.subtitle { color: var(--text-dim); font-size: 0.85rem; margin-bottom: 2rem; }
+.meta { display: flex; gap: 2rem; margin-bottom: 2rem; font-size: 0.8rem; color: var(--text-dim); }
+.meta span { color: var(--cyan); }
+p { margin-bottom: 1rem; }
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1.2rem;
+  margin: 1rem 0;
+}
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+.kpi {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1rem;
+  text-align: center;
+}
+.kpi-value { font-size: 1.8rem; font-weight: 700; color: var(--green); }
+.kpi-value.amber { color: var(--amber); }
+.kpi-value.red { color: var(--red); }
+.kpi-value.cyan { color: var(--cyan); }
+.kpi-label { font-size: 0.75rem; color: var(--text-dim); margin-top: 0.3rem; }
+.kpi-delta { font-size: 0.7rem; margin-top: 0.2rem; }
+.kpi-delta.up { color: var(--green); }
+.kpi-delta.down { color: var(--red); }
+table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.85rem; }
+th { color: var(--green); text-align: left; padding: 0.5rem 0.8rem; border-bottom: 2px solid var(--green-dim); font-weight: 500; }
+td { padding: 0.5rem 0.8rem; border-bottom: 1px solid var(--border); }
+tr:hover td { background: var(--bg-surface); }
+.highlight { color: var(--green); font-weight: 700; }
+.warn { color: var(--amber); }
+.dim { color: var(--text-dim); }
+.tag { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 0.7rem; font-weight: 500; }
+.tag-green { background: #22cc5520; color: var(--green); border: 1px solid var(--green-dim); }
+.tag-amber { background: #ccaa2220; color: var(--amber); border: 1px solid #99881a; }
+.tag-red { background: #cc332220; color: var(--red); border: 1px solid #992211; }
+.tag-cyan { background: #22cccc20; color: var(--cyan); border: 1px solid #1a9999; }
+.finding { border-left: 3px solid var(--amber); padding-left: 1rem; margin: 1rem 0; }
+.verdict { border-left: 3px solid var(--green); padding-left: 1rem; margin: 1rem 0; }
+code { background: var(--bg-surface); padding: 1px 5px; border-radius: 2px; color: var(--cyan); font-size: 0.85rem; }
+.bar-container { display: flex; align-items: center; gap: 0.5rem; margin: 0.3rem 0; }
+.bar-label { width: 100px; text-align: right; font-size: 0.75rem; color: var(--text-dim); }
+.bar { height: 18px; border-radius: 2px; min-width: 2px; }
+.bar-value { font-size: 0.75rem; color: var(--text); }
+.scanline { height: 1px; background: linear-gradient(90deg, transparent, var(--green-dim), transparent); margin: 2rem 0; }
+footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border); font-size: 0.7rem; color: var(--text-dim); }
+</style>
+</head>
+<body>
+
+<h1>&gt; V2 MODEL SELECTION &amp; PERFORMANCE ANALYSIS</h1>
+<div class="subtitle">Medicare Provider Utilization &amp; Cost Prediction // Investigative Knowledge Report</div>
+<div class="meta">
+  <div>Date: <span>2026-04-11</span></div>
+  <div>Dataset: <span>126,810,995 rows</span></div>
+  <div>Target: <span>Avg_Mdcr_Alowd_Amt</span></div>
+  <div>Author: <span>Raj Vedire</span></div>
+</div>
+
+<!-- KPI STRIP -->
+<div class="kpi-grid">
+  <div class="kpi">
+    <div class="kpi-value">0.9575</div>
+    <div class="kpi-label">BEST SINGLE MODEL R2 (LightGBM)</div>
+    <div class="kpi-delta up">+0.073 vs V1 RF baseline</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-value cyan">$6.73</div>
+    <div class="kpi-label">BEST MAE (LightGBM)</div>
+    <div class="kpi-delta up">-$5.31 vs V1 RF ($12.04)</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-value amber">+0.0004</div>
+    <div class="kpi-label">ENSEMBLE LIFT OVER BEST SINGLE</div>
+    <div class="kpi-delta down">13.3 hrs compute for negligible gain</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-value">-0.015</div>
+    <div class="kpi-label">R2 DROP WITHOUT CHARGE FEATURE</div>
+    <div class="kpi-delta up">Models are genuinely predictive</div>
+  </div>
+</div>
+
+<div class="scanline"></div>
+
+<!-- SECTION 1: WHY THESE THREE MODELS -->
+<h2>01 // WHY XGBOOST + CATBOOST + LIGHTGBM?</h2>
+
+<h3>The V1 Problem</h3>
+<p>V1 trained Random Forest, XGBoost, and GLM on 30% of the data (38M rows) using regional batching due to 24 GB WSL2 RAM constraints. The best V1 result was RF at R2=0.884. GLM diverged entirely (R2=-102). The question for V2: can we do better by (a) using all the data and (b) choosing models with complementary inductive biases?</p>
+
+<h3>Model Selection Rationale</h3>
+
+<div class="card">
+<h3>XGBoost: The Proven Baseline</h3>
+<p><span class="tag tag-green">SELECTED</span> Level-wise tree growth, L1/L2 regularization, histogram binning. V1 had already shown XGBoost works on this data (R2=0.833 at 30% sample). The V2 hypothesis was that full data would close the gap with RF, and it did: R2=0.945. XGBoost's <code>hist</code> method on GPU processes 126M rows in 8 minutes, making it the fastest of the three.</p>
+</div>
+
+<div class="card">
+<h3>CatBoost: Native Categorical Handling</h3>
+<p><span class="tag tag-amber">SELECTED WITH CAVEATS</span> The key motivation was <strong>ordered target statistics</strong> for the 7 categorical features, especially <code>HCPCS_Cd_idx</code> (~6,000 unique procedure codes). Standard label encoding (used by XGBoost) treats code 4500 as "between" 4499 and 4501, which is meaningless. CatBoost computes optimal splits by building statistics from randomly permuted subsets, avoiding target leakage that naive target encoding introduces.</p>
+<p>The theory was sound but the practice was harder. CatBoost GPU has restrictions: no <code>rsm</code> (column sampling) for regression, <code>subsample</code> requires <code>bootstrap_type='MVS'</code> instead of the default Bayesian, and convergence on 126M rows with high-cardinality categoricals is 3-4x slower than XGBoost. At 1,000 iterations it scored only R2=0.789. At 3,000 iterations: R2=0.907. Still the weakest of the three, suggesting the ordered target statistics add value but the model needs more iterations or depth to fully exploit them at this scale.</p>
+</div>
+
+<div class="card">
+<h3>LightGBM: Leaf-Wise Growth + GOSS</h3>
+<p><span class="tag tag-green">BEST PERFORMER</span> Two architectural differences from XGBoost made LightGBM the winner:</p>
+<p><strong>1. Leaf-wise growth</strong> (<code>num_leaves=63</code>) instead of level-wise (<code>max_depth=6</code>). For 126M rows with high-cardinality categoricals, leaf-wise finds deeper, more specific splits in the high-density regions of the feature space without wasting capacity on sparse regions. XGBoost's level-wise approach builds balanced trees that allocate equal depth to every branch, even those with few samples.</p>
+<p><strong>2. Gradient-based One-Side Sampling (GOSS)</strong> retains all samples with large gradients (hard examples) and randomly samples from small-gradient instances. On 126M rows, most instances are "easy" (common procedures, standard pricing). GOSS focuses training capacity on the ~20% of hard cases, which is where the incremental R2 comes from.</p>
+<p>Additionally, LightGBM natively handles categorical features (optimal histogram splits) without the overhead of CatBoost's ordered permutations. On CPU with all cores, LightGBM trained 1,000 rounds in ~50 minutes vs CatBoost's ~100 minutes per 1,000 iterations on GPU.</p>
+</div>
+
+<div class="scanline"></div>
+
+<!-- SECTION 2: FEATURE ENGINEERING -->
+<h2>02 // FEATURE ENGINEERING: V1 TO V2</h2>
+
+<h3>V2 Feature Set (13 features)</h3>
+<table>
+  <tr><th>Feature</th><th>Type</th><th>Source</th><th>Role</th></tr>
+  <tr><td><code>HCPCS_Cd_idx</code></td><td>Cat (~6K)</td><td>CMS</td><td>Procedure identity, primary price signal</td></tr>
+  <tr><td><code>hcpcs_target_enc</code></td><td>Continuous</td><td>Derived (Pass 1)</td><td>Mean allowed amt per procedure code</td></tr>
+  <tr><td><code>Avg_Sbmtd_Chrg</code></td><td>Continuous</td><td>CMS</td><td>Submitted charge (billed amount)</td></tr>
+  <tr><td><code>Rndrng_Prvdr_Type_idx</code></td><td>Cat (~100)</td><td>CMS</td><td>Provider specialty</td></tr>
+  <tr><td><code>Rndrng_Prvdr_State_Abrvtn_idx</code></td><td>Cat (~63)</td><td>CMS</td><td>Geographic pricing variation</td></tr>
+  <tr><td><code>hcpcs_bucket</code></td><td>Cat (6)</td><td>Derived</td><td>Coarse clinical category</td></tr>
+  <tr><td><code>place_of_srvc_flag</code></td><td>Binary</td><td>CMS</td><td>Facility vs office (affects fee schedule)</td></tr>
+  <tr><td><code>Bene_Avg_Risk_Scre</code></td><td>Continuous</td><td>CMS (by Provider)</td><td>Patient acuity (HCC risk score)</td></tr>
+  <tr><td><code>log_srvcs</code></td><td>Continuous</td><td>Derived</td><td>Volume of services (log-transformed)</td></tr>
+  <tr><td><code>log_benes</code></td><td>Continuous</td><td>Derived</td><td>Number of beneficiaries (log-transformed)</td></tr>
+  <tr><td><code>srvcs_per_bene</code></td><td>Continuous</td><td>Derived</td><td>Utilization intensity ratio</td></tr>
+  <tr><td><code>specialty_bucket</code></td><td>Cat</td><td>Derived</td><td>Interaction: specialty x clinical category</td></tr>
+  <tr><td><code>pos_bucket</code></td><td>Cat</td><td>Derived</td><td>Interaction: place of service x clinical category</td></tr>
+</table>
+
+<h3>The Avg_Sbmtd_Chrg Question</h3>
+<div class="finding">
+<p><strong>Finding:</strong> V1 RF attributed 61.8% feature importance to <code>Avg_Sbmtd_Chrg</code>. We hypothesized that removing it would drop R2 by 0.25-0.30, revealing how much the model was simply learning "allowed = f(billed)". The actual drop was only 0.015.</p>
+<p><strong>Why the drop was small:</strong> The <code>hcpcs_target_enc</code> feature (mean allowed amount per procedure code, fitted in a separate pass on training data) encodes nearly the same pricing information as the submitted charge, but through procedure identity rather than the specific bill. Together with <code>HCPCS_Cd_idx</code>, these two features capture the Medicare fee schedule structure. The charge is redundant once you know what procedure was performed.</p>
+<p><strong>Implication:</strong> The no-charge model (R2=0.943) is deployable for prospective cost estimation where the billed charge isn't known yet. This is the more useful model for real-world applications.</p>
+</div>
+
+<h3>No-Charge Ablation Results</h3>
+<table>
+  <tr><th>Model</th><th>With Charge (R2)</th><th>Without Charge (R2)</th><th>Delta</th></tr>
+  <tr><td>LightGBM</td><td class="highlight">0.9575</td><td>0.9428</td><td>-0.015</td></tr>
+  <tr><td>XGBoost</td><td>0.9452</td><td>0.9295</td><td>-0.016</td></tr>
+  <tr><td>CatBoost</td><td>0.9070</td><td>0.8974</td><td>-0.010</td></tr>
+</table>
+
+<div class="scanline"></div>
+
+<!-- SECTION 3: ERROR METRICS -->
+<h2>03 // ERROR METRICS: WHAT THEY TELL US</h2>
+
+<h3>Full V2 Results Comparison</h3>
+<table>
+  <tr><th>Model</th><th>MAE ($)</th><th>RMSE ($)</th><th>R2</th><th>Status</th></tr>
+  <tr><td>LightGBM V2</td><td class="highlight">6.73</td><td class="highlight">13.59</td><td class="highlight">0.9575</td><td><span class="tag tag-green">BEST</span></td></tr>
+  <tr><td>XGBoost V2</td><td>7.73</td><td>15.43</td><td>0.9452</td><td><span class="tag tag-green">STRONG</span></td></tr>
+  <tr><td>Ensemble V2</td><td>6.68</td><td>13.50</td><td>0.9580</td><td><span class="tag tag-amber">MARGINAL</span></td></tr>
+  <tr><td>CatBoost V2</td><td>10.88</td><td>20.10</td><td>0.9070</td><td><span class="tag tag-amber">UNDERPERFORMED</span></td></tr>
+  <tr><td class="dim">RF V1</td><td class="dim">12.04</td><td class="dim">22.73</td><td class="dim">0.8843</td><td><span class="tag tag-red">V1 BASELINE</span></td></tr>
+  <tr><td class="dim">XGB V1</td><td class="dim">11.83</td><td class="dim">21.18</td><td class="dim">0.8331</td><td><span class="tag tag-red">V1 BASELINE</span></td></tr>
+</table>
+
+<h3>What MAE vs RMSE Reveals</h3>
+<div class="card">
+<p>The RMSE/MAE ratio indicates the distribution of errors:</p>
+
+<div class="bar-container">
+  <div class="bar-label">LightGBM</div>
+  <div class="bar" style="width: 202px; background: var(--green)"></div>
+  <div class="bar-value">RMSE/MAE = 2.02</div>
+</div>
+<div class="bar-container">
+  <div class="bar-label">XGBoost</div>
+  <div class="bar" style="width: 200px; background: var(--cyan)"></div>
+  <div class="bar-value">RMSE/MAE = 2.00</div>
+</div>
+<div class="bar-container">
+  <div class="bar-label">CatBoost</div>
+  <div class="bar" style="width: 185px; background: var(--amber)"></div>
+  <div class="bar-value">RMSE/MAE = 1.85</div>
+</div>
+<div class="bar-container">
+  <div class="bar-label dim">RF V1</div>
+  <div class="bar" style="width: 189px; background: var(--text-dim)"></div>
+  <div class="bar-value dim">RMSE/MAE = 1.89</div>
+</div>
+
+<p style="margin-top: 1rem;">An RMSE/MAE ratio near 1.0 means uniform errors. A ratio near 2.0+ means the model has a long tail of large errors on specific cases. All V2 models show ratio ~2.0, indicating that the remaining error is concentrated in outlier cases (rare procedures, unusual geographic pricing, edge-case provider types) rather than uniform noise. The models are good at common cases and bad at rare ones, which is the expected pattern for a fee-schedule-driven target variable.</p>
+</div>
+
+<h3>Why CatBoost Underperformed</h3>
+<div class="finding">
+<p><strong>Root cause: Insufficient iterations for convergence at scale.</strong></p>
+<p>CatBoost's ordered target statistics compute per-feature optimal splits using random permutations of the training set. With 126M rows and 6,000 unique HCPCS codes, each iteration explores a massive combinatorial space. The convergence curve shows:</p>
+<table>
+  <tr><th>Iterations</th><th>Test RMSE (log-space)</th><th>Dollar R2</th></tr>
+  <tr><td>1,000</td><td>0.382</td><td>0.789</td></tr>
+  <tr><td>2,000</td><td>0.244</td><td>~0.87</td></tr>
+  <tr><td>3,000</td><td>0.209</td><td>0.907</td></tr>
+  <tr><td>5,000 (est.)</td><td>~0.175</td><td>~0.93</td></tr>
+</table>
+<p>CatBoost was still improving at iteration 2,999 (best_iteration = 2999). XGBoost converged by round ~500. LightGBM plateaued around round ~800. CatBoost's slower convergence is the price of its more principled categorical handling, which builds richer internal representations but needs more passes to refine them.</p>
+<p>Additionally, GPU restrictions forced removing <code>rsm</code> (column subsampling), which reduces regularization and may cause slight overfitting on the training permutations. CatBoost on CPU with <code>rsm=0.8</code> might converge faster at the same R2, but CPU training on 126M rows would take prohibitively long.</p>
+</div>
+
+<div class="scanline"></div>
+
+<!-- SECTION 4: ENSEMBLE FAILURE ANALYSIS -->
+<h2>04 // WHY THE ENSEMBLE FAILED</h2>
+
+<h3>Ridge Meta-Learner Weights</h3>
+<div class="card">
+<div class="bar-container">
+  <div class="bar-label">LightGBM</div>
+  <div class="bar" style="width: 336px; background: var(--green)"></div>
+  <div class="bar-value highlight">+1.120</div>
+</div>
+<div class="bar-container">
+  <div class="bar-label">XGBoost</div>
+  <div class="bar" style="width: 29px; background: var(--red)"></div>
+  <div class="bar-value" style="color: var(--red)">-0.097</div>
+</div>
+<div class="bar-container">
+  <div class="bar-label">CatBoost</div>
+  <div class="bar" style="width: 7px; background: var(--red)"></div>
+  <div class="bar-value" style="color: var(--red)">-0.023</div>
+</div>
+</div>
+
+<h3>Three Reasons for Negligible Ensemble Lift</h3>
+
+<div class="card">
+<p><strong>1. Correlated Error Patterns</strong></p>
+<p>All three models are gradient boosted decision trees operating on the same 13 features. They make the same mistakes on the same hard cases: rare HCPCS codes with few training examples, geographic outliers (territories with tiny populations), and provider types with high cost variance (anesthesiology, interventional cardiology). Stacking can only average away <em>uncorrelated</em> errors.</p>
+</div>
+
+<div class="card">
+<p><strong>2. LightGBM Already Captures the Signal</strong></p>
+<p>With R2=0.9575, LightGBM explains 95.75% of variance. The remaining 4.25% is likely irreducible noise (within-provider billing variance, patient mix differences, year-over-year fee schedule changes not captured in the features). XGBoost and CatBoost cannot recover signal that doesn't exist in the feature set, so they add only noise to the ensemble.</p>
+</div>
+
+<div class="card">
+<p><strong>3. CatBoost Weakness Dragged Down Diversity</strong></p>
+<p>For stacking to work, base learners need to be both <em>accurate</em> and <em>diverse</em>. CatBoost at R2=0.907 is accurate enough, but its errors are a superset of LightGBM's errors (it fails on everything LightGBM fails on, plus more). The negative Ridge weight (-0.023) means CatBoost's predictions are being subtracted, not added. The meta-learner uses CatBoost as a small correction term, not a contributor.</p>
+</div>
+
+<div class="verdict">
+<p><strong>Verdict:</strong> The ensemble (R2=0.9580) adds +0.0004 over LightGBM alone (R2=0.9576) at a cost of 13.3 hours and ~149 CU. LightGBM is the production model. The ensemble provides no practical benefit and should not be deployed.</p>
+</div>
+
+<div class="scanline"></div>
+
+<!-- SECTION 5: WHAT DATA VOLUME CONTRIBUTED -->
+<h2>05 // THE REAL V2 WIN: DATA VOLUME</h2>
+
+<h3>Same Model, Different Data Scale</h3>
+<table>
+  <tr><th>Model</th><th>V1 (30% sampled, batch)</th><th>V2 (100%, full)</th><th>R2 Gain</th></tr>
+  <tr><td>XGBoost</td><td>0.8331</td><td class="highlight">0.9452</td><td class="highlight">+0.112</td></tr>
+</table>
+<p>Same hyperparameters, same features, same split strategy. The <strong>only</strong> difference is data volume: 38M rows vs 126.8M rows. This +0.112 R2 gain is entirely from seeing more data, not from model architecture changes. The V2 improvement story is fundamentally about removing the WSL2 memory constraint, not about CatBoost or LightGBM being better algorithms.</p>
+
+<div class="finding">
+<p><strong>Lesson:</strong> For datasets with high-cardinality categoricals (6K procedure codes x 100 specialties x 63 states), the model needs to see enough examples of each combination to learn stable splits. At 30% sampling, many combinations had too few examples for reliable estimation. At 100%, coverage is sufficient. This is a data coverage problem, not a model capacity problem.</p>
+</div>
+
+<div class="scanline"></div>
+
+<!-- SECTION 6: COMPUTE REALITY CHECK -->
+<h2>06 // COMPUTE: ESTIMATES VS REALITY</h2>
+
+<table>
+  <tr><th>Notebook</th><th>Estimated CU</th><th>Actual CU</th><th>Factor</th></tr>
+  <tr><td>V2_01 (3 models)</td><td>8-12</td><td>~28</td><td class="warn">2.5x</td></tr>
+  <tr><td>V2_02 (ablation)</td><td>6-10</td><td>~34</td><td class="warn">4x</td></tr>
+  <tr><td>V2_03 (ensemble 5-fold)</td><td>12-16</td><td>~149</td><td style="color: var(--red)">10x</td></tr>
+  <tr><td><strong>Total</strong></td><td><strong>26-38</strong></td><td><strong>~211</strong></td><td style="color: var(--red)"><strong>6.5x</strong></td></tr>
+</table>
+
+<p>The primary driver of the underestimate was CatBoost at 3,000 iterations on 126M rows. Each CatBoost training run took ~100 minutes on A100 GPU. The ensemble notebook ran 5 CatBoost folds = 530 minutes of CatBoost alone, plus 5 LightGBM folds at ~50 min each = 250 minutes. Total ensemble notebook: 13.3 hours, dominated by CatBoost's slow convergence.</p>
+
+<div class="scanline"></div>
+
+<!-- SECTION 7: RECOMMENDATIONS -->
+<h2>07 // RECOMMENDATIONS</h2>
+
+<div class="card">
+<h3>For Production Deployment</h3>
+<p>Deploy <strong>LightGBM V2</strong> (R2=0.9575, MAE=$6.73) as the Stage 1 model. It is the best single model and the ensemble adds negligible value. The no-charge variant (R2=0.9428) is the better choice for prospective estimation where the billed charge isn't available.</p>
+</div>
+
+<div class="card">
+<h3>For Future Iteration</h3>
+<p>If pursuing ensemble gains, the path is model diversity, not more boosters. Consider:</p>
+<p>1. <strong>Neural network base learner</strong> (TabNet, FT-Transformer) for structurally different error patterns<br>
+2. <strong>Per-specialty sub-models</strong> that specialize on high-variance procedure groups<br>
+3. <strong>Residual stacking</strong> where the second model predicts LightGBM's residuals, not the target directly</p>
+</div>
+
+<div class="card">
+<h3>For Stage 2 OOP (Next Sprint)</h3>
+<p>The remaining ~89 CU is sufficient for V2_04 through V2_08. The OOP synthetic data is 10.3M rows (12x smaller), and the TFT forecasting data is 23K groups. Neither will repeat the compute overrun. Budget 3x the initial estimate as a safety margin.</p>
+</div>
+
+<div class="scanline"></div>
+
+<footer>
+  <div>Medicare Provider Cost Analysis // V2 Model Knowledge Report</div>
+  <div>Generated 2026-04-11 // Cobbles &amp; Currents Studios</div>
+</footer>
+
+</body>
+</html>

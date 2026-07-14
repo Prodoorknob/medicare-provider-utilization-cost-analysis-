@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AllowanceMap Animation — Recording Harness</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; padding: 0; background: #0a0a0a; height: 100%; overflow: hidden; }
+  * { box-sizing: border-box; }
+  #root { position: absolute; inset: 0; width: 1920px; height: 1080px; overflow: hidden; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="animations.jsx"></script>
+<script type="text/babel" src="anim-scenes-1.jsx"></script>
+<script type="text/babel" src="anim-scenes-2.jsx"></script>
+<script type="text/babel" src="anim-scenes-3.jsx"></script>
+
+<script type="text/babel">
+  // Scene timing — identical to AllowanceMap Animation.html
+  const SCENES = [
+    { start:  0.0, end:  3.2, Comp: SceneOpen,     chrome: false },
+    { start:  3.2, end:  9.2, Comp: SceneProblem,  chrome: true  },
+    { start:  9.2, end: 15.6, Comp: SceneData,     chrome: true  },
+    { start: 15.6, end: 22.6, Comp: ScenePipeline, chrome: true  },
+    { start: 22.6, end: 30.2, Comp: SceneModelZoo, chrome: true  },
+    { start: 30.2, end: 36.8, Comp: SceneBug,      chrome: true  },
+    { start: 36.8, end: 43.6, Comp: SceneResults,  chrome: true  },
+    { start: 43.6, end: 50.0, Comp: SceneProduct,  chrome: false },
+  ];
+  const TOTAL = SCENES[SCENES.length - 1].end;
+  const WIDTH = 1920, HEIGHT = 1080;
+
+  function ChromeSprite() {
+    const t = useTime();
+    const show = SCENES.some(s => s.chrome && t >= s.start && t < s.end);
+    if (!show) return null;
+    return <Chrome/>;
+  }
+
+  function SceneProgress() {
+    const t = useTime();
+    return (
+      <div style={{
+        position:'absolute', top: 56, left: 0, right: 0, height: 3,
+        display: 'flex', gap: 4, padding: '0 40px', zIndex: 40,
+      }}>
+        {SCENES.map((s, i) => {
+          const p = Math.max(0, Math.min(1, (t - s.start) / (s.end - s.start)));
+          return (
+            <div key={i} style={{ flex: 1, height: 2, background: 'rgba(0,0,0,0.08)' }}>
+              <div style={{
+                width: `${p * 100}%`, height: '100%',
+                background: p >= 1 ? AC.green : AC.teal,
+              }}/>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  // Recording stage: native 1920x1080, no scaling, no playback bar.
+  // Time is driven externally via window.__setTime.
+  function RecordStage({ children }) {
+    const [time, setTime] = React.useState(0);
+
+    React.useEffect(() => {
+      window.__setTime = (t) => {
+        const clamped = Math.max(0, Math.min(TOTAL, Number(t) || 0));
+        setTime(clamped);
+      };
+      window.__duration = TOTAL;
+      window.__width = WIDTH;
+      window.__height = HEIGHT;
+      window.__ready = true;
+    }, []);
+
+    const ctxValue = React.useMemo(
+      () => ({ time, duration: TOTAL, playing: false, setTime, setPlaying: () => {} }),
+      [time]
+    );
+
+    return (
+      <div style={{
+        position: 'absolute', inset: 0,
+        width: WIDTH, height: HEIGHT,
+        background: AC.bg,
+        overflow: 'hidden',
+        fontFamily: 'Inter, system-ui, sans-serif',
+      }}>
+        <TimelineContext.Provider value={ctxValue}>
+          {children}
+        </TimelineContext.Provider>
+      </div>
+    );
+  }
+
+  function App() {
+    return (
+      <RecordStage>
+        {SCENES.map((s, i) => (
+          <Sprite key={i} start={s.start} end={s.end}>
+            <s.Comp/>
+          </Sprite>
+        ))}
+        <ChromeSprite/>
+        <SceneProgress/>
+      </RecordStage>
+    );
+  }
+
+  ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

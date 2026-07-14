@@ -34,6 +34,14 @@ web/.env.local
 # gitignored so `railway up` includes it in the build context. It is also not
 # committed — leave it untracked and regenerate with deploy/railway-pipeline/make_seed.py.
 
+# Falsification test bulk inputs (re-downloadable CMS RVU/PFS files; reports and scripts are tracked)
+falsification_test/rvu_zips/
+falsification_test/rvu_extracted/
+falsification_test/rvu_page.html
+
+# Claude Code session artifacts
+.claude/scheduled_tasks.lock
+
 # OS
 .DS_Store
 Thumbs.db

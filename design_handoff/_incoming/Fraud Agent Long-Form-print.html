@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How an AI agent reads Medicare like a forensic accountant · AllowanceMap</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; padding: 0; background: #FAFAF8; color: #1C1917; }
+  * { box-sizing: border-box; }
+  #root { min-height: 100vh; }
+
+  /* Print rules */
+  @page { size: 1280px 1700px; margin: 0; }
+
+  @media print {
+    html, body {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+      background: #FAFAF8 !important;
+    }
+    /* Center the 1280-wide page; remove max-width constraints */
+    #root > div { display: block !important; }
+    #root > div > div { max-width: none !important; width: 1280px !important; margin: 0 auto !important; }
+
+    /* Each section becomes a page */
+    section {
+      break-after: page;
+      page-break-after: always;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    section:last-child {
+      break-after: auto;
+      page-break-after: auto;
+    }
+
+    /* Force dark backgrounds + colors to print */
+    section, div, span, p, h1, h2, h3 {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+
+    /* Kill animations / hover */
+    *, *::before, *::after {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="onepager.jsx"></script>
+
+<script type="text/babel">
+  function App() {
+    return (
+      <div style={{
+        display: 'flex', justifyContent: 'center',
+        background: '#FAFAF8', minHeight: '100vh',
+      }}>
+        <div style={{ width: '100%', maxWidth: 1280 }}>
+          <OnePager/>
+        </div>
+      </div>
+    );
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+
+  // Auto-print once fonts + JSX are ready
+  (async () => {
+    try {
+      if (document.fonts && document.fonts.ready) {
+        await document.fonts.ready;
+      }
+    } catch (e) {}
+    await new Promise(r => setTimeout(r, 800));
+    window.print();
+  })();
+</script>
+</body>
+</html>

@@ -185,13 +185,10 @@ export default function AboutPage() {
               <CardContent>
                 <Typography variant="h6" gutterBottom>Overview</Typography>
                 <Typography variant="body1" sx={{ mb: 1.5 }}>
-                  An end-to-end data science pipeline predicting Medicare provider costs and patient out-of-pocket expenses. Processes over 103 million provider-service records (126.8 million model-ready rows) from the CMS Medicare Physician &amp; Other Practitioners dataset spanning 2013 to 2023.
-                </Typography>
-                <Typography variant="body1" sx={{ mb: 1.5 }}>
-                  The project implements a two-stage prediction architecture: Stage 1 predicts what Medicare allows for a service; Stage 2 estimates what the patient pays out of pocket based on demographic and insurance profile.
+                  An end-to-end data science pipeline predicting Medicare provider costs and patient out-of-pocket expenses. Processes over 103 million provider-service records from the CMS Medicare Physician &amp; Other Practitioners dataset spanning 2013 to 2023.
                 </Typography>
                 <Typography variant="body1">
-                  A third surface, the <Link href="/investigations">Provider Anomaly Investigation Agent</Link>, reuses the same cleaned data layer to flag providers whose billing deviates from their specialty peers and to generate evidence-cited investigation briefs.
+                  The project implements a two-stage prediction architecture: Stage 1 predicts what Medicare allows for a service; Stage 2 estimates what the patient pays out of pocket based on demographic and insurance profile.
                 </Typography>
               </CardContent>
             </Card>
@@ -205,11 +202,8 @@ export default function AboutPage() {
                 <Typography variant="body1" sx={{ mb: 1.5 }}>
                   <strong>CMS Medicare Current Beneficiary Survey (MCBS)</strong>: Public Use Files for beneficiary demographics, insurance coverage, and cost data. Used for Stage 2 patient cost modeling.
                 </Typography>
-                <Typography variant="body1" sx={{ mb: 1.5 }}>
-                  <strong>CMS Provider Summary (by Provider)</strong>: NPI-level HCC risk scores for beneficiary health burden adjustment.
-                </Typography>
                 <Typography variant="body1">
-                  <strong>OIG LEIE &amp; CMS Revoked Providers</strong>: Government sanction and exclusion lists, refreshed monthly and used as ground truth to validate the anomaly investigation agent.
+                  <strong>CMS Provider Summary (by Provider)</strong>: NPI-level HCC risk scores for beneficiary health burden adjustment.
                 </Typography>
               </CardContent>
             </Card>
@@ -223,7 +217,7 @@ export default function AboutPage() {
                 <Divider sx={{ my: 1.5 }} />
                 <Typography variant="h6" gutterBottom color="secondary" sx={{ mt: 1.5 }}>Stage 2: Patient Out-of-Pocket</Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-                  CatBoost monotonic quantile regression (P10/P50/P90) trained on synthetic MCBS-derived beneficiary data segmented by region, age, income, and insurance status. Asymmetric conformal (CQR) calibration is applied at inference&mdash;the raw P90 covered only 67.5% of held-out actuals, so a calibration sidecar widens the upper tail to restore nominal 90% interval coverage.
+                  CatBoost monotonic quantile regression (P10/P50/P90) trained on synthetic MCBS-derived beneficiary data segmented by region, age, income, and insurance status.
                 </Typography>
                 <Divider sx={{ my: 1.5 }} />
                 <Typography variant="h6" gutterBottom sx={{ mt: 1.5, color: '#15755D' }}>Forecast: 2024–2026 Projections</Typography>
@@ -236,25 +230,10 @@ export default function AboutPage() {
               </CardContent>
             </Card>
 
-            <Card sx={{ mb: 3 }}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom sx={{ color: '#8A3B4E' }}>Provider Anomaly Investigation Agent</Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-                  Builds 11.5 million provider-year billing profiles (1.76M NPIs &times; 2013&ndash;2023, 22 metrics each) and flags outliers via peer-benchmark z-scores, Isolation Forest, and temporal spike rules&mdash;requiring agreement from at least two methods keeps the composite flag rate at 0.77% of provider-years. Flagged providers are checked against 11 codified fraud-indicator rules (8 evaluable on public data), and Claude generates an evidence-cited investigation brief for each.
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-                  Validated against government ground truth (OIG LEIE + CMS Revoked Providers) with a point-in-time, leakage-corrected backtest: held-out lift@1000 of 3.9&ndash;6.2&times; over the sanction base rate, with a median lead-time of 42 months from first flag to sanction. Much of the lift correlates with provider volume&mdash;documented as a known confound. A monthly validation loop runs autonomously as a Railway cron service.
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ fontSize: 12, fontStyle: 'italic' }}>
-                  The agent is a lead-prioritization and evidence layer for human analysts, not a fraud classifier. Browse the output at <Link href="/investigations">Investigations</Link>.
-                </Typography>
-              </CardContent>
-            </Card>
-
             <Box sx={{ bgcolor: '#FDF4EA', borderLeft: '3px solid #B8763A', borderRadius: 1, p: 2 }}>
               <Typography variant="body2" color="#B8763A" sx={{ fontWeight: 600, mb: 1 }}>Disclaimer</Typography>
               <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7 }}>
-                This is an academic research project. Estimates are based on aggregate historical data and should not be used for medical billing decisions. Stage 2 out-of-pocket estimates use synthetic beneficiary data modeled after MCBS distributions. Actual patient costs depend on specific plan details, deductibles, and coverage terms not captured in this model. Anomaly flags and investigation briefs are statistical signals derived from public billing data&mdash;they are not accusations of fraud or wrongdoing.
+                This is an academic research project. Estimates are based on aggregate historical data and should not be used for medical billing decisions. Stage 2 out-of-pocket estimates use synthetic beneficiary data modeled after MCBS distributions. Actual patient costs depend on specific plan details, deductibles, and coverage terms not captured in this model.
               </Typography>
             </Box>
           </Grid>
@@ -292,11 +271,8 @@ export default function AboutPage() {
                 <Typography variant="body2">XGBoost &middot; CatBoost &middot; LightGBM &middot; PyTorch</Typography>
                 <Typography variant="body2">MLflow &middot; Databricks</Typography>
                 <Divider sx={{ my: 1.5 }} />
-                <Typography variant="body2">Claude API (Sonnet 4.6) &middot; Isolation Forest</Typography>
-                <Divider sx={{ my: 1.5 }} />
                 <Typography variant="body2">Next.js &middot; Material UI &middot; Recharts</Typography>
-                <Typography variant="body2">FastAPI &middot; Docker &middot; Railway &middot; Vercel</Typography>
-                <Typography variant="body2">Railway Postgres &middot; Railway cron</Typography>
+                <Typography variant="body2">Supabase (PostgreSQL) &middot; Railway &middot; Vercel</Typography>
               </CardContent>
             </Card>
           </Grid>
@@ -523,10 +499,7 @@ export default function AboutPage() {
           {/* Feature importance */}
           <Card sx={{ mb: 4 }}>
             <CardContent>
-              <Typography variant="h6" gutterBottom>Feature Importance: LightGBM V2 (charge-aware variant)</Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                Importances shown are from the charge-aware variant. The production no-charge model excludes Submitted Charge; its signal shifts primarily to the HCPCS code and service-volume features, costing only 0.01&ndash;0.02 R².
-              </Typography>
+              <Typography variant="h6" gutterBottom>Feature Importance: LightGBM (no-charge)</Typography>
               <ResponsiveContainer width="100%" height={350}>
                 <BarChart data={fiChart} layout="vertical" margin={{ left: 140, right: 30 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
@@ -583,12 +556,7 @@ CMS MCBS PUF
   > 08_mcbs_crosswalk
          |
   generate_synthetic_mcbs.py
-  > Stage 2 OOP training data
-
-Silver  >  NPI-year profiles (11.5M)
-  > peer benchmarks > outlier detection
-  > fraud-indicator rules > Claude brief
-  > monthly validation vs LEIE + CMS Revoked`}
+  > Stage 2 OOP training data`}
                 </Box>
               </CardContent>
             </Card>

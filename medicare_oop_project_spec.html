@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Project Spec — Medicare OOP Prediction Pipeline</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --ink:    #0f0e0c;
+    --paper:  #f5f0e8;
+    --paper2: #ede8df;
+    --forest: #2a4a3e;
+    --blue:   #8ab0c8;
+    --rust:   #b05a30;
+    --gold:   #c8960a;
+    --muted:  #6b6660;
+    --rule:   #c8bfb0;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 16px; scroll-behavior: smooth; }
+  body { background: var(--paper); color: var(--ink); font-family: 'DM Sans', sans-serif; font-weight: 300; line-height: 1.75; }
+
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--ink); padding: 0.75rem 2rem;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  nav .brand { font-family: 'DM Mono', monospace; font-size: 0.75rem; color: var(--gold); letter-spacing: 0.15em; text-transform: uppercase; }
+  nav .nav-links { display: flex; gap: 1.5rem; }
+  nav .nav-links a { font-family: 'DM Mono', monospace; font-size: 0.7rem; color: var(--rule); text-decoration: none; letter-spacing: 0.1em; text-transform: uppercase; transition: color 0.2s; }
+  nav .nav-links a:hover { color: var(--gold); }
+
+  .hero { background: var(--forest); color: var(--paper); padding: 5rem 2rem 4rem; }
+  .hero-inner { max-width: 900px; margin: 0 auto; }
+  .hero .eyebrow { font-family: 'DM Mono', monospace; font-size: 0.72rem; letter-spacing: 0.2em; color: var(--gold); text-transform: uppercase; margin-bottom: 1.25rem; }
+  .hero h1 { font-family: 'Playfair Display', serif; font-size: clamp(2.2rem, 4.5vw, 3.5rem); font-weight: 700; line-height: 1.15; margin-bottom: 1rem; }
+  .hero h1 em { font-style: italic; color: var(--blue); }
+  .hero .sub { font-size: 1rem; color: #a0b8b0; max-width: 680px; margin-bottom: 2.5rem; }
+  .hero-meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; overflow: hidden; }
+  .hero-meta-item { background: rgba(0,0,0,0.2); padding: 1rem 1.25rem; }
+  .hero-meta-item .hm-label { font-family: 'DM Mono', monospace; font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); margin-bottom: 0.3rem; }
+  .hero-meta-item .hm-val { font-size: 0.9rem; color: var(--paper); font-weight: 400; }
+
+  .container { max-width: 960px; margin: 0 auto; padding: 0 2rem; }
+  section { padding: 4rem 0; border-bottom: 1px solid var(--rule); }
+  section:last-of-type { border-bottom: none; }
+  .section-label { font-family: 'DM Mono', monospace; font-size: 0.68rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--rust); margin-bottom: 0.5rem; }
+  .rule-line { width: 3rem; height: 2px; background: var(--rust); margin: 0 0 1.5rem; }
+  h2 { font-family: 'Playfair Display', serif; font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 600; line-height: 1.2; margin-bottom: 1.25rem; }
+  h3 { font-family: 'Playfair Display', serif; font-size: 1.15rem; font-weight: 600; margin: 2rem 0 0.75rem; }
+  p { margin-bottom: 1rem; font-size: 0.96rem; }
+
+  /* PHASE CARDS */
+  .phase-grid { display: flex; flex-direction: column; gap: 1px; margin: 2rem 0; background: var(--rule); border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; }
+  .phase-card { background: var(--paper); display: grid; grid-template-columns: 100px 1fr; }
+  @media(max-width:600px){ .phase-card { grid-template-columns: 1fr; } }
+  .phase-num-col { background: var(--ink); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem 1rem; }
+  .phase-num-col .pn { font-family: 'Playfair Display', serif; font-size: 2.2rem; color: var(--gold); line-height: 1; }
+  .phase-num-col .pt { font-family: 'DM Mono', monospace; font-size: 0.6rem; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 0.25rem; }
+  .phase-body { padding: 1.5rem 1.75rem; }
+  .phase-body h4 { font-family: 'Playfair Display', serif; font-size: 1.1rem; margin-bottom: 0.5rem; }
+  .phase-body .phase-meta { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+  .phase-body p { font-size: 0.9rem; margin-bottom: 0.5rem; }
+  .phase-body .deliverable { font-family: 'DM Mono', monospace; font-size: 0.75rem; color: var(--forest); background: var(--paper2); padding: 0.15rem 0.5rem; border-radius: 3px; display: inline-block; margin: 0.15rem 0.15rem 0 0; }
+  .pill { display: inline-block; padding: 0.15rem 0.55rem; border-radius: 99px; font-family: 'DM Mono', monospace; font-size: 0.62rem; letter-spacing: 0.05em; }
+  .pill.green  { background: #1a3a2a; color: #5fba7d; }
+  .pill.amber  { background: #3a2a00; color: var(--gold); }
+  .pill.red    { background: #3a1a10; color: #d47a50; }
+  .pill.blue   { background: #1a2a3a; color: var(--blue); }
+  .pill.forest { background: #1a2a24; color: #6abfa0; }
+
+  /* TECH TABLE */
+  table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; font-size: 0.87rem; }
+  th { background: var(--ink); color: var(--paper); padding: 0.7rem 1rem; text-align: left; font-family: 'DM Mono', monospace; font-size: 0.65rem; letter-spacing: 0.08em; text-transform: uppercase; }
+  td { padding: 0.65rem 1rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  tr:nth-child(even) td { background: var(--paper2); }
+
+  /* CALLOUT */
+  .callout { border-left: 3px solid var(--forest); background: var(--paper2); padding: 1.25rem 1.5rem; margin: 1.75rem 0; border-radius: 0 4px 4px 0; }
+  .callout .cl { font-family: 'DM Mono', monospace; font-size: 0.65rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--forest); margin-bottom: 0.4rem; }
+  .callout p { font-size: 0.92rem; margin-bottom: 0; }
+  .callout.gold { border-left-color: var(--gold); }
+  .callout.gold .cl { color: var(--gold); }
+  .callout.rust { border-left-color: var(--rust); }
+  .callout.rust .cl { color: var(--rust); }
+  .callout.blue { border-left-color: var(--blue); }
+  .callout.blue .cl { color: var(--blue); }
+
+  /* DATA SCHEMA */
+  .schema-block { background: var(--ink); border-radius: 8px; padding: 1.5rem; margin: 1.25rem 0; }
+  .schema-block .sb-label { font-family: 'DM Mono', monospace; font-size: 0.65rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gold); margin-bottom: 0.75rem; }
+  .schema-block .field-row { display: flex; gap: 1rem; align-items: baseline; padding: 0.3rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+  .schema-block .field-row:last-child { border-bottom: none; }
+  .schema-block .field-name { font-family: 'DM Mono', monospace; font-size: 0.78rem; color: var(--blue); min-width: 220px; }
+  .schema-block .field-type { font-family: 'DM Mono', monospace; font-size: 0.68rem; color: var(--gold); min-width: 80px; }
+  .schema-block .field-desc { font-size: 0.82rem; color: var(--rule); }
+  .schema-block .field-source { font-family: 'DM Mono', monospace; font-size: 0.65rem; color: var(--muted); min-width: 80px; text-align: right; }
+
+  /* MILESTONE TIMELINE */
+  .timeline { position: relative; padding-left: 2rem; margin: 2rem 0; }
+  .timeline::before { content: ''; position: absolute; left: 0.4rem; top: 0; bottom: 0; width: 2px; background: var(--rule); }
+  .tl-item { position: relative; margin-bottom: 1.75rem; }
+  .tl-item::before { content: ''; position: absolute; left: -1.65rem; top: 0.35rem; width: 10px; height: 10px; border-radius: 50%; background: var(--forest); border: 2px solid var(--paper); }
+  .tl-item.done::before { background: #5fba7d; }
+  .tl-item.active::before { background: var(--gold); }
+  .tl-item .tl-date { font-family: 'DM Mono', monospace; font-size: 0.65rem; color: var(--muted); letter-spacing: 0.1em; }
+  .tl-item h4 { font-family: 'Playfair Display', serif; font-size: 1rem; margin: 0.15rem 0 0.3rem; }
+  .tl-item p { font-size: 0.86rem; color: var(--muted); margin: 0; }
+
+  /* OOP QUERY MOCKUP */
+  .query-mockup { background: var(--ink); border-radius: 10px; padding: 2rem; margin: 2rem 0; }
+  .query-mockup .qm-title { font-family: 'DM Mono', monospace; font-size: 0.65rem; color: var(--gold); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 1.25rem; }
+  .input-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.75rem; margin-bottom: 1.25rem; }
+  .input-field { }
+  .input-field label { font-family: 'DM Mono', monospace; font-size: 0.62rem; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; display: block; margin-bottom: 0.3rem; }
+  .input-field .fval { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 4px; padding: 0.5rem 0.75rem; font-family: 'DM Mono', monospace; font-size: 0.8rem; color: var(--paper); }
+  .qm-output { background: rgba(255,255,255,0.04); border-radius: 6px; padding: 1.25rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 1rem; }
+  .qm-out-item { text-align: center; }
+  .qm-out-item .qol { font-family: 'DM Mono', monospace; font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+  .qm-out-item .qov { font-family: 'Playfair Display', serif; font-size: 1.6rem; }
+  .qm-out-item .qov.blue { color: var(--blue); }
+  .qm-out-item .qov.gold { color: var(--gold); }
+  .qm-out-item .qov.green { color: #5fba7d; }
+  .qm-out-item .qod { font-size: 0.75rem; color: var(--muted); margin-top: 0.2rem; }
+
+  /* RISK BLOCK */
+  .risk-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1.5rem 0; }
+  @media(max-width:600px){ .risk-grid { grid-template-columns: 1fr; } }
+  .risk-item { border: 1px solid var(--rule); border-radius: 6px; padding: 1.1rem 1.25rem; }
+  .risk-item .ri-label { font-family: 'DM Mono', monospace; font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.4rem; }
+  .risk-item.med .ri-label { color: var(--gold); }
+  .risk-item.high .ri-label { color: var(--rust); }
+  .risk-item.low .ri-label { color: #5fba7d; }
+  .risk-item p { font-size: 0.85rem; color: var(--muted); margin: 0; }
+
+  footer { background: var(--ink); color: var(--muted); padding: 2.5rem 2rem; text-align: center; }
+  footer .footer-brand { font-family: 'DM Mono', monospace; font-size: 0.7rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--rule); margin-bottom: 0.5rem; }
+  footer p { font-size: 0.78rem; }
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="brand">Project Spec · Medicare OOP Pipeline</span>
+  <div class="nav-links">
+    <a href="#overview">Overview</a>
+    <a href="#phases">Phases</a>
+    <a href="#schema">Schema</a>
+    <a href="#models">Models</a>
+    <a href="#milestones">Milestones</a>
+    <a href="#risks">Risks</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-inner">
+    <div class="eyebrow">Portfolio Project Specification · v1.0 · April 2026</div>
+    <h1>Medicare Provider Cost &<br/><em>Patient Out-of-Pocket Prediction</em></h1>
+    <p class="sub">A full-stack ML pipeline extending from raw CMS claims data to individual patient out-of-pocket estimation — built on Databricks, tracked in MLflow, and ultimately deployable as a patient-facing tool.</p>
+    <div class="hero-meta">
+      <div class="hero-meta-item"><div class="hm-label">Primary Dataset</div><div class="hm-val">CMS PUF 2013–2023</div></div>
+      <div class="hero-meta-item"><div class="hm-label">Secondary Dataset</div><div class="hm-val">MCBS PUF (annual)</div></div>
+      <div class="hero-meta-item"><div class="hm-label">Modeling Stages</div><div class="hm-val">2 (Allowed Amt → OOP)</div></div>
+      <div class="hero-meta-item"><div class="hm-label">Architecture</div><div class="hm-val">Medallion · Databricks</div></div>
+      <div class="hero-meta-item"><div class="hm-label">Tracking</div><div class="hm-val">MLflow on Databricks</div></div>
+      <div class="hero-meta-item"><div class="hm-label">Target Delivery</div><div class="hm-val">Streamlit / Gradio App</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- OVERVIEW -->
+<section id="overview">
+  <div class="container">
+    <div class="section-label">Section 01</div>
+    <div class="rule-line"></div>
+    <h2>Project Overview & Goal</h2>
+    <p>This project builds a two-stage machine learning pipeline that answers a question no public tool currently answers well: <em>"Given my Medicare coverage, my doctor's specialty, and the procedure I'm having — what will I actually pay out of pocket?"</em></p>
+    <p><strong>Stage 1</strong> uses the CMS Provider Utilization and Payment Data (2013–2023, 11 years, all 50 states) to predict the Medicare allowed amount for any provider × HCPCS × geography combination. A time-series LSTM layer adds a forecasting dimension — predicting what allowed amounts will look like in future years by specialty.</p>
+    <p><strong>Stage 2</strong> takes the Stage 1 prediction as an input and uses the Medicare Current Beneficiary Survey (MCBS) to model the distribution of patient out-of-pocket spending conditional on supplemental coverage type, demographics, and chronic condition burden. The output is a probabilistic range, not a single number — communicating real uncertainty to real patients.</p>
+
+    <div class="callout gold">
+      <div class="cl">The core portfolio thesis</div>
+      <p>This project demonstrates the full data science stack: distributed data engineering (Databricks + S3 + PySpark), experiment tracking (MLflow), three distinct modeling families (GLM, tree ensembles, deep learning), and deployment thinking (what does the output actually need to look like for a patient to act on it?). The MCBS integration makes this meaningfully different from any of the dozens of "predict Medicare costs" Kaggle notebooks.</p>
+    </div>
+
+    <h3>What "patient-facing" means in practice</h3>
+    <p>The end-state deployment is a simple query interface where a user provides: their supplemental coverage type, their doctor's specialty, the procedure they're having, and their state. The system returns an estimated Medicare allowed amount (Stage 1), a projected cost range for 2025–2026 (LSTM), and a patient out-of-pocket range with a confidence interval (Stage 2).</p>
+
+    <div class="query-mockup">
+      <div class="qm-title">Target UI — Patient Query Interface (Prototype Concept)</div>
+      <div class="input-row">
+        <div class="input-field"><label>Specialty</label><div class="fval">Cardiology</div></div>
+        <div class="input-field"><label>Procedure</label><div class="fval">Echocardiogram</div></div>
+        <div class="input-field"><label>State</label><div class="fval">Indiana</div></div>
+        <div class="input-field"><label>Coverage Type</label><div class="fval">Medigap Plan G</div></div>
+        <div class="input-field"><label>Age Band</label><div class="fval">65–74</div></div>
+      </div>
+      <div class="qm-output">
+        <div class="qm-out-item">
+          <div class="qol">Medicare Allowed</div>
+          <div class="qov blue">$312</div>
+          <div class="qod">Stage 1 prediction</div>
+        </div>
+        <div class="qm-out-item">
+          <div class="qol">Medicare Pays</div>
+          <div class="qov green">$250</div>
+          <div class="qod">~80% of allowed</div>
+        </div>
+        <div class="qm-out-item">
+          <div class="qol">Your OOP (Median)</div>
+          <div class="qov gold">$0</div>
+          <div class="qod">Medigap G covers gap</div>
+        </div>
+        <div class="qm-out-item">
+          <div class="qol">OOP Range (P10–P90)</div>
+          <div class="qov" style="color:var(--rule);font-size:1.2rem;">$0 – $14</div>
+          <div class="qod">Only deductible exposure</div>
+        </div>
+        <div class="qm-out-item">
+          <div class="qol">2026 Forecast</div>
+          <div class="qov" style="color:#a0b8a0;font-size:1.2rem;">$318</div>
+          <div class="qod">LSTM projection ±$22</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PHASES -->
+<section id="phases">
+  <div class="container">
+    <div class="section-label">Section 02</div>
+    <div class="rule-line"></div>
+    <h2>Project Phases</h2>
+    <p>The project is structured into six sequential phases. Phases 1–3 are the academic baseline extended to full national scale. Phases 4–6 are the portfolio-exclusive additions that make this project unique.</p>
+
+    <div class="phase-grid">
+
+      <div class="phase-card">
+        <div class="phase-num-col"><div class="pn">1</div><div class="pt">Phase</div></div>
+        <div class="phase-body">
+          <div class="phase-meta"><span class="pill green">In Progress</span><span class="pill forest">CMS Data</span><span class="pill blue">Databricks</span></div>
+          <h4>Academic Baseline — 3-State Subset</h4>
+          <p>Full Medallion pipeline (Bronze → Silver → Gold) on a representative 3-state subset. GLM, Random Forest, and XGBoost trained locally with MLflow tracking URI pointed at Databricks. Cross-validation, paired t-test, feature importance analysis.</p>
+          <div>
+            <span class="deliverable">01_bronze.ipynb</span>
+            <span class="deliverable">02_silver.ipynb</span>
+            <span class="deliverable">03_gold.ipynb</span>
+            <span class="deliverable">04_eda.ipynb</span>
+            <span class="deliverable">local_training.py</span>
+            <span class="deliverable">MLflow experiment</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="phase-card">
+        <div class="phase-num-col"><div class="pn">2</div><div class="pt">Phase</div></div>
+        <div class="phase-body">
+          <div class="phase-meta"><span class="pill amber">Queued</span><span class="pill forest">CMS Full Dataset</span></div>
+          <h4>National Scale — All 50 States</h4>
+          <p>Re-run the full pipeline on all states and all 11 years. Retrain all three models on the complete gold-layer dataset. Update MLflow with national-scale metrics. This produces the production-grade Stage 1 model that will serve as input to Stage 2.</p>
+          <div>
+            <span class="deliverable">national_training.py</span>
+            <span class="deliverable">stage1_model.pkl</span>
+            <span class="deliverable">MLflow production run</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="phase-card">
+        <div class="phase-num-col"><div class="pn">3</div><div class="pt">Phase</div></div>
+        <div class="phase-body">
+          <div class="phase-meta"><span class="pill amber">Queued</span><span class="pill blue">LSTM</span><span class="pill forest">Time Series</span></div>
+          <h4>LSTM Time-Series Forecasting Layer</h4>
+          <p>Build a sequence model over the 11-year panel to forecast allowed amounts 2–3 years forward by specialty × HCPCS bucket. The LSTM takes year-over-year allowed amount as the time series, with specialty, geography, and volume as auxiliary features. Output: confidence-bounded forecasts logged to MLflow.</p>
+          <div>
+            <span class="deliverable">lstm_forecaster.py</span>
+            <span class="deliverable">forecast_2024_2026.parquet</span>
+            <span class="deliverable">specialty_trend_charts</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="phase-card">
+        <div class="phase-num-col"><div class="pn">4</div><div class="pt">Phase</div></div>
+        <div class="phase-body">
+          <div class="phase-meta"><span class="pill red">Not Started</span><span class="pill forest">MCBS Data</span><span class="pill blue">New Pipeline</span></div>
+          <h4>MCBS Integration — New Bronze/Silver Track</h4>
+          <p>Ingest MCBS Public Use Files (annual, available from CMS). Build a parallel Bronze → Silver pipeline to produce a clean beneficiary-level feature matrix with coverage type, demographics, chronic conditions, and actual out-of-pocket amounts. Build a crosswalk table joining MCBS census regions to CMS specialty categories.</p>
+          <div>
+            <span class="deliverable">pull_mcbs_data.py</span>
+            <span class="deliverable">05_mcbs_bronze.ipynb</span>
+            <span class="deliverable">06_mcbs_silver.ipynb</span>
+            <span class="deliverable">region_specialty_crosswalk.parquet</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="phase-card">
+        <div class="phase-num-col"><div class="pn">5</div><div class="pt">Phase</div></div>
+        <div class="phase-body">
+          <div class="phase-meta"><span class="pill red">Not Started</span><span class="pill blue">Stage 2 Modeling</span></div>
+          <h4>Patient Out-of-Pocket Stage 2 Model</h4>
+          <p>Train a cost-sharing model on the MCBS feature matrix with the Stage 1 predicted allowed amount as a feature. Use quantile regression to produce P10/P50/P90 out-of-pocket estimates rather than a single point prediction. Track in the same MLflow experiment as Stage 1 for unified comparison. Evaluate on a held-out MCBS year.</p>
+          <div>
+            <span class="deliverable">stage2_oop_model.py</span>
+            <span class="deliverable">quantile_regressor.pkl</span>
+            <span class="deliverable">07_oop_modeling.ipynb</span>
+            <span class="deliverable">MLflow Stage 2 run</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="phase-card">
+        <div class="phase-num-col"><div class="pn">6</div><div class="pt">Phase</div></div>
+        <div class="phase-body">
+          <div class="phase-meta"><span class="pill red">Not Started</span><span class="pill blue">Deployment</span><span class="pill forest">Portfolio</span></div>
+          <h4>Portfolio Deployment — Streamlit App</h4>
+          <p>Build a Streamlit (or Gradio) application that exposes both stages and the LSTM forecast in a single user interface. The app loads the gold-layer models, accepts patient inputs, runs Stage 1 and Stage 2 inference, and displays the output with appropriate uncertainty communication. Deploy to Streamlit Community Cloud or HuggingFace Spaces.</p>
+          <div>
+            <span class="deliverable">app.py</span>
+            <span class="deliverable">model_loader.py</span>
+            <span class="deliverable">requirements.txt</span>
+            <span class="deliverable">Hosted deployment URL</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- SCHEMA -->
+<section id="schema">
+  <div class="container">
+    <div class="section-label">Section 03</div>
+    <div class="rule-line"></div>
+    <h2>Data Schema — Gold Layer Feature Matrices</h2>
+    <p>The gold layer produces two separate feature matrices — one per data source — that are joined at inference time, not at training time. Training each stage independently prevents data leakage and allows each stage to be retrained independently as new data arrives.</p>
+
+    <h3>Gold Layer A — CMS Feature Matrix (Stage 1 Training)</h3>
+    <div class="schema-block">
+      <div class="sb-label">cms_gold_features</div>
+      <div class="field-row"><span class="field-name">provider_specialty_encoded</span><span class="field-type">INT</span><span class="field-desc">Label-encoded specialty, with rare specialties bucketed into "Other"</span><span class="field-source">CMS</span></div>
+      <div class="field-row"><span class="field-name">hcpcs_bucket</span><span class="field-type">INT</span><span class="field-desc">HCPCS codes grouped by clinical category to reduce cardinality</span><span class="field-source">CMS</span></div>
+      <div class="field-row"><span class="field-name">state_encoded</span><span class="field-type">INT</span><span class="field-desc">State abbreviation label-encoded</span><span class="field-source">CMS</span></div>
+      <div class="field-row"><span class="field-name">place_of_service_flag</span><span class="field-type">BINARY</span><span class="field-desc">0 = non-facility, 1 = facility</span><span class="field-source">CMS</span></div>
+      <div class="field-row"><span class="field-name">year</span><span class="field-type">INT</span><span class="field-desc">Service year (2013–2023)</span><span class="field-source">CMS</span></div>
+      <div class="field-row"><span class="field-name">log_service_count</span><span class="field-type">FLOAT</span><span class="field-desc">Log-transformed number of services — accounts for volume skew</span><span class="field-source">CMS</span></div>
+      <div class="field-row"><span class="field-name">log_beneficiary_count</span><span class="field-type">FLOAT</span><span class="field-desc">Log-transformed distinct beneficiary count per provider-HCPCS</span><span class="field-source">CMS</span></div>
+      <div class="field-row"><span class="field-name">avg_beneficiary_risk_score</span><span class="field-type">FLOAT</span><span class="field-desc">HCC risk score proxy for patient complexity mix</span><span class="field-source">CMS</span></div>
+      <div class="field-row"><span class="field-name">TARGET: log_avg_allowed_amount</span><span class="field-type">FLOAT</span><span class="field-desc">Log-transformed average Medicare allowed amount — Stage 1 target</span><span class="field-source">CMS</span></div>
+    </div>
+
+    <h3>Gold Layer B — MCBS Feature Matrix (Stage 2 Training)</h3>
+    <div class="schema-block">
+      <div class="sb-label">mcbs_gold_features</div>
+      <div class="field-row"><span class="field-name">predicted_allowed_amount</span><span class="field-type">FLOAT</span><span class="field-desc">Output from Stage 1 model — key bridge between the two stages</span><span class="field-source">Stage 1</span></div>
+      <div class="field-row"><span class="field-name">supplemental_coverage_type</span><span class="field-type">INT</span><span class="field-desc">Encoded: 0=None, 1=Medigap A-D, 2=Medigap G, 3=Medigap N, 4=Employer, 5=Dual</span><span class="field-source">MCBS</span></div>
+      <div class="field-row"><span class="field-name">dual_eligible_flag</span><span class="field-type">BINARY</span><span class="field-desc">1 if Medicaid dual-eligible (OOP is effectively zero)</span><span class="field-source">MCBS</span></div>
+      <div class="field-row"><span class="field-name">age_band</span><span class="field-type">INT</span><span class="field-desc">65–69, 70–74, 75–79, 80–84, 85+</span><span class="field-source">MCBS</span></div>
+      <div class="field-row"><span class="field-name">census_region</span><span class="field-type">INT</span><span class="field-desc">1=Northeast, 2=Midwest, 3=South, 4=West</span><span class="field-source">MCBS</span></div>
+      <div class="field-row"><span class="field-name">chronic_condition_count</span><span class="field-type">INT</span><span class="field-desc">Number of CMS-defined chronic conditions — proxy for annual utilization</span><span class="field-source">MCBS</span></div>
+      <div class="field-row"><span class="field-name">deductible_met_flag</span><span class="field-type">BINARY</span><span class="field-desc">Engineered: 1 if beneficiary has met annual Part B deductible (from claims)</span><span class="field-source">MCBS</span></div>
+      <div class="field-row"><span class="field-name">service_category</span><span class="field-type">INT</span><span class="field-desc">Crosswalk from specialty → service category (physician, lab, imaging, etc.)</span><span class="field-source">Crosswalk</span></div>
+      <div class="field-row"><span class="field-name">TARGET: actual_oop_amount</span><span class="field-type">FLOAT</span><span class="field-desc">Actual beneficiary out-of-pocket payment — Stage 2 target</span><span class="field-source">MCBS</span></div>
+    </div>
+
+    <div class="callout rust">
+      <div class="cl">Why log-transform the target in Stage 1?</div>
+      <p>The distribution of allowed amounts is heavily right-skewed — a small number of high-cost procedures (infusions, complex surgeries) dominate the variance and make RMSE a misleading metric on the raw scale. Log-transforming the target gives the model a more symmetric error distribution and means RMSE is interpretable as approximate percentage error. Back-transform predictions with exp() at inference time.</p>
+    </div>
+  </div>
+</section>
+
+<!-- MODELS -->
+<section id="models">
+  <div class="container">
+    <div class="section-label">Section 04</div>
+    <div class="rule-line"></div>
+    <h2>Model Specifications</h2>
+
+    <h3>Stage 1 — Allowed Amount Models</h3>
+    <table>
+      <thead><tr><th>Model</th><th>Rationale</th><th>Key Hyperparameters</th><th>Evaluation</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>GLM (Ridge)</strong></td>
+          <td>Interpretable baseline. Coefficients directly quantify the dollar effect of specialty and geography. Required for inference analysis.</td>
+          <td>alpha (L2 penalty), feature scaling required</td>
+          <td>RMSE, MAE, R², paired t-test vs. tree models</td>
+        </tr>
+        <tr>
+          <td><strong>Random Forest</strong></td>
+          <td>Captures non-linear interactions between specialty and HCPCS without manual feature engineering. Good OOB error estimate.</td>
+          <td>n_estimators, max_depth, min_samples_leaf</td>
+          <td>Same metrics + feature importance (MDI)</td>
+        </tr>
+        <tr>
+          <td><strong>XGBoost</strong></td>
+          <td>Expected best predictive performance. SHAP values provide interpretability to complement raw accuracy.</td>
+          <td>learning_rate, n_estimators, max_depth, subsample, colsample_bytree</td>
+          <td>Same metrics + SHAP global/local</td>
+        </tr>
+        <tr>
+          <td><strong>LSTM (PyTorch)</strong></td>
+          <td>Captures temporal autocorrelation in year-over-year allowed amounts. Only model that produces forward forecasts.</td>
+          <td>hidden_size, num_layers, dropout, seq_length, lr</td>
+          <td>Forecast RMSE on held-out years, PI coverage</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Stage 2 — Out-of-Pocket Models</h3>
+    <table>
+      <thead><tr><th>Model</th><th>Rationale</th><th>Output Type</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>GLM (Linear)</strong></td>
+          <td>Interpretable baseline showing direct effect of coverage type on OOP</td>
+          <td>Point estimate (mean)</td>
+        </tr>
+        <tr>
+          <td><strong>Gradient Boosting</strong></td>
+          <td>Captures non-linear interactions (e.g., coverage type × allowed amount × chronic conditions)</td>
+          <td>Point estimate (mean)</td>
+        </tr>
+        <tr>
+          <td><strong>Quantile Regression (GBM)</strong></td>
+          <td>Primary production model — produces P10/P50/P90 simultaneously. OOP distribution is right-skewed; mean prediction alone is misleading.</td>
+          <td>P10, P50, P90 simultaneously</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout blue">
+      <div class="cl">MLflow tracking strategy</div>
+      <p>Both stages share a single MLflow experiment on Databricks for unified visibility. Each model run logs: all hyperparameters, train/val/test metrics, the serialized model artifact, a feature importance plot, and (for Stage 2) the quantile coverage plot. This makes the full pipeline reproducible from a single MLflow UI view.</p>
+    </div>
+  </div>
+</section>
+
+<!-- MILESTONES -->
+<section id="milestones">
+  <div class="container">
+    <div class="section-label">Section 05</div>
+    <div class="rule-line"></div>
+    <h2>Milestone Timeline</h2>
+    <p>Phases are designed to be independently completable — each phase produces a concrete artifact that doesn't block progress on unrelated areas. The MCBS track (Phases 4–5) can begin in parallel with Phase 3 LSTM work.</p>
+
+    <div class="timeline">
+      <div class="tl-item done">
+        <div class="tl-date">Completed · Early 2026</div>
+        <h4>Data Infrastructure</h4>
+        <p>CMS pull scripts, partitioning, Parquet conversion, S3 bucket configured. Databricks Git integration live. Project proposal delivered.</p>
+      </div>
+      <div class="tl-item active">
+        <div class="tl-date">In Progress · April 2026</div>
+        <h4>Phase 1 — Academic Baseline (3 States)</h4>
+        <p>Bronze through Gold notebooks, EDA, GLM + RF + XGBoost local training, MLflow comparison, academic report.</p>
+      </div>
+      <div class="tl-item">
+        <div class="tl-date">Phase 2 Target · May 2026</div>
+        <h4>National Scale Retraining</h4>
+        <p>Full 50-state gold layer export, local training on complete dataset, production Stage 1 model artifact saved to MLflow.</p>
+      </div>
+      <div class="tl-item">
+        <div class="tl-date">Phase 3 Target · June 2026</div>
+        <h4>LSTM Forecasting</h4>
+        <p>Time-indexed gold layer, PyTorch LSTM implementation, forecast validation on held-out years (2022–2023), 2024–2026 projections.</p>
+      </div>
+      <div class="tl-item">
+        <div class="tl-date">Phase 4 Target · July 2026</div>
+        <h4>MCBS Ingestion & Silver Notebook</h4>
+        <p>MCBS PUF download, Bronze + Silver pipeline, beneficiary feature matrix, region × specialty crosswalk complete.</p>
+      </div>
+      <div class="tl-item">
+        <div class="tl-date">Phase 5 Target · August 2026</div>
+        <h4>Stage 2 OOP Model</h4>
+        <p>Quantile regression on MCBS gold layer, evaluation on held-out MCBS year, SHAP analysis, MLflow logged alongside Stage 1.</p>
+      </div>
+      <div class="tl-item">
+        <div class="tl-date">Phase 6 Target · September 2026</div>
+        <h4>Streamlit Portfolio App</h4>
+        <p>Both-stage inference pipeline wrapped in a Streamlit app. Hosted on Streamlit Community Cloud or HuggingFace Spaces. Portfolio writeup published.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- RISKS -->
+<section id="risks">
+  <div class="container">
+    <div class="section-label">Section 06</div>
+    <div class="rule-line"></div>
+    <h2>Risks & Mitigations</h2>
+
+    <div class="risk-grid">
+      <div class="risk-item high">
+        <div class="ri-label">High — MCBS Geographic Resolution</div>
+        <p>MCBS public files only provide census-region geography (4 regions), vs. state-level in CMS data. Stage 2 loses geographic granularity. <strong>Mitigation:</strong> Clearly communicate this in the app UI; offer state-level Stage 1 output separately from the regional Stage 2 output.</p>
+      </div>
+      <div class="risk-item high">
+        <div class="ri-label">High — Medicare Advantage Blindspot</div>
+        <p>54% of Medicare patients are in MA plans not captured by either dataset. <strong>Mitigation:</strong> Scope the app explicitly to "Traditional Medicare (Original Medicare) beneficiaries" and add a clear MA disclaimer to the UI.</p>
+      </div>
+      <div class="risk-item med">
+        <div class="ri-label">Medium — MCBS Sample Sparsity</div>
+        <p>Rare coverage type × specialty × region combinations may have very few MCBS observations, producing wide and unreliable quantile estimates. <strong>Mitigation:</strong> Flag cells with n &lt; 30 observations with a "low confidence" indicator in the app output.</p>
+      </div>
+      <div class="risk-item med">
+        <div class="ri-label">Medium — Annual Retraining Requirement</div>
+        <p>Medicare fee schedules update every January. CMS releases prior-year data ~18 months after year end, so 2024 data arrives mid-2025. <strong>Mitigation:</strong> Build the pipeline to accept new annual files with a single config change. LSTM forecasts partially mitigate staleness.</p>
+      </div>
+      <div class="risk-item low">
+        <div class="ri-label">Low — Databricks Free Tier Compute</div>
+        <p>Free tier serverless compute cannot use s3a:// or mount DBFS. Already solved via pandas + HTTPS URL pattern. <strong>Mitigation:</strong> Pattern is documented in existing notebooks; MCBS ingestion will follow same approach.</p>
+      </div>
+      <div class="risk-item low">
+        <div class="ri-label">Low — LSTM Sequence Length</div>
+        <p>11 years of data is a short sequence for an LSTM. The model may overfit or produce unstable forecasts. <strong>Mitigation:</strong> Use 1D CNN + LSTM hybrid or add auxiliary features (specialty, volume) as context. Evaluate forecast intervals carefully on held-out years.</p>
+      </div>
+    </div>
+
+    <div class="callout">
+      <div class="cl">How to frame limitations in the portfolio writeup</div>
+      <p>The limitations aren't weaknesses — they're evidence of domain understanding. A candidate who says "our model predicts OOP for Traditional Medicare FFS patients, which represents 46% of beneficiaries; extending to MA would require CMS encounter data that isn't publicly available" demonstrates significantly more sophistication than one who ignores the gap entirely. Lead with what the model does, follow with what it doesn't, and explain why the gap exists structurally.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-brand">Cobbles &amp; Currents Studios · Raj Vedire</div>
+  <p>Project Specification v1.0 · Medicare Provider Cost &amp; Patient OOP Prediction Pipeline · April 2026</p>
+</footer>
+
+</body>
+</html>

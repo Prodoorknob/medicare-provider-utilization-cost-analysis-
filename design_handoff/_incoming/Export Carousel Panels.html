@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Export panels</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; padding: 0; background: #E8E6E1; font-family: Inter, system-ui, sans-serif; }
+  * { box-sizing: border-box; }
+  /* anchors must render their inline color (html2canvas otherwise applies browser default) */
+  a, a:link, a:visited { text-decoration: none; }
+  a[data-cta-light], a[data-cta-light] * { color: #fff !important; }
+  a[data-cta-dark], a[data-cta-dark] * { color: #1C1917 !important; }
+  .toolbar {
+    position: sticky; top: 0; z-index: 100;
+    background: #1C1917; color: #fff; padding: 16px 24px;
+    display: flex; align-items: center; gap: 16px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  }
+  .toolbar h1 { font-size: 16px; margin: 0; font-weight: 700; }
+  .toolbar p { font-size: 13px; margin: 0; color: #A8A29E; flex: 1; }
+  .toolbar button {
+    background: #0F6E8C; color: #fff; border: 0; padding: 10px 20px;
+    font-family: Inter, system-ui, sans-serif; font-size: 14px; font-weight: 600;
+    border-radius: 8px; cursor: pointer;
+  }
+  .toolbar button:hover { background: #1389AC; }
+  .toolbar button:disabled { background: #57534E; cursor: not-allowed; }
+  .status { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: #FEBC2E; }
+
+  .grid {
+    display: grid; grid-template-columns: repeat(auto-fill, 540px);
+    gap: 24px; padding: 40px; justify-content: center;
+  }
+  .panel-wrapper {
+    background: #fff; border-radius: 12px; overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+  }
+  .panel-label {
+    padding: 10px 14px; background: #fff; border-bottom: 1px solid rgba(0,0,0,0.08);
+    font-family: "IBM Plex Mono", monospace; font-size: 11px; font-weight: 700;
+    letter-spacing: 0.14em; text-transform: uppercase; color: #57534E;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .panel-scaler {
+    width: 540px; height: 540px; overflow: hidden; position: relative;
+  }
+  .panel-scaler .panel {
+    transform: scale(0.5); transform-origin: top left;
+  }
+  /* hidden full-size render targets */
+  .capture-stage {
+    position: fixed; top: -99999px; left: -99999px;
+    width: 1080px; height: 1080px;
+  }
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <h1>LinkedIn carousel · panel export</h1>
+  <p>Download all 9 panels as separate 1080×1080 PNGs, ready to upload.</p>
+  <span class="status" id="status"></span>
+  <button id="download-all">Download all 9 as ZIP</button>
+  <button id="download-pdf">Download as PDF</button>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://unpkg.com/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
+<script type="text/babel" src="onepager.jsx"></script>
+<script type="text/babel" src="swipedeck.jsx"></script>
+
+<script type="text/babel">
+  const panels = [
+    { n: 1, name: 'P1-hook', Comp: P1Hook, dark: true },
+    { n: 2, name: 'P2-medicare', Comp: P2Medicare, dark: false },
+    { n: 3, name: 'P3-problem', Comp: P2Problem, dark: false },
+    { n: 4, name: 'P4-rules', Comp: P3Rules, dark: false },
+    { n: 5, name: 'P5-case', Comp: P4Case, dark: true },
+    { n: 6, name: 'P6-finding', Comp: P5Finding, dark: false },
+    { n: 7, name: 'P7-why', Comp: P6Why, dark: false },
+    { n: 8, name: 'P8-honesty', Comp: P7Honesty, dark: true },
+    { n: 9, name: 'P9-cta', Comp: P8CTA, dark: false },
+  ];
+
+  function PanelRender({ n, total, Comp, dark }) {
+    return (
+      <SwipePanel n={n} total={total}
+        bg={dark ? '#0D0C0B' : '#FAFAF8'}
+        color={dark ? '#fff' : '#1C1917'}>
+        <Comp/>
+      </SwipePanel>
+    );
+  }
+
+  function App() {
+    return (
+      <>
+        {panels.map(p => (
+          <div key={p.n} className="panel-wrapper">
+            <div className="panel-label">
+              <span>{String(p.n).padStart(2, '0')} · {p.name}</span>
+              <span>1080×1080</span>
+            </div>
+            <div className="panel-scaler">
+              <div className="panel" id={`panel-${p.n}`}>
+                <PanelRender n={p.n} total={panels.length} Comp={p.Comp} dark={p.dark}/>
+              </div>
+            </div>
+          </div>
+        ))}
+        {/* Hidden full-size capture stages */}
+        {panels.map(p => (
+          <div key={'cap-' + p.n} className="capture-stage" id={`capture-${p.n}`}>
+            <PanelRender n={p.n} total={panels.length} Comp={p.Comp} dark={p.dark}/>
+          </div>
+        ))}
+      </>
+    );
+  }
+
+  const root = document.getElementById('grid');
+  // Spread into grid + hidden stages
+  ReactDOM.createRoot(root).render(<App/>);
+
+  // --- Export logic ---
+  const statusEl = document.getElementById('status');
+  const setStatus = (s) => statusEl.textContent = s;
+
+  async function captureOne(n) {
+    const el = document.getElementById(`capture-${n}`).firstChild;
+    const canvas = await html2canvas(el, {
+      width: 1080, height: 1080, scale: 2,
+      backgroundColor: null, useCORS: true, logging: false,
+    });
+    return canvas;
+  }
+
+  async function captureAll() {
+    const canvases = [];
+    for (const p of panels) {
+      setStatus(`capturing ${p.n}/${panels.length}...`);
+      canvases.push({ n: p.n, name: p.name, canvas: await captureOne(p.n) });
+    }
+    return canvases;
+  }
+
+  document.getElementById('download-all').addEventListener('click', async () => {
+    const btn = document.getElementById('download-all');
+    btn.disabled = true;
+    try {
+      const shots = await captureAll();
+      setStatus('zipping...');
+      const zip = new JSZip();
+      for (const s of shots) {
+        const blob = await new Promise(r => s.canvas.toBlob(r, 'image/png'));
+        zip.file(`${String(s.n).padStart(2, '0')}-${s.name}.png`, blob);
+      }
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'fraud-agent-carousel.zip';
+      a.click();
+      URL.revokeObjectURL(url);
+      setStatus('done ✓');
+    } catch (e) {
+      setStatus('error: ' + e.message);
+      console.error(e);
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  document.getElementById('download-pdf').addEventListener('click', async () => {
+    const btn = document.getElementById('download-pdf');
+    btn.disabled = true;
+    try {
+      const shots = await captureAll();
+      setStatus('building PDF...');
+      const { jsPDF } = window.jspdf;
+      // 1080pt square pages (LinkedIn document post works with any square PDF)
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: [1080, 1080] });
+      shots.forEach((s, i) => {
+        if (i > 0) pdf.addPage([1080, 1080], 'portrait');
+        pdf.addImage(s.canvas.toDataURL('image/png'), 'PNG', 0, 0, 1080, 1080);
+      });
+      pdf.save('fraud-agent-carousel.pdf');
+      setStatus('done ✓');
+    } catch (e) {
+      setStatus('error: ' + e.message);
+      console.error(e);
+    } finally {
+      btn.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>
